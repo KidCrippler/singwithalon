@@ -109,16 +109,9 @@ p {
 }
 
 .nav-logo .logo {
-    height: 60px;
+    height: 50px;
     width: auto;
-    border-radius: 12px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
-}
-
-.nav-logo .logo:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.3);
+    border-radius: 8px;
 }
 
 .nav-menu {
@@ -206,35 +199,6 @@ p {
 
 .hero-text {
     color: white;
-}
-
-.hero-logo-container {
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-.hero-logo {
-    height: 100px;
-    width: auto;
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-    transition: transform 0.4s ease, box-shadow 0.4s ease;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    animation: logoGlow 3s ease-in-out infinite alternate;
-}
-
-.hero-logo:hover {
-    transform: scale(1.08) rotateY(5deg);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-@keyframes logoGlow {
-    0% {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(102, 126, 234, 0.3);
-    }
-    100% {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4), 0 0 30px rgba(102, 126, 234, 0.5);
-    }
 }
 
 .hero-title {
@@ -1070,10 +1034,6 @@ p {
 
     .title-main {
         font-size: 2.5rem;
-    }
-
-    .hero-logo {
-        height: 80px;
     }
 
     .hero-buttons {
