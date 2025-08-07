@@ -161,23 +161,26 @@ class MusicianSite {
         const formData = new FormData(this.contactForm);
         const data = Object.fromEntries(formData);
         
+        // Validate form first
+        const errors = FormValidator.validateForm(data);
+        if (errors.length > 0) {
+            this.showMessage(errors.join('\n'), 'error');
+            return;
+        }
+        
         // Show loading state
         const submitBtn = this.contactForm.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> שולח...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> יוצר הודעה...';
         submitBtn.disabled = true;
 
         try {
-            // Simulate form submission (replace with actual endpoint)
-            await this.simulateFormSubmission(data);
-            
-            // Success message
-            this.showMessage('ההודעה נשלחה בהצלחה! אחזור אליכם בהקדם.', 'success');
-            this.contactForm.reset();
+            // Create WhatsApp message
+            await this.sendWhatsAppMessage(data);
             
         } catch (error) {
-            console.error('Form submission error:', error);
-            this.showMessage('שגיאה בשליחת ההודעה. אנא נסו שוב או צרו קשר טלפוני.', 'error');
+            console.error('WhatsApp message error:', error);
+            this.showMessage('שגיאה ביצירת הודעת WhatsApp. אנא נסו שוב.', 'error');
         } finally {
             // Reset button
             submitBtn.innerHTML = originalText;
@@ -185,18 +188,38 @@ class MusicianSite {
         }
     }
 
-    async simulateFormSubmission(data) {
-        // Simulate API call
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                // Simulate random success/failure for demo
-                if (Math.random() > 0.1) {
-                    resolve(data);
-                } else {
-                    reject(new Error('Simulated network error'));
-                }
-            }, 2000);
-        });
+    async sendWhatsAppMessage(data) {
+        const formattedDate = data.date ? new Date(data.date).toLocaleDateString('he-IL') : 'לא צוין';
+        
+        const message = `שלום אלון! 🎵
+
+אני מעוניין/ת להזמין מופע:
+
+👤 שם: ${data.name}
+📞 טלפון: ${data.phone}
+📅 תאריך מועדף: ${formattedDate}
+
+💬 פרטים נוספים:
+${data.message || 'לא צוינו פרטים נוספים'}
+
+אשמח לשמוע ממך בהקדם! 🎶`;
+
+        // Encode message for URL
+        const encodedMessage = encodeURIComponent(message);
+        const phoneNumber = '972528962110'; // Your WhatsApp number in international format
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        
+        // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Open WhatsApp
+        window.open(whatsappUrl, '_blank');
+        
+        // Show success message
+        this.showMessage('הודעת WhatsApp נוצרה בהצלחה! הדפדפן ייפתח בעוד רגע.', 'success');
+        this.contactForm.reset();
+        
+        return true;
     }
 
     showMessage(message, type) {
@@ -352,16 +375,8 @@ class FormValidator {
             errors.push('שם מלא חייב להכיל לפחות 2 תווים');
         }
 
-        if (!FormValidator.validateEmail(formData.email)) {
-            errors.push('כתובת אימייל לא תקינה');
-        }
-
         if (!FormValidator.validatePhone(formData.phone)) {
             errors.push('מספר טלפון לא תקין');
-        }
-
-        if (!formData['event-type']) {
-            errors.push('יש לבחור סוג אירוע');
         }
 
         if (!formData.date) {
@@ -369,8 +384,9 @@ class FormValidator {
         } else {
             const selectedDate = new Date(formData.date);
             const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to compare dates only
             if (selectedDate < today) {
-                errors.push('התאריך חייב להיות בעתיד');
+                errors.push('התאריך חייב להיות היום או בעתיד');
             }
         }
 
