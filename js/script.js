@@ -212,12 +212,25 @@ ${data.message || 'לא צוינו פרטים נוספים'}
         // Simulate processing time
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Open WhatsApp
-        window.open(whatsappUrl, '_blank');
-        
-        // Show success message
-        this.showMessage('הודעת WhatsApp נוצרה בהצלחה! הדפדפן ייפתח בעוד רגע.', 'success');
-        this.contactForm.reset();
+        // Try multiple methods to open WhatsApp
+        try {
+            // Method 1: Try window.open with user gesture
+            const newWindow = window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+            
+            // Method 2: If popup blocked, use direct navigation
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                // Popup was blocked, use location.href as fallback
+                window.location.href = whatsappUrl;
+            } else {
+                // Popup opened successfully
+                this.showMessage('הודעת WhatsApp נוצרה בהצלחה! הדפדפן ייפתח בעוד רגע.', 'success');
+                this.contactForm.reset();
+            }
+        } catch (error) {
+            // Method 3: Direct navigation as last resort
+            console.log('Popup failed, using direct navigation:', error);
+            window.location.href = whatsappUrl;
+        }
         
         return true;
     }
