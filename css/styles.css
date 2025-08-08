@@ -420,7 +420,20 @@ p {
     position: relative;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.1),
+        0 4px 15px rgba(0, 0, 0, 0.08);
+    margin: 0;
+    padding: 0;
+    line-height: 0;
+    transition: all 0.3s ease;
+}
+
+.about-image:hover {
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.15),
+        0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-5px);
 }
 
 .about-img {
@@ -428,6 +441,9 @@ p {
     height: 500px;
     object-fit: cover;
     object-position: center;
+    display: block;
+    margin: 0;
+    padding: 0;
 }
 
 
