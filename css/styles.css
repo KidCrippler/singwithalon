@@ -427,37 +427,12 @@ p {
     width: 100%;
     height: 500px;
     object-fit: cover;
+    object-position: center;
 }
 
-.about-img-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(102, 126, 234, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
 
-.about-image:hover .about-img-overlay {
-    opacity: 1;
-}
 
-.play-icon {
-    width: 80px;
-    height: 80px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #667eea;
-    font-size: 30px;
-}
+
 
 /* Videos Section */
 .videos {
@@ -1049,6 +1024,10 @@ p {
     .about-content {
         grid-template-columns: 1fr;
         gap: 40px;
+    }
+
+    .about-img {
+        height: 400px;
     }
 
     .video-card.featured {
