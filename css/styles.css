@@ -446,6 +446,27 @@ p {
     padding: 0;
 }
 
+/* Mobile image - hidden by default, shown only on mobile */
+.about-image-mobile {
+    display: none;
+    margin-bottom: 30px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.1),
+        0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.about-img-mobile {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
 
 
 
@@ -1044,6 +1065,16 @@ p {
 
     .about-img {
         height: 400px;
+    }
+
+    /* Hide desktop image on mobile */
+    .about-image {
+        display: none;
+    }
+
+    /* Show mobile image on mobile */
+    .about-image-mobile {
+        display: block;
     }
 
     .video-card.featured {
