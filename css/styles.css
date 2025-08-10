@@ -822,38 +822,7 @@ p {
     text-decoration: underline;
 }
 
-.social-links {
-    margin-top: 20px;
-}
 
-.social-links h4 {
-    color: #2c3e50;
-    margin-bottom: 15px;
-}
-
-.social-icons {
-    display: flex;
-    gap: 15px;
-}
-
-.social-icon {
-    width: 50px;
-    height: 50px;
-    background: #f8f9fa;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #667eea;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.social-icon:hover {
-    background: #667eea;
-    color: white;
-    transform: translateY(-3px);
-}
 
 /* Contact Form */
 .contact-form {
@@ -957,28 +926,7 @@ p {
     margin-bottom: 10px;
 }
 
-.footer-social {
-    display: flex;
-    gap: 15px;
-    margin-top: 20px;
-}
 
-.footer-social a {
-    width: 40px;
-    height: 40px;
-    background: #34495e;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    text-decoration: none;
-    transition: background 0.3s ease;
-}
-
-.footer-social a:hover {
-    background: #667eea;
-}
 
 .footer-bottom {
     text-align: center;
