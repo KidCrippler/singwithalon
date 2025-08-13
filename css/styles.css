@@ -62,7 +62,6 @@ p {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-    margin-top: 25px;
 }
 
 .btn-primary:hover {
@@ -866,6 +865,10 @@ p {
 .form-group textarea {
     resize: vertical;
     min-height: 120px;
+}
+
+.contact-form .btn-primary {
+    margin-top: 25px;
 }
 
 /* Footer */
