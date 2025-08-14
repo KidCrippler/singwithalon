@@ -476,7 +476,7 @@ p {
 .about::before {
     content: '♪';
     position: absolute;
-    top: 50px;
+    top: 65px;
     right: 5%;
     font-size: 2.5rem;
     color: #8b5fbf;
