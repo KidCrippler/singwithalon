@@ -1,0 +1,24 @@
+# Claude Code configuration directory
+.claude/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node modules (if ever needed)
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
