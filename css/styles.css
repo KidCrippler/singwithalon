@@ -15,6 +15,10 @@ body {
     line-height: 1.6;
     color: #333;
     background-color: #f8f9fa;
+    background-image: url('../assets/wallpaper.png');
+    background-repeat: repeat;
+    background-size: 200px 200px;
+    background-attachment: fixed;
     overflow-x: hidden;
 }
 
@@ -428,7 +432,7 @@ p {
 /* About Section */
 .about {
     padding: 100px 0;
-    background: white;
+    background: rgba(255, 255, 255, 0.92);
     position: relative;
 }
 
@@ -587,7 +591,7 @@ p {
 /* Videos Section */
 .videos {
     padding: 100px 0;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250, 0.92);
     position: relative;
 }
 
@@ -598,11 +602,11 @@ p {
     position: absolute;
     top: 60px;
     right: 6%;
-    font-size: 2.5rem;
+    font-size: 3rem;
     color: #8b5fbf;
-    opacity: 0.2;
+    opacity: 0.35;
     transform: rotate(12deg);
-    text-shadow: 0 0 10px rgba(139, 95, 191, 0.3);
+    text-shadow: 0 0 15px rgba(139, 95, 191, 0.4);
 }
 
 .videos::after {
@@ -731,7 +735,7 @@ p {
 /* Services Section */
 .services {
     padding: 100px 0;
-    background: white;
+    background: rgba(255, 255, 255, 0.92);
     position: relative;
 }
 
@@ -894,7 +898,7 @@ p {
 /* Testimonials Section */
 .testimonials {
     padding: 100px 0;
-    background: #f8f9fa;
+    background: rgba(248, 249, 250, 0.92);
     position: relative;
 }
 
@@ -983,7 +987,7 @@ p {
 /* Contact Section */
 .contact {
     padding: 100px 0;
-    background: white;
+    background: rgba(255, 255, 255, 0.92);
     position: relative;
 }
 
@@ -994,11 +998,11 @@ p {
     position: absolute;
     top: 45px;
     right: 7%;
-    font-size: 2rem;
+    font-size: 2.4rem;
     color: #8b5fbf;
-    opacity: 0.2;
+    opacity: 0.32;
     transform: rotate(20deg);
-    text-shadow: 0 0 10px rgba(139, 95, 191, 0.3);
+    text-shadow: 0 0 15px rgba(139, 95, 191, 0.4);
 }
 
 .contact-content {
