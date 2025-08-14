@@ -19,6 +19,7 @@ class MusicianSite {
         this.setupContactForm();
         this.setupAnimations();
         this.setupSmoothScrolling();
+        this.setupParallaxOptimizations();
     }
 
     setupNavigation() {
@@ -49,8 +50,24 @@ class MusicianSite {
         let lastScrollY = window.scrollY;
         const hero = document.querySelector('.hero');
         const heroOverlay = document.querySelector('.hero-overlay');
+        const parallaxLayers = document.querySelectorAll('.parallax-layer');
+        
+        // Performance optimization: use requestAnimationFrame and Intersection Observer
+        let ticking = false;
+        let heroVisible = true;
+        
+        // Intersection Observer to only animate when hero is visible
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                heroVisible = entry.isIntersecting;
+            });
+        }, {
+            rootMargin: '100px 0px'
+        });
+        
+        if (hero) observer.observe(hero);
 
-        window.addEventListener('scroll', () => {
+        const updateParallax = () => {
             const currentScrollY = window.scrollY;
 
             // Navbar scroll effect
@@ -60,27 +77,44 @@ class MusicianSite {
                 this.navbar.classList.remove('scrolled');
             }
 
-            // Parallax effect for hero section
-            if (hero && currentScrollY < window.innerHeight) {
-                // More noticeable parallax speeds
-                const parallaxSpeed = 0.6;
-                const overlaySpeed = 0.4;
-                const yPos = currentScrollY * parallaxSpeed;
+            // Multi-layer parallax effect for hero section (only when visible)
+            if (hero && heroVisible && currentScrollY < window.innerHeight * 1.2) {
+                // Apply parallax to each layer based on data-speed attribute
+                parallaxLayers.forEach(layer => {
+                    const speed = parseFloat(layer.dataset.speed) || 0;
+                    const yPos = currentScrollY * speed;
+                    
+                    // Use transform3d for hardware acceleration
+                    layer.style.transform = `translate3d(0, ${yPos}px, 0)`;
+                });
                 
-                // Apply parallax to background elements
-                hero.style.setProperty('--parallax-y', `${yPos}px`);
-                
-                // More noticeable parallax offset for overlay to create depth
+                // Keep existing overlay effect
                 if (heroOverlay) {
-                    heroOverlay.style.transform = `translateY(${currentScrollY * overlaySpeed}px)`;
+                    heroOverlay.style.transform = `translate3d(0, ${currentScrollY * 0.4}px, 0)`;
                 }
+                
+                // Old CSS custom property removed - now using only image-based parallax layers
             }
 
             // Update active nav link based on current section
             this.updateActiveNavLink();
 
             lastScrollY = currentScrollY;
-        });
+            ticking = false;
+        };
+
+        const requestTick = () => {
+            if (!ticking) {
+                requestAnimationFrame(updateParallax);
+                ticking = true;
+            }
+        };
+
+        // Use throttled scroll event for better performance
+        window.addEventListener('scroll', requestTick, { passive: true });
+        
+        // Initial call to set correct positions
+        updateParallax();
     }
 
     updateActiveNavLink() {
@@ -355,6 +389,57 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                     });
                 }
             });
+        }
+    }
+
+    setupParallaxOptimizations() {
+        // Reduce parallax complexity on low-end devices
+        const isLowEndDevice = () => {
+            return navigator.hardwareConcurrency <= 4 || 
+                   window.devicePixelRatio < 1.5 ||
+                   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        };
+
+        // Disable complex filters on mobile/low-end devices
+        if (isLowEndDevice()) {
+            document.querySelectorAll('.parallax-layer').forEach(layer => {
+                layer.style.filter = 'none';
+            });
+        }
+
+        // Pause parallax when tab is not visible
+        document.addEventListener('visibilitychange', () => {
+            const parallaxLayers = document.querySelectorAll('.parallax-layer');
+            if (document.hidden) {
+                parallaxLayers.forEach(layer => {
+                    layer.style.willChange = 'auto';
+                });
+            } else {
+                parallaxLayers.forEach(layer => {
+                    layer.style.willChange = 'transform';
+                });
+            }
+        });
+
+        // Intersection Observer to only animate when hero is visible
+        const heroObserver = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Enable parallax
+                        document.body.classList.add('parallax-active');
+                    } else {
+                        // Disable parallax when hero is not visible
+                        document.body.classList.remove('parallax-active');
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        const hero = document.querySelector('.hero');
+        if (hero) {
+            heroObserver.observe(hero);
         }
     }
 
