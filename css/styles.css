@@ -614,7 +614,7 @@ p {
     font-family: 'Font Awesome 5 Free';
     font-weight: 900;
     position: absolute;
-    bottom: 80px;
+    bottom: 40px;
     left: 5%;
     font-size: 2rem;
     color: #b19cd9;
@@ -740,7 +740,7 @@ p {
 }
 
 .services::before {
-    content: '\f790';
+    content: '\f025';
     font-family: 'Font Awesome 5 Free';
     font-weight: 900;
     position: absolute;
