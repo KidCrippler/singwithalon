@@ -334,6 +334,19 @@ p {
     height: 4px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 2px;
+    animation: pulse-gentle 3s ease-in-out infinite;
+}
+
+/* Add subtle musical rhythm animation */
+@keyframes pulse-gentle {
+    0%, 100% { 
+        transform: translateX(-50%) scaleX(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: translateX(-50%) scaleX(1.1);
+        opacity: 0.8;
+    }
 }
 
 .section-subtitle {
@@ -346,6 +359,30 @@ p {
 .about {
     padding: 100px 0;
     background: white;
+    position: relative;
+}
+
+/* Musical note decorations for sections */
+.about::before {
+    content: '♪';
+    position: absolute;
+    top: 50px;
+    right: 5%;
+    font-size: 2rem;
+    color: #667eea;
+    opacity: 0.15;
+    transform: rotate(15deg);
+}
+
+.about::after {
+    content: '♫';
+    position: absolute;
+    bottom: 50px;
+    left: 8%;
+    font-size: 1.5rem;
+    color: #764ba2;
+    opacity: 0.15;
+    transform: rotate(-10deg);
 }
 
 .about-content {
@@ -470,6 +507,27 @@ p {
 .videos {
     padding: 100px 0;
     background: #f8f9fa;
+    position: relative;
+}
+
+.videos::before {
+    content: '🎵';
+    position: absolute;
+    top: 60px;
+    right: 6%;
+    font-size: 2rem;
+    opacity: 0.1;
+    transform: rotate(12deg);
+}
+
+.videos::after {
+    content: '🎤';
+    position: absolute;
+    bottom: 80px;
+    left: 5%;
+    font-size: 1.6rem;
+    opacity: 0.1;
+    transform: rotate(-8deg);
 }
 
 .videos-grid {
@@ -491,6 +549,7 @@ p {
 
 .video-card:hover {
     transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(102, 126, 234, 0.2);
 }
 
 
@@ -584,6 +643,27 @@ p {
 .services {
     padding: 100px 0;
     background: white;
+    position: relative;
+}
+
+.services::before {
+    content: '🎹';
+    position: absolute;
+    top: 40px;
+    left: 3%;
+    font-size: 1.8rem;
+    opacity: 0.12;
+    transform: rotate(-5deg);
+}
+
+.services::after {
+    content: '🎸';
+    position: absolute;
+    bottom: 40px;
+    right: 4%;
+    font-size: 1.8rem;
+    opacity: 0.12;
+    transform: rotate(8deg);
 }
 
 .services-grid {
@@ -605,6 +685,7 @@ p {
 .service-card:hover {
     transform: translateY(-10px);
     border-color: #667eea;
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
 }
 
 .service-card.featured {
@@ -690,6 +771,18 @@ p {
 .testimonials {
     padding: 100px 0;
     background: #f8f9fa;
+    position: relative;
+}
+
+.testimonials::before {
+    content: '♬';
+    position: absolute;
+    top: 70px;
+    left: 4%;
+    font-size: 1.8rem;
+    color: #667eea;
+    opacity: 0.12;
+    transform: rotate(-12deg);
 }
 
 .testimonials-grid {
@@ -766,6 +859,17 @@ p {
 .contact {
     padding: 100px 0;
     background: white;
+    position: relative;
+}
+
+.contact::before {
+    content: '🎶';
+    position: absolute;
+    top: 45px;
+    right: 7%;
+    font-size: 1.5rem;
+    opacity: 0.1;
+    transform: rotate(20deg);
 }
 
 .contact-content {
