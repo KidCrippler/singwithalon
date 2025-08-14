@@ -185,6 +185,26 @@ p {
     position: relative;
     background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
     overflow: hidden;
+    --parallax-y: 0px;
+}
+
+/* Additional parallax background layer for more visible effect */
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        rgba(255, 255, 255, 0.05) 25%, 
+        transparent 25%, 
+        transparent 75%, 
+        rgba(255, 255, 255, 0.05) 75%);
+    background-size: 60px 60px;
+    transform: translateY(calc(var(--parallax-y) * 1.5));
+    z-index: 0;
+    will-change: transform;
 }
 
 /* Musical sound wave background */
@@ -201,14 +221,15 @@ p {
         radial-gradient(circle at 60% 90%, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
     background-size: 40px 40px, 60px 60px, 30px 30px;
     animation: musical-flow 20s ease-in-out infinite;
+    transform: translateY(var(--parallax-y));
     z-index: 0;
 }
 
 @keyframes musical-flow {
-    0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
-    25% { transform: translateY(-10px) rotate(1deg); opacity: 0.4; }
-    50% { transform: translateY(-5px) rotate(0deg); opacity: 0.5; }
-    75% { transform: translateY(-15px) rotate(-1deg); opacity: 0.3; }
+    0%, 100% { transform: translateY(var(--parallax-y)) rotate(0deg); opacity: 0.3; }
+    25% { transform: translateY(calc(var(--parallax-y) - 10px)) rotate(1deg); opacity: 0.4; }
+    50% { transform: translateY(calc(var(--parallax-y) - 5px)) rotate(0deg); opacity: 0.5; }
+    75% { transform: translateY(calc(var(--parallax-y) - 15px)) rotate(-1deg); opacity: 0.3; }
 }
 
 .hero-overlay {
@@ -219,6 +240,7 @@ p {
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
     z-index: 1;
+    will-change: transform; /* Optimize for smooth parallax */
 }
 
 .hero-content {
@@ -227,6 +249,7 @@ p {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    transform: translateZ(0); /* Create a new stacking context for smoother parallax */
     padding: 100px 20px 50px;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -353,13 +376,26 @@ p {
 .scroll-arrow {
     color: white;
     font-size: 24px;
-    animation: bounce 2s infinite;
+    animation: musical-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-10px); }
-    60% { transform: translateY(-5px); }
+@keyframes musical-pulse {
+    0%, 100% { 
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    25% { 
+        transform: translateY(-8px) scale(1.1);
+        opacity: 0.8;
+    }
+    50% { 
+        transform: translateY(-12px) scale(1.2);
+        opacity: 0.9;
+    }
+    75% { 
+        transform: translateY(-8px) scale(1.1);
+        opacity: 0.8;
+    }
 }
 
 /* Musical breathing animation for hero text */
@@ -1263,6 +1299,10 @@ p {
 
     .hero-buttons {
         justify-content: center;
+    }
+
+    .scroll-indicator {
+        bottom: 10px; /* Move scroll indicator down on mobile to avoid video overlap */
     }
 
     .about-content {

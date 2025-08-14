@@ -47,6 +47,8 @@ class MusicianSite {
 
     setupScrollEffects() {
         let lastScrollY = window.scrollY;
+        const hero = document.querySelector('.hero');
+        const heroOverlay = document.querySelector('.hero-overlay');
 
         window.addEventListener('scroll', () => {
             const currentScrollY = window.scrollY;
@@ -56,6 +58,22 @@ class MusicianSite {
                 this.navbar.classList.add('scrolled');
             } else {
                 this.navbar.classList.remove('scrolled');
+            }
+
+            // Parallax effect for hero section
+            if (hero && currentScrollY < window.innerHeight) {
+                // More noticeable parallax speeds
+                const parallaxSpeed = 0.6;
+                const overlaySpeed = 0.4;
+                const yPos = currentScrollY * parallaxSpeed;
+                
+                // Apply parallax to background elements
+                hero.style.setProperty('--parallax-y', `${yPos}px`);
+                
+                // More noticeable parallax offset for overlay to create depth
+                if (heroOverlay) {
+                    heroOverlay.style.transform = `translateY(${currentScrollY * overlaySpeed}px)`;
+                }
             }
 
             // Update active nav link based on current section
