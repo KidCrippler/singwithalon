@@ -578,8 +578,9 @@ class Chatbot {
         this.isTyping = false;
         
         // Railway Backend API configuration
-        this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app'; // Update when backend is deployed
-        this.USE_BACKEND_API = true; // Set to false for local development without backend
+        // TODO: Update this URL when the singwithalon-ai-chat backend is deployed to Railway
+        this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app';
+        this.USE_BACKEND_API = window.location.hostname !== 'localhost'; // Auto-detect: use backend on production, fallback on localhost
         
         // Rate limiting
         this.messageCount = 0;
@@ -636,37 +637,6 @@ class Chatbot {
         }
         
         return this.messageCount < this.MAX_MESSAGES_PER_HOUR;
-    }
-    
-    // System prompt for Gemini
-    getSystemPrompt() {
-        return `אתה עוזר וירטואלי של אלון כהן, מוזיקאי מקצועי מישראל המתמחה בשירה בציבור ומופעים אינטראקטיביים.
-
-פרטים עליך (אלון כהן):
-- קלידן, גיטריסט וזמר מקצועי
-- מתמחה בשירי ארץ ישראל הישנה והטובה
-- מוביל שירה בציבור עם מערכת בחירת שירים אינטראקטיבית ייחודית
-- מאות שירים ברפרטואר מכל התקופות
-- מספק ציוד מקצועי: מיקרופונים אלחוטיים, הקרנת מילים, הגברה
-- מפעיל אולפן ביתי לקאברים מקצועיים
-- מספר טלפון: 052-896-2110
-- אימייל: alon7@yahoo.com
-
-השירותים שלך:
-1. מופעים אינטראקטיביים - הקהל בוחר שירים בזמן אמת דרך אתר
-2. שירה בציבור מקצועית עם כל הציוד
-3. הקלטת קאברים באולפן פרטי
-4. אפשרות להוסיף נגנים נוספים
-
-הנחיות:
-- תמיד ענה בעברית
-- היה חם, ידידותי ומקצועי
-- עודד מעבר לוואטסאפ לפרטים מדויקים
-- אל תציין מחירים ספציפיים - הפנה לשיחה אישית
-- הדגש את הייחודיות של המערכת האינטראקטיבית
-- אם לא יודע משהו, אמור שתמיד אפשר לשאול בוואטסאפ
-
-תמיד סיים תשובות מורכבות עם הפניה לוואטסאפ: 052-896-2110`;
     }
     
     setupEventListeners() {
@@ -832,87 +802,49 @@ class Chatbot {
         }
     }
     
-    // Gemini API integration
-    async getGeminiResponse(userMessage) {
-        // Check if API key is available
-        if (!this.GEMINI_API_KEY) {
-            this.hideTyping();
-            this.addMessage('הצ\'אט החכם כרגע לא זמין. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
-            return;
-        }
-        
+    // AI Response - integrates with Railway backend or fallback
+    async getAIResponse(userMessage) {
         // Increment message count for rate limiting
         this.messageCount++;
         
+        if (this.USE_BACKEND_API) {
+            await this.getBackendResponse(userMessage);
+        } else {
+            await this.getFallbackResponse(userMessage);
+        }
+    }
+    
+    // Railway Backend API integration
+    async getBackendResponse(userMessage) {
         try {
-            // Prepare conversation context
-            const messages = [
-                { role: 'system', content: this.getSystemPrompt() },
-                ...this.conversationHistory.slice(-6), // Keep last 6 messages for context
-                { role: 'user', content: userMessage }
-            ];
-            
-            // Build Gemini API request
             const requestBody = {
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n\n')
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 300,
-                },
-                safetySettings: [
-                    {
-                        category: "HARM_CATEGORY_HARASSMENT",
-                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_HATE_SPEECH",
-                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                    },
-                    {
-                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
-                    }
-                ]
+                message: userMessage,
+                session_id: this.sessionId
             };
             
-            // Make API call
-            const response = await fetch(`${this.GEMINI_API_URL}?key=${this.GEMINI_API_KEY}`, {
+            const response = await fetch(`${this.API_BASE_URL}/api/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Origin': window.location.origin
                 },
                 body: JSON.stringify(requestBody)
             });
             
             if (!response.ok) {
-                throw new Error(`API Error: ${response.status}`);
+                throw new Error(`Backend API Error: ${response.status}`);
             }
             
             const data = await response.json();
             
-            // Extract response text
-            let botResponse = 'מצטער, לא הצלחתי לענות על השאלה. אשמח אם תצרו קשר בוואטסאפ: 052-896-2110';
-            
-            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-                botResponse = data.candidates[0].content.parts[0].text;
+            // Update session ID if provided by backend
+            if (data.session_id && data.session_id !== this.sessionId) {
+                this.sessionId = data.session_id;
+                localStorage.setItem('chat_session_id', this.sessionId);
             }
             
             // Add to conversation history
-            this.conversationHistory.push({ role: 'assistant', content: botResponse });
+            this.conversationHistory.push({ role: 'assistant', content: data.response });
             
             // Keep conversation history manageable
             if (this.conversationHistory.length > 10) {
@@ -920,22 +852,69 @@ class Chatbot {
             }
             
             this.hideTyping();
-            this.addMessage(botResponse, 'bot');
+            this.addMessage(data.response, 'bot');
             
         } catch (error) {
-            console.error('Gemini API Error:', error);
+            console.error('Backend API Error:', error);
             this.hideTyping();
             
-            // Fallback response
-            const fallbackResponses = [
-                'מצטער, יש לי בעיה טכנית כרגע. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110',
-                'לא הצלחתי להתחבר למערכת כרגע. בואו נמשיך בוואטסאפ: 052-896-2110',
-                'יש בעיה זמנית במערכת. אני זמין בוואטסאפ לכל שאלה: 052-896-2110'
-            ];
-            
-            const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-            this.addMessage(randomFallback, 'bot');
+            // Handle specific error cases
+            if (error.message.includes('429')) {
+                this.addMessage('הגעתם למגבלת ההודעות השעתית. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            } else if (error.message.includes('500')) {
+                this.addMessage('יש בעיה זמנית במערכת. אני זמין בוואטסאפ לכל שאלה: 052-896-2110', 'bot');
+            } else {
+                // Network or connection error - fallback to local response
+                await this.getFallbackResponse(userMessage);
+            }
         }
+    }
+    
+    // Fallback response system when backend is unavailable
+    async getFallbackResponse(userMessage) {
+        // Simple keyword-based responses for when backend is down
+        const responses = {
+            'מה כלול במופע אינטראקטיבי': 'במופע האינטראקטיבי שלי כלול: מערכת בחירת שירים בזמן אמת, ליווי מוזיקלי מלא, מיקרופונים אלחוטיים לקהל, הקרנת מילים, והגברה מקצועית. הקהל בוחר מתוך מאות שירים ברפרטואר!',
+            'כמה עולה מופע': 'המחיר תלוי במספר גורמים כמו מספר האורחים, משך הזמן, והמיקום. אשמח לתת לכם הצעת מחיר מדויקת לאחר שתספרו לי על האירוע שלכם. בואו נעבור לוואטסאפ לפרטים? 052-896-2110',
+            'איך פועלת מערכת בחירת השירים': 'המערכת שלי פשוטה וכיפית! האורחים נכנסים לאתר באמצעות QR קוד, רואים רשימה של מאות שירים לבחירה, ובוחרים את השירים שהם הכי אוהבים. אני רואה את הבקשות בזמן אמת ובונה את המופע בהתאם!',
+            'default': [
+                'אשמח לעזור לכם עם האירוע! בואו נדבר יותר בפירוט בוואטסאפ: 052-896-2110',
+                'שאלה מעולה! אני זמין לענות על כל השאלות שלכם בוואטסאפ: 052-896-2110',
+                'אשמח לעזור לכם לתכנן את האירוע המושלם! בואו נמשיך בוואטסאפ: 052-896-2110'
+            ]
+        };
+        
+        // Simulate AI thinking delay
+        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+        
+        const lowerMessage = userMessage.toLowerCase();
+        let response = null;
+        
+        // Find best matching response
+        for (const [key, responseText] of Object.entries(responses)) {
+            if (key !== 'default' && lowerMessage.includes(key)) {
+                response = responseText;
+                break;
+            }
+        }
+        
+        // Check for common patterns
+        if (!response) {
+            if (lowerMessage.includes('מחיר') || lowerMessage.includes('עולה') || lowerMessage.includes('עלות')) {
+                response = responses['כמה עולה מופע'];
+            } else if (lowerMessage.includes('שיר') || lowerMessage.includes('רפרטואר') || lowerMessage.includes('מוזיקה')) {
+                response = 'ברפרטואר שלי יש מאות שירים מכל התקופות: שירי ארץ ישראל הישנים, שלמה ארצי, יהורם גאון, הדודאים, עד שירים מודרניים יותר. במערכת האינטראקטיבית האורחים יכולים לראות את כל הרשימה ולבחור!';
+            }
+        }
+        
+        // Use default response if no match found
+        if (!response) {
+            const defaultResponses = responses['default'];
+            response = defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+        
+        this.hideTyping();
+        this.addMessage(response, 'bot');
     }
 }
 
