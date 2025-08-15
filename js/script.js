@@ -562,10 +562,390 @@ class PerformanceUtils {
     }
 }
 
+// Chatbot functionality
+class Chatbot {
+    constructor() {
+        this.chatWidget = document.getElementById('chatbot-widget');
+        this.chatToggle = document.getElementById('chat-toggle');
+        this.chatModal = document.getElementById('chat-modal');
+        this.chatClose = document.getElementById('chat-close');
+        this.chatMessages = document.getElementById('chat-messages');
+        this.chatInputField = document.getElementById('chat-input-field');
+        this.chatSend = document.getElementById('chat-send');
+        this.chatTyping = document.getElementById('chat-typing');
+        
+        this.isOpen = false;
+        this.isTyping = false;
+        
+        // Railway Backend API configuration
+        this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app'; // Update when backend is deployed
+        this.USE_BACKEND_API = true; // Set to false for local development without backend
+        
+        // Rate limiting
+        this.messageCount = 0;
+        this.lastResetTime = Date.now();
+        this.MAX_MESSAGES_PER_HOUR = 20; // Adjust as needed
+        
+        // Session management for backend
+        this.sessionId = this.getOrCreateSessionId();
+        this.conversationHistory = [];
+        
+        // Only initialize if all required elements exist
+        if (this.chatWidget && this.chatToggle && this.chatModal) {
+            this.init();
+        } else {
+            console.warn('Chatbot elements not found, skipping initialization');
+        }
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.setupSuggestions();
+        this.enableInputValidation();
+    }
+    
+    // Session management for backend API
+    getOrCreateSessionId() {
+        // Try to get existing session from localStorage
+        let sessionId = localStorage.getItem('chat_session_id');
+        
+        if (!sessionId) {
+            // Generate new session ID
+            sessionId = this.generateSessionId();
+            localStorage.setItem('chat_session_id', sessionId);
+        }
+        
+        return sessionId;
+    }
+    
+    generateSessionId() {
+        // Generate a unique session ID
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    
+    // Rate limiting check
+    canSendMessage() {
+        const now = Date.now();
+        const oneHour = 60 * 60 * 1000;
+        
+        // Reset counter if an hour has passed
+        if (now - this.lastResetTime > oneHour) {
+            this.messageCount = 0;
+            this.lastResetTime = now;
+        }
+        
+        return this.messageCount < this.MAX_MESSAGES_PER_HOUR;
+    }
+    
+    // System prompt for Gemini
+    getSystemPrompt() {
+        return `אתה עוזר וירטואלי של אלון כהן, מוזיקאי מקצועי מישראל המתמחה בשירה בציבור ומופעים אינטראקטיביים.
+
+פרטים עליך (אלון כהן):
+- קלידן, גיטריסט וזמר מקצועי
+- מתמחה בשירי ארץ ישראל הישנה והטובה
+- מוביל שירה בציבור עם מערכת בחירת שירים אינטראקטיבית ייחודית
+- מאות שירים ברפרטואר מכל התקופות
+- מספק ציוד מקצועי: מיקרופונים אלחוטיים, הקרנת מילים, הגברה
+- מפעיל אולפן ביתי לקאברים מקצועיים
+- מספר טלפון: 052-896-2110
+- אימייל: alon7@yahoo.com
+
+השירותים שלך:
+1. מופעים אינטראקטיביים - הקהל בוחר שירים בזמן אמת דרך אתר
+2. שירה בציבור מקצועית עם כל הציוד
+3. הקלטת קאברים באולפן פרטי
+4. אפשרות להוסיף נגנים נוספים
+
+הנחיות:
+- תמיד ענה בעברית
+- היה חם, ידידותי ומקצועי
+- עודד מעבר לוואטסאפ לפרטים מדויקים
+- אל תציין מחירים ספציפיים - הפנה לשיחה אישית
+- הדגש את הייחודיות של המערכת האינטראקטיבית
+- אם לא יודע משהו, אמור שתמיד אפשר לשאול בוואטסאפ
+
+תמיד סיים תשובות מורכבות עם הפניה לוואטסאפ: 052-896-2110`;
+    }
+    
+    setupEventListeners() {
+        // Toggle chat
+        if (this.chatToggle) {
+            this.chatToggle.addEventListener('click', () => {
+                this.toggleChat();
+            });
+        }
+        
+        // Close chat
+        if (this.chatClose) {
+            this.chatClose.addEventListener('click', () => {
+                this.closeChat();
+            });
+        }
+        
+        // Send message
+        if (this.chatSend) {
+            this.chatSend.addEventListener('click', () => {
+                this.sendMessage();
+            });
+        }
+        
+        // Send on Enter key
+        if (this.chatInputField) {
+            this.chatInputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && this.chatInputField.value.trim()) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+        }
+        
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (this.isOpen && !this.chatWidget.contains(e.target)) {
+                this.closeChat();
+            }
+        });
+        
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isOpen) {
+                this.closeChat();
+            }
+        });
+    }
+    
+    setupSuggestions() {
+        document.querySelectorAll('.suggestion-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const question = btn.textContent;
+                this.chatInputField.value = question;
+                this.sendMessage();
+            });
+        });
+    }
+    
+    enableInputValidation() {
+        if (this.chatInputField && this.chatSend) {
+            this.chatInputField.addEventListener('input', () => {
+                const hasText = this.chatInputField.value.trim().length > 0;
+                this.chatSend.disabled = !hasText || this.isTyping;
+            });
+        }
+    }
+    
+    toggleChat() {
+        if (this.isOpen) {
+            this.closeChat();
+        } else {
+            this.openChat();
+        }
+    }
+    
+    openChat() {
+        this.isOpen = true;
+        if (this.chatToggle) this.chatToggle.classList.add('active');
+        if (this.chatModal) this.chatModal.classList.add('open');
+        setTimeout(() => {
+            if (this.chatInputField) this.chatInputField.focus();
+        }, 300);
+    }
+    
+    closeChat() {
+        this.isOpen = false;
+        if (this.chatToggle) this.chatToggle.classList.remove('active');
+        if (this.chatModal) this.chatModal.classList.remove('open');
+    }
+    
+    sendMessage() {
+        if (!this.chatInputField) return;
+        
+        const text = this.chatInputField.value.trim();
+        if (!text || this.isTyping) return;
+        
+        // Check rate limiting
+        if (!this.canSendMessage()) {
+            this.addMessage('מצטער, הגעתם למגבלת ההודעות השעתית. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            return;
+        }
+        
+        this.addMessage(text, 'user');
+        this.chatInputField.value = '';
+        if (this.chatSend) this.chatSend.disabled = true;
+        
+        // Add to conversation history
+        this.conversationHistory.push({ role: 'user', content: text });
+        
+        // Show typing and get AI response
+        this.showTyping();
+        this.getAIResponse(text);
+    }
+    
+    addMessage(text, sender) {
+        if (!this.chatMessages) return;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        
+        const time = new Date().toLocaleTimeString('he-IL', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const avatar = sender === 'bot' ? 
+            '<div class="message-avatar"><i class="fas fa-music"></i></div>' :
+            '<div class="message-avatar"><i class="fas fa-user"></i></div>';
+        
+        messageDiv.innerHTML = `
+            ${avatar}
+            <div class="message-content">
+                <p>${text}</p>
+                <span class="message-time">${time}</span>
+            </div>
+        `;
+        
+        this.chatMessages.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+    
+    showTyping() {
+        this.isTyping = true;
+        if (this.chatTyping) this.chatTyping.style.display = 'flex';
+        if (this.chatSend) this.chatSend.disabled = true;
+        this.scrollToBottom();
+    }
+    
+    hideTyping() {
+        this.isTyping = false;
+        if (this.chatTyping) this.chatTyping.style.display = 'none';
+        if (this.chatSend && this.chatInputField) {
+            this.chatSend.disabled = this.chatInputField.value.trim().length === 0;
+        }
+    }
+    
+    scrollToBottom() {
+        if (this.chatMessages) {
+            setTimeout(() => {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }, 100);
+        }
+    }
+    
+    // Gemini API integration
+    async getGeminiResponse(userMessage) {
+        // Check if API key is available
+        if (!this.GEMINI_API_KEY) {
+            this.hideTyping();
+            this.addMessage('הצ\'אט החכם כרגע לא זמין. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            return;
+        }
+        
+        // Increment message count for rate limiting
+        this.messageCount++;
+        
+        try {
+            // Prepare conversation context
+            const messages = [
+                { role: 'system', content: this.getSystemPrompt() },
+                ...this.conversationHistory.slice(-6), // Keep last 6 messages for context
+                { role: 'user', content: userMessage }
+            ];
+            
+            // Build Gemini API request
+            const requestBody = {
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n\n')
+                            }
+                        ]
+                    }
+                ],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 300,
+                },
+                safetySettings: [
+                    {
+                        category: "HARM_CATEGORY_HARASSMENT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        category: "HARM_CATEGORY_HATE_SPEECH",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    },
+                    {
+                        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                    }
+                ]
+            };
+            
+            // Make API call
+            const response = await fetch(`${this.GEMINI_API_URL}?key=${this.GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Extract response text
+            let botResponse = 'מצטער, לא הצלחתי לענות על השאלה. אשמח אם תצרו קשר בוואטסאפ: 052-896-2110';
+            
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+                botResponse = data.candidates[0].content.parts[0].text;
+            }
+            
+            // Add to conversation history
+            this.conversationHistory.push({ role: 'assistant', content: botResponse });
+            
+            // Keep conversation history manageable
+            if (this.conversationHistory.length > 10) {
+                this.conversationHistory = this.conversationHistory.slice(-8);
+            }
+            
+            this.hideTyping();
+            this.addMessage(botResponse, 'bot');
+            
+        } catch (error) {
+            console.error('Gemini API Error:', error);
+            this.hideTyping();
+            
+            // Fallback response
+            const fallbackResponses = [
+                'מצטער, יש לי בעיה טכנית כרגע. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110',
+                'לא הצלחתי להתחבר למערכת כרגע. בואו נמשיך בוואטסאפ: 052-896-2110',
+                'יש בעיה זמנית במערכת. אני זמין בוואטסאפ לכל שאלה: 052-896-2110'
+            ];
+            
+            const randomFallback = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+            this.addMessage(randomFallback, 'bot');
+        }
+    }
+}
+
 // Initialize the site when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize main functionality
     new MusicianSite();
+    
+    // Initialize chatbot
+    new Chatbot();
     
     // Performance optimizations
     PerformanceUtils.lazyLoadImages();

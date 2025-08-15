@@ -493,6 +493,66 @@
         </div>
     </div>
 
+    <!-- Chatbot Widget -->
+    <div id="chatbot-widget" class="chatbot-widget">
+        <!-- Chat Toggle Button -->
+        <button id="chat-toggle" class="chat-toggle" aria-label="פתח צ'אט">
+            <i class="fas fa-comments"></i>
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <!-- Chat Modal -->
+        <div id="chat-modal" class="chat-modal">
+            <div class="chat-header">
+                <div class="chat-avatar">
+                    <i class="fas fa-music"></i>
+                </div>
+                <div class="chat-info">
+                    <h4>אלון כהן</h4>
+                    <span class="chat-status">זמין לשיחה</span>
+                </div>
+                <button id="chat-close" class="chat-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="chat-messages" class="chat-messages">
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>שלום! אני כאן לעזור לכם עם כל שאלה על השירותים המוזיקליים שלי. איך אוכל לעזור?</p>
+                        <span class="message-time">עכשיו</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <div class="chat-typing" id="chat-typing" style="display: none;">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span>אלון מקליד...</span>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chat-input-field" placeholder="כתבו את השאלה שלכם..." maxlength="500">
+                    <button id="chat-send" class="chat-send" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="chat-suggestions">
+                    <button class="suggestion-btn">מה כלול במופע אינטראקטיבי?</button>
+                    <button class="suggestion-btn">כמה עולה מופע לאירוע של 50 איש?</button>
+                    <button class="suggestion-btn">איך פועלת מערכת בחירת השירים?</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>

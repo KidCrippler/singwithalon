@@ -1,6 +1,9 @@
 # Claude Code configuration directory
 .claude/
 
+# API Keys and sensitive configuration
+config.js
+
 # OS generated files
 .DS_Store
 .DS_Store?
