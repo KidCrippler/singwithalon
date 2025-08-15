@@ -822,7 +822,12 @@ class Chatbot {
                 session_id: this.sessionId
             };
             
-            const response = await fetch(`${this.API_BASE_URL}/api/v1/chat`, {
+            // Add timeout to prevent hanging requests
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+            );
+            
+            const fetchPromise = fetch(`${this.API_BASE_URL}/api/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -830,6 +835,8 @@ class Chatbot {
                 },
                 body: JSON.stringify(requestBody)
             });
+            
+            const response = await Promise.race([fetchPromise, timeoutPromise]);
             
             if (!response.ok) {
                 throw new Error(`Backend API Error: ${response.status}`);
@@ -864,7 +871,8 @@ class Chatbot {
             } else if (error.message.includes('500')) {
                 this.addMessage('יש בעיה זמנית במערכת. אני זמין בוואטסאפ לכל שאלה: 052-896-2110', 'bot');
             } else {
-                // Network or connection error - fallback to local response
+                // Any error (timeout, network, connection, etc.) - fallback to local response
+                console.log('Falling back to automated response due to:', error.message);
                 await this.getFallbackResponse(userMessage);
             }
         }
