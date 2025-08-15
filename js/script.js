@@ -174,6 +174,13 @@ class MusicianSite {
                 this.closeVideoModal();
             }
         });
+
+        // Handle browser back button
+        window.addEventListener('popstate', (e) => {
+            if (this.videoModal && this.videoModal.style.display === 'block') {
+                this.closeVideoModal(true); // true = skip history change to avoid infinite loop
+            }
+        });
     }
 
     openVideoModal(videoSrc) {
@@ -181,6 +188,9 @@ class MusicianSite {
             this.modalVideo.src = videoSrc;
             this.videoModal.style.display = 'block';
             document.body.style.overflow = 'hidden';
+            
+            // Push a new state to history so back button will close modal
+            history.pushState({ modalOpen: true }, '', '');
             
             // Auto-play the video
             setTimeout(() => {
@@ -191,12 +201,17 @@ class MusicianSite {
         }
     }
 
-    closeVideoModal() {
+    closeVideoModal(skipHistoryChange = false) {
         if (this.videoModal && this.modalVideo) {
             this.videoModal.style.display = 'none';
             this.modalVideo.pause();
             this.modalVideo.src = '';
             document.body.style.overflow = 'auto';
+            
+            // Go back in history if we added a state (but only if not called from popstate)
+            if (!skipHistoryChange && window.history.state && window.history.state.modalOpen) {
+                history.back();
+            }
         }
     }
 
