@@ -580,9 +580,9 @@ class Chatbot {
         this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app';
         this.USE_BACKEND_API = true; // Always use backend API (with fallback on errors)
         
-        // Session message limiting (6 messages per session)
+        // Session message limiting (10 messages per session)
         this.sessionMessageCount = 0;
-        this.MAX_MESSAGES_PER_SESSION = 6;
+        this.MAX_MESSAGES_PER_SESSION = 10;
         
         // Session management for backend
         this.sessionId = this.getOrCreateSessionId();
@@ -724,7 +724,7 @@ class Chatbot {
         
         // Check session message limit
         if (!this.canSendMessage()) {
-            this.addMessage('מצטער, הגעתם למגבלת 6 הודעות לשיחה. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            this.addMessage('מצטער, הגעתם למגבלת 10 הודעות לשיחה. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
             this.disableChatInput();
             return;
         }
@@ -805,7 +805,7 @@ class Chatbot {
     disableChatInput() {
         if (this.chatInputField) {
             this.chatInputField.disabled = true;
-            this.chatInputField.placeholder = 'הגעתם למגבלת 6 הודעות - צרו קשר בוואטסאפ';
+            this.chatInputField.placeholder = 'הגעתם למגבלת 10 הודעות - צרו קשר בוואטסאפ';
         }
         if (this.chatSend) {
             this.chatSend.disabled = true;
