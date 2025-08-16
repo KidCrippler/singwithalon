@@ -578,9 +578,8 @@ class Chatbot {
         this.isTyping = false;
         
         // Railway Backend API configuration
-        // TODO: Update this URL when the singwithalon-ai-chat backend is deployed to Railway
         this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app';
-        this.USE_BACKEND_API = window.location.hostname !== 'localhost'; // Auto-detect: use backend on production, fallback on localhost
+        this.USE_BACKEND_API = true; // Always use backend API (with fallback on errors)
         
         // Rate limiting
         this.messageCount = 0;
@@ -827,11 +826,10 @@ class Chatbot {
                 setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
             );
             
-            const fetchPromise = fetch(`${this.API_BASE_URL}/api/v1/chat`, {
+            const fetchPromise = fetch(`${this.API_BASE_URL}/chat`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Origin': window.location.origin
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestBody)
             });
@@ -872,7 +870,6 @@ class Chatbot {
                 this.addMessage('יש בעיה זמנית במערכת. אני זמין בוואטסאפ לכל שאלה: 052-896-2110', 'bot');
             } else {
                 // Any error (timeout, network, connection, etc.) - fallback to local response
-                console.log('Falling back to automated response due to:', error.message);
                 await this.getFallbackResponse(userMessage);
             }
         }
