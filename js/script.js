@@ -548,8 +548,7 @@ class PerformanceUtils {
 
     static preloadCriticalImages() {
         const criticalImages = [
-            'assets/logo.jpg',
-            'assets/video-poster.jpg'
+            'assets/logo.jpg'
         ];
 
         criticalImages.forEach(src => {
