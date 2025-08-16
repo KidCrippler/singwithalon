@@ -580,10 +580,9 @@ class Chatbot {
         this.API_BASE_URL = 'https://singwithalon-ai-chat-production.up.railway.app';
         this.USE_BACKEND_API = true; // Always use backend API (with fallback on errors)
         
-        // Rate limiting
-        this.messageCount = 0;
-        this.lastResetTime = Date.now();
-        this.MAX_MESSAGES_PER_HOUR = 20; // Adjust as needed
+        // Session message limiting (6 messages per session)
+        this.sessionMessageCount = 0;
+        this.MAX_MESSAGES_PER_SESSION = 6;
         
         // Session management for backend
         this.sessionId = this.getOrCreateSessionId();
@@ -623,18 +622,9 @@ class Chatbot {
     }
     
     
-    // Rate limiting check
+    // Session message limit check
     canSendMessage() {
-        const now = Date.now();
-        const oneHour = 60 * 60 * 1000;
-        
-        // Reset counter if an hour has passed
-        if (now - this.lastResetTime > oneHour) {
-            this.messageCount = 0;
-            this.lastResetTime = now;
-        }
-        
-        return this.messageCount < this.MAX_MESSAGES_PER_HOUR;
+        return this.sessionMessageCount < this.MAX_MESSAGES_PER_SESSION;
     }
     
     setupEventListeners() {
@@ -698,7 +688,7 @@ class Chatbot {
         if (this.chatInputField && this.chatSend) {
             this.chatInputField.addEventListener('input', () => {
                 const hasText = this.chatInputField.value.trim().length > 0;
-                this.chatSend.disabled = !hasText || this.isTyping;
+                this.chatSend.disabled = !hasText || this.isTyping || !this.canSendMessage();
             });
         }
     }
@@ -732,18 +722,30 @@ class Chatbot {
         const text = this.chatInputField.value.trim();
         if (!text || this.isTyping) return;
         
-        // Check rate limiting
+        // Check session message limit
         if (!this.canSendMessage()) {
-            this.addMessage('מצטער, הגעתם למגבלת ההודעות השעתית. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            this.addMessage('מצטער, הגעתם למגבלת 6 הודעות לשיחה. אשמח אם תצרו קשר ישירות בוואטסאפ: 052-896-2110', 'bot');
+            this.disableChatInput();
             return;
+        }
+        
+        // Increment session message count
+        this.sessionMessageCount++;
+        
+        // Check if we've reached the limit after this message
+        if (this.sessionMessageCount >= this.MAX_MESSAGES_PER_SESSION) {
+            // Disable input after AI response
+            setTimeout(() => {
+                this.disableChatInput();
+            }, 2000); // Wait for AI response to complete
         }
         
         this.addMessage(text, 'user');
         this.chatInputField.value = '';
         if (this.chatSend) this.chatSend.disabled = true;
         
-        // Add to conversation history
-        this.conversationHistory.push({ role: 'user', content: text });
+        // Add to conversation history (new API format)
+        this.conversationHistory.push({ role: 'user', parts: [{ text: text }] });
         
         // Show typing and get AI response
         this.showTyping();
@@ -788,7 +790,7 @@ class Chatbot {
         this.isTyping = false;
         if (this.chatTyping) this.chatTyping.style.display = 'none';
         if (this.chatSend && this.chatInputField) {
-            this.chatSend.disabled = this.chatInputField.value.trim().length === 0;
+            this.chatSend.disabled = this.chatInputField.value.trim().length === 0 || !this.canSendMessage();
         }
     }
     
@@ -800,11 +802,18 @@ class Chatbot {
         }
     }
     
+    disableChatInput() {
+        if (this.chatInputField) {
+            this.chatInputField.disabled = true;
+            this.chatInputField.placeholder = 'הגעתם למגבלת 6 הודעות - צרו קשר בוואטסאפ';
+        }
+        if (this.chatSend) {
+            this.chatSend.disabled = true;
+        }
+    }
+    
     // AI Response - integrates with Railway backend or fallback
     async getAIResponse(userMessage) {
-        // Increment message count for rate limiting
-        this.messageCount++;
-        
         if (this.USE_BACKEND_API) {
             await this.getBackendResponse(userMessage);
         } else {
@@ -816,9 +825,10 @@ class Chatbot {
     async getBackendResponse(userMessage) {
         try {
             const requestBody = {
-                message: userMessage,
+                messages: this.conversationHistory,
                 session_id: this.sessionId
             };
+            
             
             // Add timeout to prevent hanging requests
             const timeoutPromise = new Promise((_, reject) =>
@@ -841,14 +851,15 @@ class Chatbot {
             
             const data = await response.json();
             
+            
             // Update session ID if provided by backend
             if (data.session_id && data.session_id !== this.sessionId) {
                 this.sessionId = data.session_id;
                 localStorage.setItem('chat_session_id', this.sessionId);
             }
             
-            // Add to conversation history
-            this.conversationHistory.push({ role: 'assistant', content: data.response });
+            // Add to conversation history (new API format)
+            this.conversationHistory.push({ role: 'assistant', parts: [{ text: data.response }] });
             
             // Keep conversation history manageable
             if (this.conversationHistory.length > 10) {
