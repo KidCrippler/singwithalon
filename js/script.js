@@ -767,10 +767,13 @@ class Chatbot {
             '<div class="message-avatar"><i class="fas fa-music"></i></div>' :
             '<div class="message-avatar"><i class="fas fa-user"></i></div>';
         
+        // Process text for clickable links (only for bot messages)
+        const processedText = sender === 'bot' ? this.processTextForLinks(text) : text;
+        
         messageDiv.innerHTML = `
             ${avatar}
             <div class="message-content">
-                <p>${text}</p>
+                <p>${processedText}</p>
                 <span class="message-time">${time}</span>
             </div>
         `;
@@ -810,6 +813,49 @@ class Chatbot {
         if (this.chatSend) {
             this.chatSend.disabled = true;
         }
+    }
+    
+    // Helper method to detect mobile devices
+    isMobileDevice() {
+        return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
+    // Helper method to make phone numbers and WhatsApp links clickable
+    processTextForLinks(text) {
+        const isMobile = this.isMobileDevice();
+        
+        // Phone number pattern (Israeli format)
+        const phonePattern = /(0\d{1,2}-?\d{3}-?\d{4})/g;
+        
+        // WhatsApp link pattern
+        const whatsappPattern = /(https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[^\s]+)/g;
+        
+        let processedText = text;
+        
+        // Process WhatsApp links first
+        processedText = processedText.replace(whatsappPattern, (match) => {
+            if (isMobile) {
+                // Mobile: Direct WhatsApp link
+                return `<a href="${match}" target="_blank" style="color: #25D366; text-decoration: underline;">צור קשר בוואטסאפ</a>`;
+            } else {
+                // Web: WhatsApp Web
+                return `<a href="${match}" target="_blank" style="color: #25D366; text-decoration: underline;">צור קשר בוואטסאפ</a>`;
+            }
+        });
+        
+        // Process phone numbers
+        processedText = processedText.replace(phonePattern, (match) => {
+            const cleanPhone = match.replace(/-/g, '');
+            if (isMobile) {
+                // Mobile: Make phone number clickable to dial
+                return `<a href="tel:${cleanPhone}" style="color: #007bff; text-decoration: underline;">${match}</a>`;
+            } else {
+                // Web: Phone number not clickable, but styled
+                return `<span style="color: #007bff; font-weight: bold;">${match}</span>`;
+            }
+        });
+        
+        return processedText;
     }
     
     // AI Response - integrates with Railway backend or fallback
