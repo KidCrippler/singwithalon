@@ -1610,20 +1610,30 @@ a:focus {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
-    border: none;
+    background: linear-gradient(135deg, #7a4db0 0%, #8b5fbf 50%, #b19cd9 100%);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     color: white;
     font-size: 24px;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(139, 95, 191, 0.4);
-    transition: all 0.3s ease;
+    box-shadow: 
+        0 4px 15px rgba(139, 95, 191, 0.4),
+        0 0 20px rgba(177, 156, 217, 0.2),
+        0 0 0 2px rgba(139, 95, 191, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.4s ease;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    animation: subtle-pulse 3s ease-in-out infinite;
 }
 
 .chat-toggle:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(139, 95, 191, 0.5);
+    transform: translateY(-2px) scale(1.05);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 6px 25px rgba(139, 95, 191, 0.5),
+        0 0 30px rgba(177, 156, 217, 0.3),
+        0 0 0 3px rgba(139, 95, 191, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .chat-toggle i {
@@ -2016,25 +2026,81 @@ a:focus {
     }
 }
 
-/* Animation for musical note floating effect */
-.chat-toggle::before {
-    content: '♪';
-    position: absolute;
-    top: -10px;
-    right: -5px;
-    font-size: 12px;
-    color: white;
-    opacity: 0;
-    animation: noteFloat 3s infinite;
+/* Subtle Pulse Animation for Chat Button */
+@keyframes subtle-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 
+            0 4px 15px rgba(139, 95, 191, 0.4),
+            0 0 20px rgba(177, 156, 217, 0.2),
+            0 0 0 2px rgba(139, 95, 191, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        transform: scale(1.03);
+        box-shadow: 
+            0 5px 18px rgba(139, 95, 191, 0.5),
+            0 0 25px rgba(177, 156, 217, 0.3),
+            0 0 0 3px rgba(139, 95, 191, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
 }
 
-@keyframes noteFloat {
-    0%, 90%, 100% {
-        opacity: 0;
-        transform: translateY(0);
+/* Subtle glowing ring effect around chat button */
+.chat-toggle::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, 
+        transparent, 
+        rgba(139, 95, 191, 0.2), 
+        rgba(177, 156, 217, 0.15),
+        transparent,
+        rgba(139, 95, 191, 0.2),
+        transparent
+    );
+    animation: gentle-ring-glow 4s linear infinite;
+    z-index: -1;
+}
+
+@keyframes gentle-ring-glow {
+    0% {
+        transform: rotate(0deg);
+        opacity: 0.4;
     }
-    10%, 80% {
-        opacity: 0.7;
-        transform: translateY(-15px);
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: rotate(360deg);
+        opacity: 0.4;
+    }
+}
+
+/* Subtle musical note floating effect */
+.chat-toggle::after {
+    content: '♪';
+    position: absolute;
+    top: -8px;
+    right: -3px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.8);
+    opacity: 0;
+    animation: gentle-note-float 4s infinite;
+    z-index: 2;
+}
+
+@keyframes gentle-note-float {
+    0%, 85%, 100% {
+        opacity: 0;
+        transform: translateY(0) scale(0.8);
+    }
+    15%, 70% {
+        opacity: 0.5;
+        transform: translateY(-8px) scale(1);
     }
 }
