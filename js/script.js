@@ -604,14 +604,9 @@ class Chatbot {
     
     // Session management for backend API
     getOrCreateSessionId() {
-        // Try to get existing session from localStorage
-        let sessionId = localStorage.getItem('chat_session_id');
-        
-        if (!sessionId) {
-            // Generate new session ID
-            sessionId = this.generateSessionId();
-            localStorage.setItem('chat_session_id', sessionId);
-        }
+        // Always generate a new session ID on each page load
+        const sessionId = this.generateSessionId();
+        localStorage.setItem('chat_session_id', sessionId);
         
         return sessionId;
     }
