@@ -2180,7 +2180,7 @@ a:focus {
     right: -8px;
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
     border: 2px solid white;
     border-radius: 50%;
     display: flex;
@@ -2189,7 +2189,7 @@ a:focus {
     font-size: 11px;
     z-index: 3;
     animation: notification-bounce 2s infinite;
-    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
 }
 
 /* Hebrew Tooltip */
