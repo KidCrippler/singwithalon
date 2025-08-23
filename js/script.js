@@ -572,6 +572,7 @@ class Chatbot {
         this.chatInputField = document.getElementById('chat-input-field');
         this.chatSend = document.getElementById('chat-send');
         this.chatTyping = document.getElementById('chat-typing');
+        this.chatTooltip = document.getElementById('chat-tooltip');
         
         this.isOpen = false;
         this.isTyping = false;
@@ -600,6 +601,8 @@ class Chatbot {
         this.setupEventListeners();
         this.setupSuggestions();
         this.enableInputValidation();
+        this.setupTooltipIntroduction();
+        this.setupPeriodicGlowEffect();
     }
     
     // Session management for backend API
@@ -971,6 +974,40 @@ class Chatbot {
         
         this.hideTyping();
         this.addMessage(response, 'bot');
+    }
+    
+    // Setup tooltip introduction that shows after 3 seconds and hides after 3 more seconds
+    setupTooltipIntroduction() {
+        if (!this.chatTooltip) return;
+        
+        // Show tooltip after 3 seconds
+        setTimeout(() => {
+            this.chatTooltip.classList.add('show');
+            
+            // Hide tooltip after 3 more seconds
+            setTimeout(() => {
+                this.chatTooltip.classList.remove('show');
+            }, 3000);
+        }, 3000);
+        
+        // Hide tooltip if user interacts with chat button
+        this.chatToggle.addEventListener('click', () => {
+            this.chatTooltip.classList.remove('show');
+        });
+    }
+    
+    // Setup periodic dramatic glow effect every 8 seconds
+    setupPeriodicGlowEffect() {
+        setInterval(() => {
+            if (!this.isOpen) { // Only glow if chat is not already open
+                this.chatToggle.classList.add('glow-effect');
+                
+                // Remove glow effect after animation completes
+                setTimeout(() => {
+                    this.chatToggle.classList.remove('glow-effect');
+                }, 1500);
+            }
+        }, 8000);
     }
 }
 
