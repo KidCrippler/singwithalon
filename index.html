@@ -10,7 +10,6 @@
     <meta name="keywords" content="שירה בציבור, קלידן, מוביל שירה, מוזיקה ישראלית, אירועים, חתונות, בר מצוה, מופעים פרטיים, נגן קלידים, רמת גן, תל אביב, מערכת בחירת שירים אינטראקטיבית">
     <meta name="author" content="אלון כהן">
     <meta name="robots" content="index, follow">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="שירה בציבור מקצועית | אלון כהן - קלידן מוביל שירה">
@@ -26,6 +25,51 @@
     <meta name="twitter:title" content="שירה בציבור מקצועית | אלון כהן - קלידן מוביל שירה">
     <meta name="twitter:description" content="★ שירה בציבור אינטראקטיבית עם מערכת בחירת שירים ייחודית ★ מוביל שירה מקצועי לאירועים">
     <meta name="twitter:image" content="https://singwithalon.com/assets/logo.jpg">
+    
+    <!-- Technical SEO Meta Tags -->
+    <link rel="canonical" href="https://singwithalon.com/">
+    
+    <!-- Language and Regional Targeting -->
+    <link rel="alternate" hreflang="he" href="https://singwithalon.com/">
+    <link rel="alternate" hreflang="he-IL" href="https://singwithalon.com/">
+    <link rel="alternate" hreflang="x-default" href="https://singwithalon.com/">
+    
+    <!-- Geographic Targeting -->
+    <meta name="geo.placename" content="רמת גן, ישראל">
+    <meta name="geo.position" content="32.0853;34.8112">
+    <meta name="DC.title" content="שירה בציבור מקצועית | אלון כהן - קלידן ומוביל שירה">
+    
+    <!-- Additional Technical Tags -->
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+    
+    <!-- Content Classification & Target Audience -->
+    <meta name="content-language" content="he-IL">
+    
+    <!-- Mobile & Performance -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="שרים עם אלון כהן">
+    <meta name="theme-color" content="#8b5fbf">
+    <meta name="msapplication-TileColor" content="#8b5fbf">
+    
+    <!-- Search Engine Hints -->
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    
+    <!-- Social Media Enhancement -->
+    <meta property="og:video" content="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4">
+    <meta property="og:video:type" content="video/mp4">
+    <meta property="og:video:width" content="1920">
+    <meta property="og:video:height" content="1080">
+    <meta name="twitter:player" content="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4">
+    <meta name="twitter:player:width" content="1920">
+    <meta name="twitter:player:height" content="1080">
+    
+    
+    <!-- Performance Hints -->
+    <link rel="preconnect" href="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev">
+    <link rel="dns-prefetch" href="//wa.me">
+    <link rel="dns-prefetch" href="//api.whatsapp.com">
     
     <!-- Enhanced Schema.org structured data -->
     <script type="application/ld+json">
@@ -123,8 +167,53 @@
           "@type": "Person",
           "name": "אלון כהן",
           "jobTitle": "מוזיקאי, קלידן וזמר",
-          "description": "מוביל שירה בציבור עם נסיון של למעלה מ-200 מופעים"
-        }
+          "description": "מוביל שירה בציבור עם נסיון של למעלה מ-200 מופעים",
+          "knowsAbout": ["מוזיקה ישראלית", "שירי ארץ ישראל", "הובלת שירה בציבור", "נגינה בקלידים", "הפקת מוזיקה"]
+        },
+        "knowsLanguage": ["Hebrew", "English"],
+        "paymentAccepted": ["Cash", "Bank Transfer"],
+        "currenciesAccepted": "ILS",
+        "hasMap": "https://www.google.com/maps/place/Ramat+Gan,+Israel/@32.0853,34.8112,15z",
+        "isAccessibleForFree": false,
+        "maximumAttendeeCapacity": 500,
+        "smokingAllowed": false,
+        "specialOpeningHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+            "opens": "09:00",
+            "closes": "22:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification", 
+            "dayOfWeek": "Friday",
+            "opens": "09:00",
+            "closes": "15:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Saturday", 
+            "opens": "19:00",
+            "closes": "23:00"
+          }
+        ],
+        "additionalProperty": [
+          {
+            "@type": "PropertyValue",
+            "name": "מספר מופעים",
+            "value": "200+"
+          },
+          {
+            "@type": "PropertyValue",
+            "name": "שנות נסיון",
+            "value": "15+"
+          },
+          {
+            "@type": "PropertyValue",
+            "name": "מספר שירים ברפרטואר",
+            "value": "1500+"
+          }
+        ]
       },
       {
         "@context": "https://schema.org",
@@ -229,6 +318,137 @@
         }
       ]
     }
+    </script>
+
+    <!-- Video Schema Markup -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "תדמית - אלון כהן מוביל שירה בציבור",
+        "description": "סרטון תדמית המציג את אלון כהן בפעולה - שירה בציבור מקצועית עם מערכת בחירת שירים אינטראקטיבית",
+        "thumbnailUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit_poster.jpg",
+        "contentUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4",
+        "embedUrl": "https://singwithalon.com/#home",
+        "uploadDate": "2025-01-01T00:00:00Z",
+        "duration": "PT2M30S",
+        "genre": "מוזיקה ישראלית",
+        "inLanguage": "he",
+        "creator": {
+          "@type": "Person",
+          "name": "אלון כהן"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "שרים עם אלון כהן",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://singwithalon.com/assets/logo.jpg"
+          }
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "רוני - גזוז",
+        "description": "ביצוע אנרגטי של השיר 'רוני' של גזוז - שמח ומשמח!",
+        "thumbnailUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony_poster.jpg",
+        "contentUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony.mp4",
+        "embedUrl": "https://singwithalon.com/#videos",
+        "uploadDate": "2025-01-01T00:00:00Z",
+        "duration": "PT1M11S",
+        "genre": "רוק פופ ישראלי",
+        "inLanguage": "he",
+        "creator": {
+          "@type": "Person",
+          "name": "אלון כהן"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "שרים עם אלון כהן",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://singwithalon.com/assets/logo.jpg"
+          }
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "לבן על לבן - מג'מג'ם ספונטנית עם דן תורן ז\"ל",
+        "description": "ביצוע אקוסטי של השיר 'לבן על לבן' במג'מג'ם ספונטנית עם דן תורן ז\"ל",
+        "thumbnailUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren_poster.jpg",
+        "contentUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren.mp4",
+        "embedUrl": "https://singwithalon.com/#videos",
+        "uploadDate": "2025-01-01T00:00:00Z",
+        "duration": "PT1M37S",
+        "genre": "מוזיקה אקוסטית",
+        "inLanguage": "he",
+        "creator": {
+          "@type": "Person",
+          "name": "אלון כהן"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "שרים עם אלון כהן",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://singwithalon.com/assets/logo.jpg"
+          }
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "אל בורות המים - נעמי שמר",
+        "description": "ביצוע חי של השיר הקלאסי 'אל בורות המים' של נעמי שמר - שירי ארץ ישראל הישנה והטובה",
+        "thumbnailUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot_poster.jpg",
+        "contentUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot.mp4",
+        "embedUrl": "https://singwithalon.com/#videos",
+        "uploadDate": "2025-01-01T00:00:00Z",
+        "duration": "PT3M16S",
+        "genre": "שירי ארץ ישראל",
+        "inLanguage": "he",
+        "creator": {
+          "@type": "Person",
+          "name": "אלון כהן"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "שרים עם אלון כהן",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://singwithalon.com/assets/logo.jpg"
+          }
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "name": "מה רצינו להגיד - שלמה ארצי (קאבר גיטרה)",
+        "description": "קאבר גיטרה מרגש של השיר 'מה רצינו להגיד' של שלמה ארצי - שירי זיכרון",
+        "thumbnailUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar_poster.jpg",
+        "contentUrl": "https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4",
+        "embedUrl": "https://singwithalon.com/#videos",
+        "uploadDate": "2025-01-01T00:00:00Z",
+        "duration": "PT5M7S",
+        "genre": "שירי זיכרון",
+        "inLanguage": "he",
+        "creator": {
+          "@type": "Person",
+          "name": "אלון כהן"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "שרים עם אלון כהן",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://singwithalon.com/assets/logo.jpg"
+          }
+        }
+      }
+    ]
     </script>
     
     <link rel="stylesheet" href="css/styles.css">
