@@ -451,9 +451,156 @@
     ]
     </script>
     
-    <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Critical CSS Inlined for Immediate Rendering -->
+    <style>
+        /* Critical above-the-fold styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { direction: rtl; scroll-behavior: smooth; }
+        body { 
+            font-family: 'Heebo', sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            overflow-x: hidden;
+            background-color: #f8f9fa;
+        }
+        
+        /* Critical Navigation */
+        .navbar { 
+            position: fixed; 
+            top: 0; 
+            width: 100%; 
+            background: rgba(255,255,255,0.95); 
+            backdrop-filter: blur(10px); 
+            z-index: 1000; 
+            padding: 15px 0; 
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .nav-container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .nav-logo .logo { height: 55px; width: auto; }
+        
+        /* Critical Hero Section */
+        .hero { 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            position: relative; 
+            background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%); 
+            overflow: hidden; 
+        }
+        .hero-overlay { 
+            position: absolute; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.3); 
+            z-index: 5; 
+        }
+        .hero-content { 
+            position: relative; 
+            z-index: 6; 
+            width: 100%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 100px 20px 50px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 60px; 
+            align-items: center; 
+        }
+        .hero-text { color: white; }
+        .title-main { 
+            display: block; 
+            font-size: 3.8rem; 
+            font-weight: 400; 
+            margin-bottom: 15px; 
+            color: #FFFFFF; 
+            text-shadow: 0 3px 6px rgba(0,0,0,0.6), 0 6px 15px rgba(139,95,191,0.4);
+        }
+        .title-subtitle { 
+            display: block; 
+            font-size: 1.3rem; 
+            font-weight: 300; 
+            color: #E6D7FF; 
+            opacity: 0.95; 
+        }
+        .hero-description { 
+            font-size: 1.2rem; 
+            line-height: 1.8; 
+            margin-bottom: 40px; 
+            color: #F5F0FF; 
+            opacity: 0.9; 
+        }
+        .hero-buttons { 
+            display: flex; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+        }
+        
+        /* Critical Button Styles */
+        .btn { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 12px 28px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            cursor: pointer; 
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%); 
+            color: white; 
+            box-shadow: 0 4px 20px rgba(139,95,191,0.3); 
+        }
+        .btn-secondary { 
+            background: rgba(255,255,255,0.9); 
+            color: #8b5fbf; 
+            border: 2px solid rgba(255,255,255,0.9); 
+        }
+        
+        /* Critical Mobile Styles */
+        @media (max-width: 768px) { 
+            .hero-content { 
+                grid-template-columns: 1fr; 
+                gap: 40px; 
+                text-align: center; 
+            }
+            .title-main { 
+                font-size: 2.5rem; 
+            }
+            .hero-buttons { 
+                justify-content: center; 
+            }
+        }
+        
+        /* Container */
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 0 20px; 
+        }
+    </style>
+
+    <!-- Preload and defer fonts to eliminate render blocking -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap"></noscript>
+
+    <!-- Defer Font Awesome to eliminate render blocking -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+
+    <!-- Defer main CSS file to eliminate render blocking -->
+    <link rel="preload" href="css/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/styles.css"></noscript>
     <link rel="icon" type="image/jpeg" href="assets/logo.jpg">
     <link rel="shortcut icon" type="image/jpeg" href="assets/logo.jpg">
     <link rel="apple-touch-icon" href="assets/logo.jpg">
