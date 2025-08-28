@@ -591,6 +591,12 @@
     <!-- Preload and defer fonts to eliminate render blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev">
+    
+    <!-- Preload critical images -->
+    <link rel="preload" href="assets/logo_png.webp" as="image" type="image/webp">
+    <link rel="preload" href="assets/tadmit_poster.webp" as="image" type="image/webp">
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap"></noscript>
 
@@ -671,10 +677,11 @@
                         width="1920"
                         height="1080">
                         <source src="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4" type="video/mp4">
+                        <track kind="captions" src="#" srclang="he" label="עברית" default>
                         הדפדפן שלך אינו תומך בתגי וידאו.
                     </video>
                     <div class="video-overlay">
-                        <button class="video-play-btn" id="video-play-btn">
+                        <button class="video-play-btn" id="video-play-btn" aria-label="נגן את הסרטון הראשי">
                             <i class="fas fa-play"></i>
                         </button>
                     </div>
@@ -764,7 +771,7 @@
                             <img src="assets/rony_poster.webp" alt="שירי רוק פופ" width="640" height="352" loading="lazy">
                         </picture>
                         <div class="play-overlay">
-                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony.mp4">
+                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony.mp4" aria-label="נגן וידאו - שירי רוק פופ">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
@@ -783,7 +790,7 @@
                             <img src="assets/jam_toren_poster.webp" alt="ביצוע אקוסטי" width="640" height="304" loading="lazy">
                         </picture>
                         <div class="play-overlay">
-                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren.mp4">
+                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren.mp4" aria-label="נגן וידאו - ביצוע אקוסטי">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
@@ -802,7 +809,7 @@
                             <img src="assets/borot_poster.webp" alt="שירי ארץ ישראל" width="1280" height="720" loading="lazy">
                         </picture>
                         <div class="play-overlay">
-                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot.mp4">
+                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot.mp4" aria-label="נגן וידאו - שירי ארץ ישראל">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
@@ -821,7 +828,7 @@
                             <img src="assets/kvar_avar_poster.webp" alt="שירי זיכרון" width="848" height="478" loading="lazy">
                         </picture>
                         <div class="play-overlay">
-                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4">
+                            <button class="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4" aria-label="נגן וידאו - שירי זיכרון">
                                 <i class="fas fa-play"></i>
                             </button>
                         </div>
@@ -931,7 +938,7 @@
                             <i class="fas fa-user-circle"></i>
                         </div>
                         <div class="author-info">
-                            <h4>משפחת גולדשטיין</h4>
+                            <h3>משפחת גולדשטיין</h3>
                             <span>אירוע בקיבוץ</span>
                         </div>
                     </div>
@@ -953,7 +960,7 @@
                             <i class="fas fa-user-circle"></i>
                         </div>
                         <div class="author-info">
-                            <h4>משפחת רוזנברג</h4>
+                            <h3>משפחת רוזנברג</h3>
                             <span>מסיבת יום הולדת פרטית</span>
                         </div>
                     </div>
@@ -975,7 +982,7 @@
                             <i class="fas fa-user-circle"></i>
                         </div>
                         <div class="author-info">
-                            <h4>מרים ויעקב</h4>
+                            <h3>מרים ויעקב</h3>
                             <span>אירוע משפחתי קטן</span>
                         </div>
                     </div>
@@ -998,7 +1005,7 @@
                             <i class="fas fa-phone"></i>
                         </div>
                         <div class="contact-details">
-                            <h4>טלפון</h4>
+                            <h3>טלפון</h3>
                             <p><a href="tel:+972528962110" dir="ltr">052-896-2110</a></p>
                         </div>
                     </div>
@@ -1008,7 +1015,7 @@
                             <i class="fas fa-envelope"></i>
                         </div>
                         <div class="contact-details">
-                            <h4>אימייל</h4>
+                            <h3>אימייל</h3>
                             <p><a href="mailto:alon7@yahoo.com" dir="ltr">alon7@yahoo.com</a></p>
                         </div>
                     </div>
@@ -1018,7 +1025,7 @@
                             <i class="fab fa-whatsapp"></i>
                         </div>
                         <div class="contact-details">
-                            <h4>WhatsApp</h4>
+                            <h3>WhatsApp</h3>
                             <p><a href="https://wa.me/972528962110" dir="ltr">052-896-2110</a></p>
                         </div>
                     </div>
@@ -1049,7 +1056,7 @@
                             <textarea id="message" name="message" rows="4" placeholder="ספרו לי קצת על האירוע - מספר אורחים, מיקום, סוג האירוע, שירים מיוחדים שתרצו לשמוע..."></textarea>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" aria-label="שלח הודעה">
                             <i class="fab fa-whatsapp"></i>
                             שלח הודעת WhatsApp
                         </button>
@@ -1096,9 +1103,10 @@
     <!-- Video Modal -->
     <div id="video-modal" class="video-modal">
         <div class="video-modal-content">
-            <button class="video-modal-close">&times;</button>
+            <button class="video-modal-close" aria-label="סגור חלון וידאו">&times;</button>
             <video id="modal-video" controls>
                 <source src="" type="video/mp4">
+                <track kind="captions" src="#" srclang="he" label="עברית" default>
             </video>
         </div>
     </div>
@@ -1127,7 +1135,7 @@
                     <h4>אלון כהן</h4>
                     <span class="chat-status">זמין לשיחה</span>
                 </div>
-                <button id="chat-close" class="chat-close">
+                <button id="chat-close" class="chat-close" aria-label="סגור צ'אט">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1155,19 +1163,19 @@
                 </div>
                 <div class="chat-input">
                     <input type="text" id="chat-input-field" placeholder="כתבו את השאלה שלכם..." maxlength="500">
-                    <button id="chat-send" class="chat-send" disabled>
+                    <button id="chat-send" class="chat-send" disabled aria-label="שלח הודעה בצ'אט">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
                 <div class="chat-suggestions">
-                    <button class="suggestion-btn">מה כלול במופע אינטראקטיבי?</button>
-                    <button class="suggestion-btn">כמה עולה מופע לאירוע של 50 איש?</button>
-                    <button class="suggestion-btn">איך פועלת מערכת בחירת השירים?</button>
+                    <button class="suggestion-btn" aria-label="שאל על מה כלול במופע אינטראקטיבי">מה כלול במופע אינטראקטיבי?</button>
+                    <button class="suggestion-btn" aria-label="שאל על מחיר מופע לאירוע של 50 איש">כמה עולה מופע לאירוע של 50 איש?</button>
+                    <button class="suggestion-btn" aria-label="שאל על מערכת בחירת השירים">איך פועלת מערכת בחירת השירים?</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="js/script.js"></script>
+    <script src="js/script.js" defer></script>
 </body>
 </html>
