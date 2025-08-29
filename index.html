@@ -83,7 +83,7 @@
         "genre": ["מוזיקה ישראלית", "שירי ארץ ישראל", "מוזיקה פופולרית"],
         "url": "https://singwithalon.com",
         "logo": "https://singwithalon.com/assets/logo.webp",
-        "image": "https://singwithalon.com/assets/about_en.jpg",
+        "image": "https://singwithalon.com/assets/about_en.webp",
         "telephone": "+972-52-896-2110", 
         "email": "alon7@yahoo.com",
         "sameAs": [
@@ -651,16 +651,24 @@
     <!-- Preload critical images -->
     <link rel="preload" href="assets/logo_png.webp" as="image" type="image/webp">
     <link rel="preload" href="assets/tadmit_poster.webp" as="image" type="image/webp">
-    <!-- Load critical fonts with font-display:swap to prevent CLS -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" as="style" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" crossorigin>
+    <!-- Preload critical font files directly for fastest LCP -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/secularone/v13/8QINdiTajsj_87rMuMdKyqDiOOhZL4pL.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/heebo/v27/NGS6v5_NC0k9P9H0TbFhsqMA6aw.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <!-- Load only critical font weights for faster LCP -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap" as="style" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap" crossorigin>
+    
+    <!-- Load additional font weights after LCP -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap"></noscript>
 
     <!-- Defer Font Awesome to eliminate render blocking -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
 
-    <!-- Defer main CSS file to eliminate render blocking -->
-    <link rel="preload" href="css/styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Load critical CSS immediately for LCP, defer non-critical -->
+    <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="css/styles.css"></noscript>
     <link rel="icon" type="image/webp" href="assets/logo.webp">
     <link rel="shortcut icon" type="image/webp" href="assets/logo.webp">
@@ -730,7 +738,8 @@
                         preload="metadata"
                         poster="assets/tadmit_poster.webp"
                         width="1920"
-                        height="1080">
+                        height="1080"
+                        fetchpriority="high">
                         <source src="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4" type="video/mp4">
                         <track kind="captions" src="#" srclang="he" label="עברית" default>
                         הדפדפן שלך אינו תומך בתגי וידאו.
