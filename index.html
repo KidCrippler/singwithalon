@@ -586,6 +586,60 @@
             margin: 0 auto; 
             padding: 0 20px; 
         }
+        
+        /* CLS Prevention: Font fallbacks with size adjustments */
+        .hero-title {
+            font-family: 'Secular One', 'Arial Black', Arial, sans-serif;
+            font-size: 2.5rem;
+            line-height: 1.2;
+            /* Prevent text from jumping by reserving space */
+            min-height: 3rem;
+            font-display: swap;
+        }
+        
+        body, p, .hero-description {
+            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-display: swap;
+        }
+        
+        /* Prevent hero content jumping */
+        .hero-content {
+            min-height: 600px; /* Reserve space to prevent shift */
+        }
+        
+        /* Prevent button shifting */
+        .btn {
+            min-height: 46px;
+            min-width: 147px;
+            font-family: 'Heebo', system-ui, sans-serif;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        
+        /* Reserve space for hero buttons */
+        .hero-buttons {
+            min-height: 60px;
+        }
+        
+        /* Prevent video container layout shift */
+        .video-container {
+            aspect-ratio: 16/9;
+            width: 100%;
+            max-width: 400px;
+            background-color: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
     </style>
 
     <!-- Preload and defer fonts to eliminate render blocking -->
@@ -597,8 +651,9 @@
     <!-- Preload critical images -->
     <link rel="preload" href="assets/logo_png.webp" as="image" type="image/webp">
     <link rel="preload" href="assets/tadmit_poster.webp" as="image" type="image/webp">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap"></noscript>
+    <!-- Load critical fonts with font-display:swap to prevent CLS -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" as="style" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Secular+One&display=swap" crossorigin>
 
     <!-- Defer Font Awesome to eliminate render blocking -->
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
