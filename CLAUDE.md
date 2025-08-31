@@ -93,7 +93,7 @@ singwithalon/
 
 **Contact Information**:
 - Phone: 052-896-2110 (update in index.html:380,400,460)
-- Email: alon7@yahoo.com (update in index.html:390,461)
+- Email: contact@singwithalon.com
 
 **Video Assets**:
 - All videos hosted on Cloudflare R2 CDN
