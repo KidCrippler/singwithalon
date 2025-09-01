@@ -141,8 +141,21 @@ class MusicianSite {
     }
 
     setupVideoHandlers() {
-        // Hero video now uses native controls
-        // No custom handlers needed for hero video
+        // Hero video poster click handler for LCP optimization
+        const videoPosterImg = document.getElementById('video-poster-img');
+        const videoOverlay = document.getElementById('video-overlay');
+        
+        if (videoPosterImg && this.heroVideo) {
+            const showVideo = () => {
+                videoPosterImg.style.display = 'none';
+                videoOverlay.style.display = 'none';
+                this.heroVideo.style.display = 'block';
+                this.heroVideo.play();
+            };
+            
+            videoPosterImg.addEventListener('click', showVideo);
+            videoOverlay.addEventListener('click', showVideo);
+        }
 
         // Video gallery modal
         document.querySelectorAll('.play-btn').forEach(btn => {
