@@ -220,6 +220,12 @@ class MusicianSite {
                 // If we're on a video route, go back to main page
                 window.history.pushState(null, 'שירה בציבור מקצועית | אלון כהן - קלידן ומוביל שירה', '/');
                 document.title = 'שירה בציבור מקצועית | אלון כהן - קלידן ומוביל שירה';
+                
+                // Update canonical tag to match new URL
+                const canonicalTag = document.querySelector('link[rel="canonical"]');
+                if (canonicalTag) {
+                    canonicalTag.href = 'https://singwithalon.com/';
+                }
             } else if (!skipHistoryChange && window.history.state && window.history.state.modalOpen) {
                 // Go back in history if we added a state (but only if not called from popstate)
                 history.back();
