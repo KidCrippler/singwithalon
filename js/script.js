@@ -9,34 +9,7 @@ class MusicianSite {
         this.videoPlayBtn = document.getElementById('video-play-btn');
         this.contactForm = document.getElementById('contact-form');
         
-        // Video routing map
-        this.videoMap = {
-            'tadmit': {
-                src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4',
-                title: 'תדמית - אלון כהן מוביל שירה בציבור',
-                description: 'סרטון תדמית המציג את אלון כהן בפעולה - שירה בציבור מקצועית עם מערכת בחירת שירים אינטראקטיבית'
-            },
-            'rony': {
-                src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony.mp4',
-                title: 'רוני - גזוז',
-                description: 'ביצוע אנרגטי של השיר "רוני" של גזוז - שמח ומשמח!'
-            },
-            'jam-toren': {
-                src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren.mp4',
-                title: 'לבן על לבן - מג\'מג\'ם ספונטנית עם דן תורן ז"ל',
-                description: 'ביצוע אקוסטי של השיר "לבן על לבן" במג\'מג\'ם ספונטנית עם דן תורן ז"ל'
-            },
-            'borot': {
-                src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot.mp4',
-                title: 'אל בורות המים - נעמי שמר',
-                description: 'ביצוע חי של השיר הקלאסי "אל בורות המים" של נעמי שמר - שירי ארץ ישראל הישנה והטובה'
-            },
-            'kvar-avar': {
-                src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4',
-                title: 'מה רצינו להגיד - שלמה ארצי (קאבר גיטרה)',
-                description: 'קאבר גיטרה מרגש של השיר "מה רצינו להגיד" של שלמה ארצי - שירי זיכרון'
-            }
-        };
+
         
         this.init();
     }
@@ -45,14 +18,10 @@ class MusicianSite {
         this.setupNavigation();
         this.setupScrollEffects();
         this.setupVideoHandlers();
-        this.setupVideoRouting();
         this.setupContactForm();
         this.setupAnimations();
         this.setupSmoothScrolling();
         this.setupParallaxOptimizations();
-        
-        // Check for video route on page load
-        this.handleVideoRoute();
     }
 
     setupNavigation() {
@@ -258,57 +227,7 @@ class MusicianSite {
         }
     }
 
-    setupVideoRouting() {
-        // Handle browser back/forward navigation
-        window.addEventListener('popstate', (e) => {
-            this.handleVideoRoute();
-        });
-    }
 
-    handleVideoRoute() {
-        const path = window.location.pathname;
-        const videoMatch = path.match(/^\/video\/(.+)$/);
-        
-        if (videoMatch) {
-            const videoId = videoMatch[1];
-            const video = this.videoMap[videoId];
-            
-            if (video) {
-                // Update page title for the video
-                document.title = `${video.title} | שרים עם אלון כהן`;
-                
-                // Open the video modal with the specific video
-                this.openVideoModal(video.src, true);
-                
-                // Scroll to videos section to make video prominent
-                const videosSection = document.getElementById('videos');
-                if (videosSection) {
-                    videosSection.scrollIntoView({ behavior: 'smooth' });
-                }
-            } else {
-                // Video not found, redirect to main page
-                window.history.replaceState(null, '', '/');
-            }
-        } else {
-            // Not a video route, restore original title
-            document.title = 'שירה בציבור מקצועית | אלון כהן - קלידן ומוביל שירה';
-        }
-    }
-
-    openVideoForRoute(videoId) {
-        const video = this.videoMap[videoId];
-        if (video) {
-            // Update URL without triggering navigation
-            const videoUrl = `/video/${videoId}`;
-            window.history.pushState({ video: videoId }, video.title, videoUrl);
-            
-            // Update page title
-            document.title = `${video.title} | שרים עם אלון כהן`;
-            
-            // Open the video
-            this.openVideoModal(video.src, true);
-        }
-    }
 
     setupContactForm() {
         if (this.contactForm) {
@@ -641,18 +560,9 @@ class PerformanceUtils {
         }
     }
 
-    static preloadCriticalImages() {
-        const criticalImages = [
-            'assets/logo.jpg'
-        ];
-
-        criticalImages.forEach(src => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.as = 'image';
-            link.href = src;
-            document.head.appendChild(link);
-        });
+        static preloadCriticalImages() {
+        // No critical images to preload currently
+        // Images are loaded on-demand via lazy loading
     }
 }
 

@@ -1,0 +1,69 @@
+# Cursor Rules for SingWithAlon Website
+
+## Critical File Synchronization Rules
+
+### ALWAYS Keep Minified Files in Sync
+When editing these source files, ALWAYS update their corresponding minified versions:
+
+**JavaScript Files:**
+- Source: `js/script.js` 
+- Minified: `js/script.min.js`
+- Action: After editing `js/script.js`, MUST update `js/script.min.js`
+
+**CSS Files:**
+- Source: `css/styles.css`
+- Minified: `css/styles.min.css` 
+- Action: After editing `css/styles.css`, MUST update `css/styles.min.css`
+
+**Video Pages CSS Files:**
+- Source: `css/video-pages.css`
+- Minified: `css/video-pages.min.css` 
+- Action: After editing `css/video-pages.css`, MUST update `css/video-pages.min.css`
+
+### Synchronization Process
+1. Make changes to source files (script.js, styles.css)
+2. **IMMEDIATELY** update minified versions using proper minification:
+
+**For JavaScript:**
+```bash
+npx terser js/script.js -c -m -o js/script.min.js
+```
+
+**For CSS:**
+```bash
+npx clean-css-cli css/styles.css -o css/styles.min.css
+npx clean-css-cli css/video-pages.css -o css/video-pages.min.css
+```
+
+3. Verify minification worked by checking file sizes are smaller
+
+### Why This Matters
+- The website loads minified files in production
+- Out-of-sync files cause bugs like the `logo.jpg` preload warning
+- JavaScript routing issues when minified version has old code
+- Performance issues when CSS is outdated
+
+### Files to Watch
+- `js/script.js` → `js/script.min.js`
+- `css/styles.css` → `css/styles.min.css`
+- `css/video-pages.css` → `css/video-pages.min.css`
+
+### Current Minification Setup ✅
+- **JavaScript**: Using `terser` via npx (52% size reduction achieved)
+- **CSS**: Using `clean-css-cli` via npx (31% size reduction achieved)
+- **Status**: Properly configured and working
+
+### Optional: Add npm scripts for convenience
+Add to package.json:
+```json
+{
+  "scripts": {
+    "minify-js": "npx terser js/script.js -c -m -o js/script.min.js",
+    "minify-css": "npx clean-css-cli css/styles.css -o css/styles.min.css",
+    "minify-video-css": "npx clean-css-cli css/video-pages.css -o css/video-pages.min.css",
+    "minify": "npm run minify-js && npm run minify-css && npm run minify-video-css"
+  }
+}
+```
+
+**REMINDER: This rule is CRITICAL for website functionality!**
