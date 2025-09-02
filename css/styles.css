@@ -449,70 +449,6 @@ p {
     opacity: 1;
 }
 
-/* Hero video overlay - always visible for better UX */
-.hero-video .video-overlay {
-    opacity: 1;
-    background: transparent; /* Remove dark overlay for hero */
-    pointer-events: none; /* Allow clicks to pass through to image */
-}
-
-/* Make only the play button clickable */
-.hero-video .hero-play-btn {
-    pointer-events: auto;
-}
-
-/* Hero video play button - prominent and centered */
-.hero-play-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100px;
-    height: 100px;
-    background: rgba(139, 95, 191, 0.9);
-    border: 4px solid rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    z-index: 10;
-    animation: pulse 2s ease-in-out infinite;
-}
-
-/* Subtle pulse animation to draw attention */
-@keyframes pulse {
-    0%, 100% {
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(139, 95, 191, 0.4);
-    }
-    50% {
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 20px rgba(139, 95, 191, 0);
-    }
-}
-
-.hero-play-btn:hover {
-    transform: translate(-50%, -50%) scale(1.1);
-    background: rgba(139, 95, 191, 1);
-    border-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 12px 48px rgba(139, 95, 191, 0.4);
-    animation: none; /* Stop pulse animation on hover */
-}
-
-.hero-play-btn:active {
-    transform: translate(-50%, -50%) scale(0.95);
-}
-
-.hero-play-btn i {
-    font-size: 2.5rem;
-    color: white;
-    margin-left: 6px; /* Slight offset to center visually */
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Original video play button for other videos */
 .video-play-btn {
     display: none;
 }
@@ -1552,16 +1488,6 @@ p {
         top: -35px;
         left: -10px;
         font-size: 28px;
-    }
-
-    /* Mobile responsive hero play button */
-    .hero-play-btn {
-        width: 80px;
-        height: 80px;
-    }
-
-    .hero-play-btn i {
-        font-size: 2rem;
     }
 }
 
