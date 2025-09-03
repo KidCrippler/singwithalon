@@ -8,6 +8,8 @@ class MusicianSite {
         this.heroVideo = document.getElementById('hero-video');
         this.videoPlayBtn = document.getElementById('video-play-btn');
         this.contactForm = document.getElementById('contact-form');
+        this.surpriseBtn = document.getElementById('surprise-btn');
+        this.surpriseModal = document.getElementById('surprise-modal');
         
 
         
@@ -19,6 +21,7 @@ class MusicianSite {
         this.setupScrollEffects();
         this.setupVideoHandlers();
         this.setupContactForm();
+        this.setupSurpriseButton();
         this.setupAnimations();
         this.setupSmoothScrolling();
         this.setupParallaxOptimizations();
@@ -242,6 +245,156 @@ class MusicianSite {
                 this.handleFormSubmission();
             });
         }
+    }
+
+    setupSurpriseButton() {
+        if (this.surpriseBtn) {
+            this.surpriseBtn.addEventListener('click', () => {
+                this.surpriseMe();
+            });
+        }
+
+        // Setup modal close functionality
+        const closeBtn = document.querySelector('.surprise-modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeSurpriseModal();
+            });
+        }
+
+        // Close modal when clicking outside
+        if (this.surpriseModal) {
+            this.surpriseModal.addEventListener('click', (e) => {
+                if (e.target === this.surpriseModal) {
+                    this.closeSurpriseModal();
+                }
+            });
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.surpriseModal.classList.contains('show')) {
+                this.closeSurpriseModal();
+            }
+        });
+    }
+
+    async surpriseMe() {
+        // Disable button to prevent multiple modals
+        this.surpriseBtn.disabled = true;
+        
+        // Show modal in loading state
+        this.showSurpriseModal();
+        this.showLoadingState();
+
+        try {
+            // Call the random song API
+            const response = await fetch('/random_song');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const songData = await response.json();
+            
+            // Check if we got valid song data
+            if (!songData || !songData.artist || !songData.song || !songData.youtube_link) {
+                throw new Error('נתוני השיר לא תקינים');
+            }
+
+            // Extract YouTube video ID
+            const videoId = this.extractYouTubeId(songData.youtube_link);
+            if (!videoId) {
+                throw new Error('קישור YouTube לא תקין');
+            }
+
+            // Show the song content
+            this.showSongContent(songData, videoId);
+
+        } catch (error) {
+            console.error('Error fetching random song:', error);
+            this.showErrorState(error.message);
+        }
+    }
+
+    extractYouTubeId(url) {
+        // Extract video ID from YouTube URL
+        const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+    }
+
+    showSurpriseModal() {
+        this.surpriseModal.classList.add('show');
+        this.surpriseModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent background scroll
+    }
+
+    closeSurpriseModal() {
+        this.surpriseModal.classList.remove('show');
+        this.surpriseModal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore background scroll
+        
+        // Properly stop YouTube video by clearing the src
+        const iframe = document.getElementById('youtube-player');
+        if (iframe) {
+            iframe.src = 'about:blank'; // This completely stops the video
+        }
+        
+        // Re-enable surprise button
+        this.surpriseBtn.disabled = false;
+    }
+
+    showLoadingState() {
+        // Update title
+        document.getElementById('surprise-title').textContent = 'מחפש שיר מיוחד...';
+        
+        // Show loading, hide others
+        document.getElementById('surprise-loading').style.display = 'flex';
+        document.getElementById('surprise-content').style.display = 'none';
+        document.getElementById('surprise-error').style.display = 'none';
+    }
+
+    showSongContent(songData, videoId) {
+        // Update title
+        document.getElementById('surprise-title').textContent = 'השיר שלכם מוכן! 🎵';
+        
+        // Update song info
+        document.getElementById('surprise-artist').textContent = songData.artist;
+        document.getElementById('surprise-song').textContent = songData.song;
+        
+        // Set up YouTube player - first clear it completely, then set new video
+        const iframe = document.getElementById('youtube-player');
+        iframe.src = 'about:blank'; // Clear any previous video
+        
+        // Small delay to ensure the iframe is fully cleared before loading new video
+        setTimeout(() => {
+            iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&showinfo=0&enablejsapi=1`;
+        }, 100);
+        
+        // Show content, hide others
+        document.getElementById('surprise-loading').style.display = 'none';
+        document.getElementById('surprise-content').style.display = 'block';
+        document.getElementById('surprise-error').style.display = 'none';
+    }
+
+    showErrorState(errorMessage = 'אופס! משהו השתבש. נסו שוב בעוד רגע.') {
+        // Update title
+        document.getElementById('surprise-title').textContent = 'משהו השתבש...';
+        
+        // Update error message
+        const errorElement = document.querySelector('#surprise-error p');
+        if (errorElement) {
+            errorElement.textContent = errorMessage;
+        }
+        
+        // Show error, hide others
+        document.getElementById('surprise-loading').style.display = 'none';
+        document.getElementById('surprise-content').style.display = 'none';
+        document.getElementById('surprise-error').style.display = 'block';
+        
+        // Re-enable surprise button so they can try again
+        this.surpriseBtn.disabled = false;
     }
 
     async handleFormSubmission() {
@@ -1025,7 +1178,7 @@ class Chatbot {
 // Initialize the site when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize main functionality
-    new MusicianSite();
+    window.musicianSite = new MusicianSite();
     
     // Initialize chatbot
     new Chatbot();
@@ -1072,4 +1225,11 @@ window.addEventListener('resize', () => {
         }
     }
 });
+
+// Global function for retry button (called via onclick)
+function surpriseMe() {
+    if (window.musicianSite) {
+        window.musicianSite.surpriseMe();
+    }
+}
 
