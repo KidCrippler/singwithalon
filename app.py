@@ -23,22 +23,6 @@ def hello():
         'api_version': '1.0'
     })
 
-@app.route('/random-song')
-def random_song():
-    """Return a random song suggestion"""
-    if not SONGS:
-        return jsonify({
-            'error': 'No songs available',
-            'status': 'error'
-        }), 404
-    
-    selected_song = random.choice(SONGS)
-    
-    return jsonify({
-        'song': selected_song,
-        'status': 'success',
-        'message': 'Random song selected successfully'
-    })
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, host='0.0.0.0')
