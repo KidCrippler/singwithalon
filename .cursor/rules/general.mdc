@@ -1,1 +1,8 @@
+---
+alwaysApply: true
+---
+
 # general.mdc
+- Use `json` for parsing json content, not `simplejson` or `ujson`
+- Whenever starting the server, first verify there are no other instances running
+- When you finish, make sure to kill all running servers of the project
