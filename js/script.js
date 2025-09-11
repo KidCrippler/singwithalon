@@ -637,10 +637,14 @@ class Chatbot {
     }
     
     setupEventListeners() {
-        // Toggle chat
+        // Toggle chat with debouncing to prevent conflicts
         if (this.chatToggle) {
-            this.chatToggle.addEventListener('click', () => {
-                this.toggleChat();
+            this.chatToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!this.chatToggle.disabled) {
+                    this.toggleChat();
+                }
             });
         }
         
@@ -711,17 +715,38 @@ class Chatbot {
     }
     
     openChat() {
+        if (this.isOpen) return; // Prevent multiple calls
+        
         this.isOpen = true;
-        if (this.chatToggle) this.chatToggle.classList.add('active');
+        // Temporarily disable button to prevent spam clicking
+        if (this.chatToggle) {
+            this.chatToggle.disabled = true;
+            this.chatToggle.classList.add('active');
+            setTimeout(() => {
+                this.chatToggle.disabled = false;
+            }, 300);
+        }
+        
         if (this.chatModal) this.chatModal.classList.add('open');
+        
         setTimeout(() => {
             if (this.chatInputField) this.chatInputField.focus();
         }, 300);
     }
     
     closeChat() {
+        if (!this.isOpen) return; // Prevent multiple calls
+        
         this.isOpen = false;
-        if (this.chatToggle) this.chatToggle.classList.remove('active');
+        // Temporarily disable button to prevent spam clicking
+        if (this.chatToggle) {
+            this.chatToggle.disabled = true;
+            this.chatToggle.classList.remove('active');
+            setTimeout(() => {
+                this.chatToggle.disabled = false;
+            }, 300);
+        }
+        
         if (this.chatModal) this.chatModal.classList.remove('open');
     }
     
