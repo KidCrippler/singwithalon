@@ -1038,10 +1038,86 @@ p {
     text-shadow: 0 0 10px rgba(139, 95, 191, 0.3);
 }
 
-.testimonials-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 40px;
+/* Testimonials Carousel Styling */
+.testimonials-carousel {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.carousel-container {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    /* Ensure proper clipping of overflowing cards */
+}
+
+.carousel-track {
+    display: flex;
+    gap: 20px;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    align-items: stretch;
+    position: relative;
+}
+
+/* Smooth sliding transitions handled by transform on .carousel-track */
+
+
+
+
+
+
+
+
+/* Touch interaction feedback */
+.carousel-track.touch-active {
+    transition: none; /* Disable transition during touch for immediate feedback */
+}
+
+.carousel-track.touch-active .testimonial-card {
+    transform: scale(0.98); /* Subtle scale down during touch */
+    opacity: 0.9;
+}
+
+/* Performance optimizations for animations */
+@media (prefers-reduced-motion: reduce) {
+    .carousel-track,
+    .testimonial-card {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+}
+
+/* Mobile-optimized carousel */
+@media (max-width: 767px) {
+    .carousel-track {
+        /* Ensure smooth transitions on mobile */
+        transition: transform 0.4s ease-out;
+    }
+}
+
+/* Desktop: Show 3 cards */
+@media (min-width: 768px) {
+    .carousel-container {
+        padding: 0 56px; /* Equal space for navigation arrows positioned at -56px */
+    }
+    
+    .testimonial-card {
+        flex: none; /* Cards will be sized by JavaScript based on container width */
+        transform-origin: center center; /* Ensure smooth scaling from center */
+    }
+}
+
+/* Mobile: Show 1 card */
+@media (max-width: 767px) {
+    .carousel-container {
+        padding: 0 10px;
+    }
+    
+    .testimonial-card {
+        flex: none; /* Cards will be sized by JavaScript based on container width */
+    }
 }
 
 .testimonial-card {
@@ -1049,11 +1125,149 @@ p {
     padding: 40px 30px;
     border-radius: 20px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    opacity: 1;
+    will-change: transform, opacity;
 }
 
 .testimonial-card:hover {
     transform: translateY(-5px);
+}
+
+/* Carousel Navigation - RTL-Aware Symmetrical Positioning */
+.carousel-navigation {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.carousel-btn {
+    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(139, 95, 191, 0.3);
+    transition: all 0.3s ease;
+    pointer-events: all;
+    position: absolute;
+}
+
+/* RTL-Aware Button Positioning - Equal distance from cards */
+.carousel-btn.prev {
+    right: -56px; /* In RTL, 'right' positions the previous button */
+}
+
+.carousel-btn.next {
+    left: -56px; /* In RTL, 'left' positions the next button */
+}
+
+.carousel-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(139, 95, 191, 0.4);
+}
+
+.carousel-btn:active {
+    transform: scale(0.95);
+}
+
+/* Button positioning handled by absolute positioning in .carousel-navigation */
+
+/* Musical note accent on hover */
+.carousel-btn::after {
+    content: '♪';
+    position: absolute;
+    font-size: 12px;
+    top: -8px;
+    right: -8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.carousel-btn:hover::after {
+    opacity: 1;
+}
+
+
+/* Mobile Navigation - Touch-Friendly Design */
+@media (max-width: 767px) {
+    .carousel-navigation {
+        position: static;
+        top: auto;
+        transform: none;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        margin-top: 20px;
+        pointer-events: all;
+    }
+    
+    .carousel-btn {
+        /* Touch-friendly buttons following iOS/Android guidelines */
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+        position: static; /* Reset absolute positioning */
+        /* Enhanced touch target - minimum 44px for accessibility */
+        min-width: 44px;
+        min-height: 44px;
+        /* Improved button styling for mobile */
+        background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
+        box-shadow: 0 2px 8px rgba(139, 95, 191, 0.3);
+    }
+    
+    .carousel-btn:active {
+        transform: scale(0.92); /* Better touch feedback */
+        box-shadow: 0 1px 4px rgba(139, 95, 191, 0.4);
+    }
+    
+    .carousel-btn.prev,
+    .carousel-btn.next {
+        position: static;
+        right: auto;
+        left: auto;
+    }
+    
+    /* Add swipe indicator with better accessibility */
+    .carousel-container::after {
+        content: '← החליק לניווט →';
+        position: absolute;
+        bottom: -45px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 12px;
+        color: rgba(139, 95, 191, 0.7);
+        opacity: 0.8; /* Always slightly visible for discoverability */
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        white-space: nowrap;
+        z-index: 1;
+    }
+    
+    .carousel-container:hover::after,
+    .carousel-container:focus-within::after {
+        opacity: 1;
+    }
+    
+    /* Enhanced accessibility: Focus ring for mobile buttons */
+    .carousel-btn:focus-visible {
+        outline: 3px solid rgba(139, 95, 191, 0.5);
+        outline-offset: 2px;
+    }
+    
 }
 
 .testimonial-content {
@@ -1453,9 +1667,6 @@ p {
         box-shadow: 0 5px 20px rgba(139, 95, 191, 0.2);
     }
 
-    .testimonials-grid {
-        grid-template-columns: 1fr;
-    }
 
     .contact-content {
         grid-template-columns: 1fr;
