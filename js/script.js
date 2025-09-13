@@ -727,11 +727,11 @@ class TestimonialsCarousel {
             if (Math.abs(diffX) > threshold) {
                 // For RTL, we need to consider direction properly
                 if (this.isRTL) {
-                    // In RTL: swipe left = next, swipe right = previous
+                    // In RTL: swipe left (diffX > 0) = previous, swipe right (diffX < 0) = next
                     if (diffX > 0) {
-                        this.goToNext();
-                    } else {
                         this.goToPrevious();
+                    } else {
+                        this.goToNext();
                     }
                 } else {
                     // In LTR: swipe left = previous, swipe right = next
