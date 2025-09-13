@@ -466,11 +466,14 @@
     
     <!-- Critical CSS Inlined for Immediate Rendering -->
     <style>
+        /* Import fonts directly in critical CSS - eliminates preload warnings */
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap');
+        
         /* Critical above-the-fold styles */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { direction: rtl; scroll-behavior: smooth; }
         body { 
-            font-family: 'Heebo', sans-serif; 
+            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif; 
             line-height: 1.6; 
             color: #333; 
             overflow-x: hidden;
@@ -602,17 +605,15 @@
         
         /* CLS Prevention: Font fallbacks with size adjustments */
         .hero-title {
-            font-family: 'Secular One', 'Arial Black', Arial, sans-serif;
+            font-family: 'Secular One', 'Arial Black', Arial, Tahoma, sans-serif;
             font-size: 2.5rem;
             line-height: 1.2;
             /* Prevent text from jumping by reserving space */
             min-height: 3rem;
-            font-display: swap;
         }
         
         body, p, .hero-description {
-            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-            font-display: swap;
+            font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
         }
         
         /* Prevent hero content jumping */
@@ -655,7 +656,7 @@
         }
     </style>
 
-    <!-- Preload and defer fonts to eliminate render blocking -->
+    <!-- Optimized font loading strategy - eliminates console warnings while maintaining performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -664,15 +665,11 @@
     <!-- Preload critical images -->
     <link rel="preload" href="assets/logo_png.webp" as="image" type="image/webp">
     <link rel="preload" href="assets/tadmit_poster.webp" as="image" type="image/webp">
-    <!-- Preload critical font files directly for fastest LCP -->
-    <link rel="preload" href="https://fonts.gstatic.com/s/secularone/v13/8QINdiTajsj_87rMuMdKyqDiOOhZL4pL.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="https://fonts.gstatic.com/s/heebo/v27/NGS6v5_NC0k9P9H0TbFhsqMA6aw.woff2" as="font" type="font/woff2" crossorigin>
     
-    <!-- Load only critical font weights for faster LCP -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap" as="style" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap" crossorigin>
+    <!-- SOLUTION: Load fonts via CSS import in critical CSS to eliminate preload warnings -->
+    <!-- This approach provides the best balance of performance and clean console logs -->
     
-    <!-- Load additional font weights after LCP -->
+    <!-- Load additional font weights lazily after critical path -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap"></noscript>
 
