@@ -677,9 +677,12 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
 
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css">
+
     <!-- Load critical CSS immediately for LCP, defer non-critical -->
-    <link rel="stylesheet" href="css/styles.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="css/styles.min.css"></noscript>
+    <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="css/styles.css"></noscript>
     <link rel="icon" type="image/webp" href="assets/logo.webp">
     <link rel="shortcut icon" type="image/webp" href="assets/logo.webp">
     <link rel="apple-touch-icon" href="assets/logo.webp">
@@ -995,21 +998,11 @@
                 <h2 class="section-title">מה אומרים עליי</h2>
                 <p class="section-subtitle">המלצות מלקוחות מרוצים</p>
             </div>
-            <div class="testimonials-carousel" role="region" aria-label="המלצות לקוחות">
-                <div class="carousel-container">
-                    <div class="carousel-track">
-                        <!-- Testimonials will be dynamically generated here -->
-                    </div>
+            <div class="swiper-container mySwiper">
+                <div class="swiper-wrapper">
+                    <!-- Testimonials will be dynamically generated here -->
                 </div>
-                
-                <div class="carousel-navigation">
-                    <button class="carousel-btn prev" aria-label="המלצה קודמת">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                    <button class="carousel-btn next" aria-label="המלצה הבאה">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                </div>
+                <div class="swiper-pagination"></div>
             </div>
         </div>
     </section>
@@ -1199,6 +1192,8 @@
         </div>
     </div>
 
-    <script src="js/script.min.js" defer></script>
+    <!-- Swiper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+    <script src="js/script.js" defer></script>
 </body>
 </html>

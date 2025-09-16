@@ -1019,45 +1019,133 @@ p {
     color: white;
 }
 
-/* Testimonials Section */
+/* Enhanced Testimonials Section with Musical Theme */
 .testimonials {
-    padding: 100px 0;
-    background: rgba(248, 249, 250, 0.96);
+    padding: 130px 0;
+    background:
+        linear-gradient(135deg, rgba(248, 249, 250, 0.98) 0%, rgba(250, 250, 255, 0.96) 100%),
+        radial-gradient(ellipse at top left, rgba(139, 95, 191, 0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at bottom right, rgba(177, 156, 217, 0.03) 0%, transparent 50%);
     position: relative;
 }
 
+/* Enhanced Musical Background Elements with Greater Visual Impact */
 .testimonials::before {
-    content: '♬';
+    content: '♪';
     position: absolute;
-    top: 70px;
-    left: 4%;
-    font-size: 2.2rem;
-    color: #8b5fbf;
-    opacity: 0.22;
-    transform: rotate(-12deg);
-    text-shadow: 0 0 10px rgba(139, 95, 191, 0.3);
+    top: 12%;
+    left: 6%;
+    font-size: 6.5rem;
+    color: rgba(139, 95, 191, 0.18);
+    transform: rotate(-18deg);
+    text-shadow:
+        0 0 40px rgba(139, 95, 191, 0.5),
+        0 0 80px rgba(177, 156, 217, 0.3),
+        0 10px 20px rgba(139, 95, 191, 0.2);
+    animation: floatNote1 12s ease-in-out infinite;
+    z-index: 1;
+    filter: blur(0.5px);
 }
 
-/* Testimonials Carousel Styling */
-.testimonials-carousel {
-    position: relative;
-    max-width: 1200px;
-    margin: 0 auto;
+.testimonials::after {
+    content: '♫';
+    position: absolute;
+    top: 65%;
+    right: 4%;
+    font-size: 5.5rem;
+    color: rgba(177, 156, 217, 0.16);
+    transform: rotate(28deg);
+    text-shadow:
+        0 0 35px rgba(177, 156, 217, 0.4),
+        0 0 70px rgba(139, 95, 191, 0.25),
+        0 8px 15px rgba(177, 156, 217, 0.18);
+    animation: floatNote2 10s ease-in-out infinite reverse;
+    z-index: 1;
+    filter: blur(0.3px);
 }
 
-.carousel-container {
-    overflow: hidden;
-    position: relative;
+/* Musical Note Animations */
+@keyframes floatNote1 {
+    0%, 100% {
+        transform: rotate(-15deg) translateY(0px) scale(1);
+    }
+    25% {
+        transform: rotate(-10deg) translateY(-8px) scale(1.05);
+    }
+    50% {
+        transform: rotate(-20deg) translateY(-5px) scale(0.95);
+    }
+    75% {
+        transform: rotate(-12deg) translateY(-10px) scale(1.02);
+    }
+}
+
+@keyframes floatNote2 {
+    0%, 100% {
+        transform: rotate(25deg) translateY(0px) scale(1);
+    }
+    30% {
+        transform: rotate(20deg) translateY(-6px) scale(1.08);
+    }
+    60% {
+        transform: rotate(30deg) translateY(-8px) scale(0.92);
+    }
+    80% {
+        transform: rotate(22deg) translateY(-4px) scale(1.05);
+    }
+}
+    right: 6%;
+    font-size: 3.5rem;
+    color: #b19cd9;
+    opacity: 0.15;
+    transform: rotate(12deg);
+    text-shadow: 0 0 15px rgba(177, 156, 217, 0.4);
+    animation: floatNote2 10s ease-in-out infinite 2s;
+}
+
+/* Musical Note Floating Animations */
+@keyframes floatNote1 {
+    0%, 100% { transform: translateY(0) rotate(-15deg); opacity: 0.12; }
+    25% { transform: translateY(-12px) rotate(-10deg); opacity: 0.18; }
+    50% { transform: translateY(-8px) rotate(-18deg); opacity: 0.15; }
+    75% { transform: translateY(-15px) rotate(-12deg); opacity: 0.20; }
+}
+
+@keyframes floatNote2 {
+    0%, 100% { transform: translateY(0) rotate(12deg); opacity: 0.15; }
+    33% { transform: translateY(-10px) rotate(16deg); opacity: 0.22; }
+    66% { transform: translateY(-6px) rotate(8deg); opacity: 0.18; }
+}
+
+/* Swiper Container Styling */
+.testimonials .swiper-container {
     width: 100%;
-    /* Ensure proper clipping of overflowing cards */
+    max-width: 1400px;
+    height: auto;
+    overflow: visible;
+    direction: rtl;
+    margin: 0 auto;
+    padding: 0 60px;
 }
 
-.carousel-track {
+.testimonials .swiper-container .swiper-slide-active {
+    opacity: 1 !important;
+}
+
+.testimonials .swiper-slide {
+    text-align: center;
+    font-size: 18px;
+    background: transparent;
     display: flex;
-    gap: 20px;
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    justify-content: center;
     align-items: stretch;
-    position: relative;
+    opacity: 0.7;
+    padding: 0 15px;
+    transition: opacity 0.3s ease;
+}
+
+.testimonials .swiper-slide.swiper-slide-active {
+    opacity: 1;
 }
 
 /* Smooth sliding transitions handled by transform on .carousel-track */
@@ -1069,257 +1157,682 @@ p {
 
 
 
-/* Touch interaction feedback */
-.carousel-track.touch-active {
-    transition: none; /* Disable transition during touch for immediate feedback */
+/* Enhanced Testimonial Card with Dominant Musical Design */
+.testimonials .swiper-slide .testimonial-content {
+    position: relative;
+    background:
+        linear-gradient(145deg, #ffffff 0%, #fefefe 40%, #f8f9ff 100%),
+        radial-gradient(circle at top right, rgba(139, 95, 191, 0.08) 0%, transparent 70%),
+        radial-gradient(circle at bottom left, rgba(177, 156, 217, 0.06) 0%, transparent 60%);
+    border: 3px solid transparent;
+    border-radius: 32px;
+    padding: 55px 55px 45px 55px;
+    margin: 0 auto;
+    min-height: 420px;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 25px 80px rgba(139, 95, 191, 0.18),
+        0 15px 40px rgba(0, 0, 0, 0.08),
+        0 5px 15px rgba(139, 95, 191, 0.12),
+        0 0 0 1px rgba(139, 95, 191, 0.05),
+        inset 0 2px 4px rgba(255, 255, 255, 0.95),
+        inset 0 -1px 2px rgba(139, 95, 191, 0.03);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    backdrop-filter: blur(15px);
+    will-change: transform, box-shadow;
+    transform: translateY(0) scale(1);
 }
 
-.carousel-track.touch-active .testimonial-card {
-    transform: scale(0.98); /* Subtle scale down during touch */
+/* Enhanced Musical Border Pattern with Shimmer Effect */
+.testimonials .swiper-slide .testimonial-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 32px;
+    padding: 3px;
+    background:
+        linear-gradient(135deg,
+            rgba(139, 95, 191, 0.3) 0%,
+            rgba(177, 156, 217, 0.25) 20%,
+            rgba(255, 255, 255, 0.4) 40%,
+            transparent 50%,
+            rgba(139, 95, 191, 0.2) 70%,
+            rgba(177, 156, 217, 0.3) 100%),
+        linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1) 50%, transparent);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    -webkit-mask-composite: xor;
+    opacity: 0.8;
+    z-index: 0;
+    pointer-events: none;
+    animation: borderShimmer 4s ease-in-out infinite;
+}
+
+/* Subtle Sound Wave Pattern Background */
+.testimonials .swiper-slide .testimonial-content::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.03;
+    background-image:
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 8px,
+            rgba(139, 95, 191, 0.1) 8px,
+            rgba(139, 95, 191, 0.1) 9px
+        );
+    z-index: 0;
+    border-radius: 28px;
+    pointer-events: none;
+}
+
+.testimonials .swiper-slide .testimonial-content:hover {
+    transform: translateY(-18px) scale(1.03);
+    box-shadow:
+        0 35px 100px rgba(139, 95, 191, 0.25),
+        0 20px 50px rgba(0, 0, 0, 0.12),
+        0 8px 25px rgba(139, 95, 191, 0.18),
+        0 0 0 2px rgba(139, 95, 191, 0.08),
+        inset 0 3px 6px rgba(255, 255, 255, 1),
+        inset 0 -2px 4px rgba(139, 95, 191, 0.05),
+        0 0 60px rgba(177, 156, 217, 0.15);
+}
+
+.testimonials .swiper-slide .testimonial-content:hover::before {
+    opacity: 1;
+    background:
+        linear-gradient(135deg,
+            rgba(139, 95, 191, 0.4) 0%,
+            rgba(177, 156, 217, 0.35) 20%,
+            rgba(255, 255, 255, 0.6) 40%,
+            rgba(139, 95, 191, 0.15) 50%,
+            rgba(177, 156, 217, 0.25) 70%,
+            rgba(139, 95, 191, 0.35) 100%),
+        linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2) 50%, transparent);
+    animation: borderShimmer 2s ease-in-out infinite;
+}
+
+/* Enhanced Quote Mark with Musical Styling */
+.testimonials .quote-mark {
+    position: absolute;
+    top: 18px;
+    left: 28px;
+    font-size: 110px;
+    line-height: 0.5;
+    font-weight: 300;
+    background: linear-gradient(145deg,
+        rgba(139, 95, 191, 0.4) 0%,
+        rgba(177, 156, 217, 0.3) 40%,
+        rgba(255, 255, 255, 0.6) 60%,
+        rgba(139, 95, 191, 0.25) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    z-index: 1;
+    text-shadow:
+        0 4px 15px rgba(139, 95, 191, 0.2),
+        0 2px 8px rgba(177, 156, 217, 0.15);
+    filter:
+        drop-shadow(0 3px 6px rgba(139, 95, 191, 0.15))
+        drop-shadow(0 1px 3px rgba(255, 255, 255, 0.3));
+    transform: rotate(-4deg);
+    transition: all 0.4s ease;
     opacity: 0.9;
 }
 
-/* Performance optimizations for animations */
-@media (prefers-reduced-motion: reduce) {
-    .carousel-track,
-    .testimonial-card {
-        animation: none !important;
-        transition: none !important;
-    }
-    
-}
-
-/* Mobile-optimized carousel */
-@media (max-width: 767px) {
-    .carousel-track {
-        /* Ensure smooth transitions on mobile */
-        transition: transform 0.4s ease-out;
-    }
-}
-
-/* Desktop: Show 3 cards */
-@media (min-width: 768px) {
-    .carousel-container {
-        padding: 0 56px; /* Equal space for navigation arrows positioned at -56px */
-    }
-    
-    .testimonial-card {
-        flex: none; /* Cards will be sized by JavaScript based on container width */
-        transform-origin: center center; /* Ensure smooth scaling from center */
-    }
-}
-
-/* Mobile: Show 1 card */
-@media (max-width: 767px) {
-    .carousel-container {
-        padding: 0 10px;
-    }
-    
-    .testimonial-card {
-        flex: none; /* Cards will be sized by JavaScript based on container width */
-    }
-}
-
-.testimonial-card {
-    background: white;
-    padding: 40px 30px;
-    border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.testimonials .swiper-slide .testimonial-content:hover .quote-mark {
+    transform: rotate(-2deg) scale(1.08);
+    background: linear-gradient(145deg,
+        rgba(139, 95, 191, 0.55) 0%,
+        rgba(177, 156, 217, 0.45) 30%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(139, 95, 191, 0.4) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     opacity: 1;
-    will-change: transform, opacity;
+    text-shadow:
+        0 6px 20px rgba(139, 95, 191, 0.3),
+        0 3px 12px rgba(177, 156, 217, 0.2);
 }
 
-.testimonial-card:hover {
-    transform: translateY(-5px);
+/* Profile and content layout - new structure */
+.testimonials .testimonial-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+    z-index: 2;
+    position: relative;
 }
 
-/* Carousel Navigation - RTL-Aware Symmetrical Positioning */
-.carousel-navigation {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 100%;
-    left: 0;
-    right: 0;
-    pointer-events: none;
+/* Left section with profile image only */
+.testimonials .testimonial-left {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced Profile Image with Musical Elements */
+.testimonials .profile-image {
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    background:
+        linear-gradient(135deg, #8b5fbf 0%, #9d6ec9 25%, #b19cd9 50%, #c7a8e0 100%),
+        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.35) 0%, transparent 70%),
+        radial-gradient(circle at 75% 75%, rgba(139, 95, 191, 0.3) 0%, transparent 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 42px;
+    flex-shrink: 0;
+    box-shadow:
+        0 12px 35px rgba(139, 95, 191, 0.4),
+        0 6px 18px rgba(0, 0, 0, 0.15),
+        0 2px 8px rgba(139, 95, 191, 0.2),
+        inset 0 3px 6px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 6px rgba(139, 95, 191, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 5px solid rgba(255, 255, 255, 0.98);
+    position: relative;
+    overflow: hidden;
     z-index: 2;
 }
 
-.carousel-btn {
-    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
-    border: none;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    box-shadow: 0 4px 12px rgba(139, 95, 191, 0.3);
-    transition: all 0.3s ease;
-    pointer-events: all;
-    position: absolute;
-}
-
-/* RTL-Aware Button Positioning - Equal distance from cards */
-.carousel-btn.prev {
-    right: -56px; /* In RTL, 'right' positions the previous button */
-}
-
-.carousel-btn.next {
-    left: -56px; /* In RTL, 'left' positions the next button */
-}
-
-.carousel-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(139, 95, 191, 0.4);
-}
-
-.carousel-btn:active {
-    transform: scale(0.95);
-}
-
-/* Button positioning handled by absolute positioning in .carousel-navigation */
-
-/* Musical note accent on hover */
-.carousel-btn::after {
+/* Musical Note Icon Enhancement */
+.testimonials .profile-image::before {
     content: '♪';
     position: absolute;
-    font-size: 12px;
-    top: -8px;
-    right: -8px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.carousel-btn:hover::after {
-    opacity: 1;
-}
-
-
-/* Mobile Navigation - Touch-Friendly Design */
-@media (max-width: 767px) {
-    .carousel-navigation {
-        position: static;
-        top: auto;
-        transform: none;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 20px;
-        margin-top: 20px;
-        pointer-events: all;
-    }
-    
-    .carousel-btn {
-        /* Touch-friendly buttons following iOS/Android guidelines */
-        width: 44px;
-        height: 44px;
-        font-size: 16px;
-        position: static; /* Reset absolute positioning */
-        /* Enhanced touch target - minimum 44px for accessibility */
-        min-width: 44px;
-        min-height: 44px;
-        /* Improved button styling for mobile */
-        background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
-        box-shadow: 0 2px 8px rgba(139, 95, 191, 0.3);
-    }
-    
-    .carousel-btn:active {
-        transform: scale(0.92); /* Better touch feedback */
-        box-shadow: 0 1px 4px rgba(139, 95, 191, 0.4);
-    }
-    
-    .carousel-btn.prev,
-    .carousel-btn.next {
-        position: static;
-        right: auto;
-        left: auto;
-    }
-    
-    /* Add swipe indicator with better accessibility */
-    .carousel-container::after {
-        content: '← החליק לניווט →';
-        position: absolute;
-        bottom: -45px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 12px;
-        color: rgba(139, 95, 191, 0.7);
-        opacity: 0.8; /* Always slightly visible for discoverability */
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-        white-space: nowrap;
-        z-index: 1;
-    }
-    
-    .carousel-container:hover::after,
-    .carousel-container:focus-within::after {
-        opacity: 1;
-    }
-    
-    /* Enhanced accessibility: Focus ring for mobile buttons */
-    .carousel-btn:focus-visible {
-        outline: 3px solid rgba(139, 95, 191, 0.5);
-        outline-offset: 2px;
-    }
-    
-}
-
-.testimonial-content {
-    margin-bottom: 25px;
-}
-
-.stars {
-    margin-bottom: 20px;
-}
-
-.stars i {
-    color: #ffd700;
-    font-size: 18px;
-    margin-left: 2px;
-}
-
-.testimonial-content p {
-    font-style: italic;
-    font-size: 1.1rem;
-    line-height: 1.7;
-    color: #555;
-    margin: 0;
-}
-
-.testimonial-author {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.author-icon {
-    width: 60px;
-    height: 60px;
+    top: -10px;
+    right: -10px;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.95);
+    background:
+        linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%),
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 30px;
-    flex-shrink: 0;
+    box-shadow:
+        0 4px 12px rgba(139, 95, 191, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.2),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    z-index: 3;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    animation: pulseNote 2.5s ease-in-out infinite;
 }
 
-.author-info h4 {
-    color: #2c3e50;
-    margin-bottom: 5px;
-    font-size: 1.1rem;
+@keyframes pulseNote {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
 }
 
-.author-info span {
+/* Border Shimmer Animation for Enhanced Visual Impact */
+@keyframes borderShimmer {
+    0%, 100% {
+        background:
+            linear-gradient(135deg,
+                rgba(139, 95, 191, 0.3) 0%,
+                rgba(177, 156, 217, 0.25) 20%,
+                rgba(255, 255, 255, 0.4) 40%,
+                transparent 50%,
+                rgba(139, 95, 191, 0.2) 70%,
+                rgba(177, 156, 217, 0.3) 100%),
+            linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1) 50%, transparent);
+    }
+    25% {
+        background:
+            linear-gradient(135deg,
+                rgba(177, 156, 217, 0.35) 0%,
+                rgba(139, 95, 191, 0.3) 20%,
+                rgba(255, 255, 255, 0.5) 40%,
+                rgba(139, 95, 191, 0.1) 50%,
+                rgba(177, 156, 217, 0.25) 70%,
+                rgba(139, 95, 191, 0.3) 100%),
+            linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15) 50%, transparent);
+    }
+    50% {
+        background:
+            linear-gradient(135deg,
+                rgba(139, 95, 191, 0.4) 0%,
+                rgba(255, 255, 255, 0.3) 20%,
+                rgba(177, 156, 217, 0.35) 40%,
+                rgba(139, 95, 191, 0.2) 50%,
+                rgba(255, 255, 255, 0.4) 70%,
+                rgba(177, 156, 217, 0.35) 100%),
+            linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2) 50%, transparent);
+    }
+    75% {
+        background:
+            linear-gradient(135deg,
+                rgba(177, 156, 217, 0.3) 0%,
+                rgba(139, 95, 191, 0.35) 20%,
+                rgba(255, 255, 255, 0.45) 40%,
+                rgba(177, 156, 217, 0.15) 50%,
+                rgba(139, 95, 191, 0.25) 70%,
+                rgba(255, 255, 255, 0.3) 100%),
+            linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.12) 50%, transparent);
+    }
+}
+
+.testimonials .swiper-slide .testimonial-content:hover .profile-image {
+    transform: scale(1.12) rotate(3deg);
+    box-shadow:
+        0 18px 45px rgba(139, 95, 191, 0.5),
+        0 8px 25px rgba(0, 0, 0, 0.18),
+        0 4px 12px rgba(139, 95, 191, 0.3),
+        inset 0 4px 8px rgba(255, 255, 255, 0.4),
+        inset 0 -3px 8px rgba(139, 95, 191, 0.3),
+        0 0 0 2px rgba(255, 255, 255, 0.2),
+        0 0 30px rgba(177, 156, 217, 0.2);
+}
+
+.testimonials .swiper-slide .testimonial-content:hover .profile-image::before {
+    animation: pulseNote 1s ease-in-out infinite;
+    transform: scale(1.2);
+    background: rgba(177, 156, 217, 0.9);
+}
+
+/* Enhanced Author Info with Musical Typography */
+.testimonials .author-info {
+    text-align: right;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 3;
+    position: relative;
+}
+
+.testimonials .author-name {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2c2c2c 50%, #1a1a1a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+    font-family: 'Secular One', 'Heebo', sans-serif;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(139, 95, 191, 0.1);
+    position: relative;
+}
+
+.testimonials .author-event {
+    font-size: 16px;
     color: #666;
-    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.4;
+    font-family: 'Heebo', sans-serif;
+    font-weight: 600;
+    opacity: 0.85;
+    position: relative;
+}
+
+.testimonials .author-event::before {
+    content: '🎵';
+    font-size: 12px;
+    margin-left: 8px;
+    opacity: 0.6;
+    display: inline-block;
+    animation: fadeInOut 3s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 0.9; transform: scale(1.1); }
+}
+
+/* Main content area */
+.testimonials .testimonial-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 2;
+    position: relative;
+}
+
+/* Enhanced Stars with Musical Sparkle */
+.testimonials .stars {
+    margin-bottom: 20px;
+    text-align: right;
+    margin-top: 8px;
+    z-index: 3;
+    position: relative;
+}
+
+.testimonials .stars i {
+    color: #ffd700;
+    font-size: 18px;
+    margin-right: 3px;
+    text-shadow:
+        0 1px 3px rgba(255, 215, 0, 0.4),
+        0 0 8px rgba(255, 215, 0, 0.2);
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.testimonials .stars i:hover {
+    transform: scale(1.2) rotate(15deg);
+    color: #ffed4e;
+    text-shadow:
+        0 2px 4px rgba(255, 215, 0, 0.6),
+        0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+/* Staggered star animations */
+.testimonials .stars i:nth-child(1) { animation-delay: 0.1s; }
+.testimonials .stars i:nth-child(2) { animation-delay: 0.2s; }
+.testimonials .stars i:nth-child(3) { animation-delay: 0.3s; }
+.testimonials .stars i:nth-child(4) { animation-delay: 0.4s; }
+.testimonials .stars i:nth-child(5) { animation-delay: 0.5s; }
+
+.testimonials .swiper-slide .testimonial-content:hover .stars i {
+    animation: starGlow 0.6s ease-in-out;
+}
+
+@keyframes starGlow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); color: #ffed4e; }
+}
+
+/* Enhanced Testimonial Text with Professional Typography */
+.testimonials .testimonial-text {
+    font-size: 18px;
+    line-height: 1.8;
+    text-align: right;
+    color: #1a1a1a;
+    margin: 0;
+    direction: rtl;
+    font-style: normal;
+    font-family: 'Heebo', sans-serif;
+    font-weight: 500;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    z-index: 3;
+    position: relative;
+}
+
+.testimonials .testimonial-text::first-letter {
+    font-size: 1.4em;
+    font-weight: 800;
+    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    float: right;
+    margin-left: 5px;
+    margin-top: 3px;
+    line-height: 0.9;
+    text-shadow: 0 2px 4px rgba(139, 95, 191, 0.2);
+    filter: drop-shadow(0 1px 2px rgba(139, 95, 191, 0.1));
+}
+
+/* Enhanced Pagination with Musical Design */
+.testimonials .swiper-pagination {
+    position: relative;
+    margin-top: 50px;
+    z-index: 4;
+}
+
+.testimonials .swiper-pagination .swiper-pagination-bullet {
+    width: 36px;
+    height: 5px;
+    opacity: 0.25;
+    border-radius: 3px;
+    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 0 4px;
+    position: relative;
+}
+
+.testimonials .swiper-pagination .swiper-pagination-bullet::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: rgba(139, 95, 191, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: all 0.3s ease;
+}
+
+.testimonials .swiper-pagination .swiper-pagination-bullet.swiper-pagination-bullet-active {
+    background: linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%);
+    opacity: 1;
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(139, 95, 191, 0.3);
+}
+
+.testimonials .swiper-pagination .swiper-pagination-bullet.swiper-pagination-bullet-active::before {
+    transform: translate(-50%, -50%) scale(1);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .testimonials {
+        padding: 100px 0;
+    }
+
+    .testimonials .swiper-container {
+        padding: 0 40px;
+        max-width: 1200px;
+    }
+
+    .testimonials .swiper-slide .testimonial-content {
+        min-height: 340px;
+        padding: 45px 40px 35px 40px;
+        max-width: 750px;
+    }
+}
+
+@media (max-width: 768px) {
+    .testimonials {
+        padding: 80px 0;
+    }
+
+    .testimonials::before {
+        font-size: 3rem;
+        top: 10%;
+        left: 5%;
+    }
+
+    .testimonials::after {
+        font-size: 2.5rem;
+        top: 70%;
+        right: 3%;
+    }
+
+    .testimonials .swiper-container {
+        padding: 0 20px;
+    }
+
+    .testimonials .swiper-slide .testimonial-content {
+        min-height: 300px;
+        padding: 35px 25px 25px 25px;
+        border-radius: 20px;
+    }
+
+    .testimonials .testimonial-header {
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .testimonials .profile-image {
+        width: 70px;
+        height: 70px;
+        font-size: 30px;
+    }
+
+    .testimonials .profile-image::before {
+        width: 20px;
+        height: 20px;
+        font-size: 14px;
+        top: -6px;
+        right: -6px;
+    }
+
+    .testimonials .author-name {
+        font-size: 17px;
+    }
+
+    .testimonials .author-event {
+        font-size: 14px;
+    }
+
+    .testimonials .testimonial-text {
+        font-size: 15px;
+        line-height: 1.65;
+    }
+
+    .testimonials .testimonial-text::first-letter {
+        font-size: 1.2em;
+    }
+
+    .testimonials .quote-mark {
+        font-size: 75px;
+        top: 15px;
+        left: 20px;
+    }
+
+    .testimonials .stars i {
+        font-size: 16px;
+        margin-right: 2px;
+    }
+
+    .testimonials .swiper-pagination .swiper-pagination-bullet {
+        width: 28px;
+        height: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .testimonials {
+        padding: 60px 0;
+    }
+
+    .testimonials::before {
+        font-size: 2.5rem;
+        opacity: 0.08;
+    }
+
+    .testimonials::after {
+        font-size: 2rem;
+        opacity: 0.1;
+    }
+
+    .testimonials .swiper-container {
+        padding: 0 15px;
+    }
+
+    .testimonials .swiper-slide .testimonial-content {
+        min-height: 260px;
+        padding: 30px 20px 20px 20px;
+        border-radius: 16px;
+    }
+
+    .testimonials .testimonial-header {
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .testimonials .profile-image {
+        width: 60px;
+        height: 60px;
+        font-size: 26px;
+        border: 3px solid rgba(255, 255, 255, 0.95);
+    }
+
+    .testimonials .profile-image::before {
+        width: 16px;
+        height: 16px;
+        font-size: 12px;
+        top: -4px;
+        right: -4px;
+    }
+
+    .testimonials .author-name {
+        font-size: 15px;
+    }
+
+    .testimonials .author-event {
+        font-size: 12px;
+    }
+
+    .testimonials .author-event::before {
+        font-size: 10px;
+        margin-left: 6px;
+    }
+
+    .testimonials .testimonial-text {
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .testimonials .testimonial-text::first-letter {
+        font-size: 1.15em;
+    }
+
+    .testimonials .quote-mark {
+        font-size: 65px;
+        top: 10px;
+        left: 15px;
+    }
+
+    .testimonials .stars i {
+        font-size: 14px;
+        margin-right: 2px;
+    }
+
+    .testimonials .swiper-pagination .swiper-pagination-bullet {
+        width: 24px;
+        height: 3px;
+        margin: 0 2px;
+    }
+}
+
+/* Performance optimization for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .testimonials .swiper-slide .testimonial-content,
+    .testimonials .profile-image,
+    .testimonials .profile-image::before,
+    .testimonials .quote-mark,
+    .testimonials .stars i,
+    .testimonials .author-event::before,
+    .testimonials::before,
+    .testimonials::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .testimonials .swiper-slide .testimonial-content:hover {
+        transform: none !important;
+    }
 }
 
 /* Contact Section */

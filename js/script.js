@@ -360,9 +360,9 @@ ${data.message || 'לא צוינו פרטים נוספים'}
     }
 
     setupTestimonialsCarousel() {
-        const carousel = document.querySelector('.testimonials-carousel');
-        if (carousel) {
-            this.testimonialsCarousel = new TestimonialsCarousel(carousel);
+        const swiperContainer = document.querySelector('.testimonials .mySwiper');
+        if (swiperContainer) {
+            this.testimonialsSwiper = new TestimonialsSwiper();
         }
     }
 
@@ -614,397 +614,143 @@ const testimonialsData = [
     }
 ];
 
-class TestimonialsCarousel {
-    constructor(container, options = {}) {
-        this.container = container;
-        this.track = container.querySelector('.carousel-track');
-        this.prevBtn = container.querySelector('.carousel-btn.prev');
-        this.nextBtn = container.querySelector('.carousel-btn.next');
-        
-        this.currentIndex = 0;
-        this.totalCards = testimonialsData.length;
-        this.isRTL = document.dir === 'rtl';
-        this.isAnimating = false;
-        
-        this.autoAdvance = options.autoAdvance ?? true;
-        this.interval = options.interval ?? 7000;
-        this.autoplayTimer = null;
-        this.mobileBreakpoint = 768;
-        
-        // Track all testimonial cards for sliding effect
-        this.allCards = [];
-        this.cardWidth = 0;
-        this.visibleCards = 3; // Default to desktop
-        
+class TestimonialsSwiper {
+    constructor() {
+        this.swiper = null;
         this.init();
     }
     
     init() {
-        this.setupEventListeners();
-        this.checkReducedMotion();
-        this.createAllCards();
-        this.updateLayout();
-        this.setupAccessibility();
+        // Generate testimonial slides
+        this.generateSlides();
         
-        if (this.autoAdvance) {
-            this.startAutoplay();
-        }
-        
-        window.addEventListener('resize', this.debounce(() => {
-            this.updateLayout();
-        }, 300));
+        // Initialize Swiper
+        this.initSwiper();
     }
     
-    checkReducedMotion() {
-        this.prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-    
-    setupEventListeners() {
-        this.prevBtn?.addEventListener('click', () => this.goToPrevious());
-        this.nextBtn?.addEventListener('click', () => this.goToNext());
+    generateSlides() {
+        const swiperWrapper = document.querySelector('.testimonials .swiper-wrapper');
+        if (!swiperWrapper) return;
         
-        
-        this.container.addEventListener('mouseenter', () => this.pauseAutoplay());
-        this.container.addEventListener('mouseleave', () => this.resumeAutoplay());
-        this.container.addEventListener('focusin', () => this.pauseAutoplay());
-        this.container.addEventListener('focusout', () => this.resumeAutoplay());
-        
-        this.setupTouchEvents();
-        this.container.addEventListener('keydown', (e) => this.handleKeydown(e));
-    }
-    
-    setupTouchEvents() {
-        let startX = 0;
-        let startY = 0;
-        let isDragging = false;
-        let currentTranslateX = 0;
-        
-        this.track.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            isDragging = true;
-            currentTranslateX = 0;
-            this.pauseAutoplay();
-            
-            // Add visual feedback class
-            this.track.classList.add('touch-active');
-        }, { passive: true });
-        
-        this.track.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            
-            const currentX = e.touches[0].clientX;
-            const currentY = e.touches[0].clientY;
-            const diffX = startX - currentX;
-            const diffY = startY - currentY;
-            
-            // Only handle horizontal swipes
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                e.preventDefault();
-                
-                // Provide visual feedback during swipe
-                currentTranslateX = -diffX;
-                const maxSwipe = window.innerWidth * 0.3; // Limit swipe distance
-                currentTranslateX = Math.max(-maxSwipe, Math.min(maxSwipe, currentTranslateX));
-                
-                // Apply temporary transform for visual feedback
-                this.track.style.transform = `translateX(${currentTranslateX}px)`;
-            }
-        }, { passive: false });
-        
-        this.track.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            
-            const endX = e.changedTouches[0].clientX;
-            const diffX = startX - endX;
-            const threshold = 50;
-            
-            // Reset visual feedback
-            this.track.classList.remove('touch-active');
-            this.track.style.transform = ''; // Remove temporary transform
-            this.track.style.transition = ''; // Reset any animation transitions
-            
-            if (Math.abs(diffX) > threshold) {
-                // For RTL, we need to consider direction properly
-                if (this.isRTL) {
-                    // In RTL: swipe left (diffX > 0) = previous, swipe right (diffX < 0) = next
-                    if (diffX > 0) {
-                        this.goToPrevious();
-                    } else {
-                        this.goToNext();
-                    }
-                } else {
-                    // In LTR: swipe left = previous, swipe right = next
-                    if (diffX > 0) {
-                        this.goToNext();
-                    } else {
-                        this.goToPrevious();
-                    }
-                }
-            }
-            
-            isDragging = false;
-            this.resumeAutoplay();
-        }, { passive: true });
-    }
-    
-    setupAccessibility() {
-        this.updateAriaStates();
-        
-        if (this.track) {
-            this.track.setAttribute('tabindex', '0');
-            this.track.setAttribute('role', 'group');
-            this.track.setAttribute('aria-label', 'קרוסלת המלצות');
-        }
-    }
-    
-    handleKeydown(e) {
-        switch (e.key) {
-            case 'ArrowLeft':
-                e.preventDefault();
-                this.isRTL ? this.goToNext() : this.goToPrevious();
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                this.isRTL ? this.goToPrevious() : this.goToNext();
-                break;
-            case 'Home':
-                e.preventDefault();
-                this.goToSlide(0);
-                break;
-            case 'End':
-                e.preventDefault();
-                this.goToSlide(this.totalCards - 1);
-                break;
-        }
-    }
-    
-    goToNext() {
-        if (this.isAnimating) return;
-        this.currentIndex = (this.currentIndex + 1) % this.totalCards;
-        this.slideToCurrentIndex();
-    }
-    
-    goToPrevious() {
-        if (this.isAnimating) return;
-        this.currentIndex = (this.currentIndex - 1 + this.totalCards) % this.totalCards;
-        this.slideToCurrentIndex();
-    }
-    
-    goToSlide(index) {
-        if (this.isAnimating || index === this.currentIndex) return;
-        this.currentIndex = index;
-        this.slideToCurrentIndex();
-    }
-    
-
-    createAllCards() {
-        if (!this.track) return;
-        
-        // Create all testimonial cards
-        this.track.innerHTML = '';
-        this.allCards = [];
+        swiperWrapper.innerHTML = '';
         
         testimonialsData.forEach((data, index) => {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'testimonial-card';
-            cardElement.dataset.testimonialIndex = index;
-            cardElement.innerHTML = this.createTestimonialCardHTML(data, index);
-            
-            this.track.appendChild(cardElement);
-            this.allCards.push(cardElement);
+            const slideElement = document.createElement('div');
+            slideElement.className = 'swiper-slide';
+            slideElement.innerHTML = this.createTestimonialHTML(data, index);
+            swiperWrapper.appendChild(slideElement);
         });
     }
     
-    createTestimonialCardHTML(data, index) {
+    createTestimonialHTML(data, index) {
         const starsHTML = Array(data.stars).fill('<i class="fas fa-star"></i>').join('');
-        
+
         return `
             <div class="testimonial-content">
-                <div class="stars">
-                    ${starsHTML}
+                <div class="quote-mark">"</div>
+                <div class="testimonial-header">
+                    <div class="testimonial-left">
+                        <div class="profile-image">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                    </div>
+                    <div class="author-info">
+                        <h3 class="author-name">${data.author}</h3>
+                        <p class="author-event">${data.event}</p>
+                    </div>
                 </div>
-                <p>"${data.text}"</p>
-            </div>
-            <div class="testimonial-author">
-                <div class="author-icon">
-                    <i class="fas fa-user-circle"></i>
-                </div>
-                <div class="author-info">
-                    <h3>${data.author}</h3>
-                    <span>${data.event}</span>
+                <div class="testimonial-content-area">
+                    <div class="stars">
+                        ${starsHTML}
+                    </div>
+                    <p class="testimonial-text">${data.text}</p>
                 </div>
             </div>
         `;
     }
     
-    updateLayout() {
-        const isMobile = window.innerWidth < this.mobileBreakpoint;
-        this.visibleCards = isMobile ? 1 : 3;
-        
-        // For desktop, recreate the card structure if needed
-        if (!isMobile) {
-            this.updateDesktopCards();
-        }
-        
-        // Calculate card width based on container and visible cards
-        const containerWidth = this.container.offsetWidth;
-        const padding = isMobile ? 20 : 112; // Account for navigation buttons on desktop
-        const gap = 20;
-        
-        this.cardWidth = (containerWidth - padding - (gap * (this.visibleCards - 1))) / this.visibleCards;
-        
-        // Set card widths and initial positions
-        this.allCards.forEach((card, index) => {
-            card.style.minWidth = `${this.cardWidth}px`;
-            card.style.maxWidth = `${this.cardWidth}px`;
-            card.style.flex = 'none';
-        });
-        
-        // Position the track to show current testimonial
-        this.slideToCurrentIndex(false); // false = no animation on layout update
-    }
-    
-    slideToCurrentIndex(animate = true) {
-        if (!this.track || this.allCards.length === 0) return;
-        
-        this.isAnimating = animate;
-        
-        // Calculate the offset based on screen size
-        const isMobile = window.innerWidth < this.mobileBreakpoint;
-        let offset = 0;
-        
-        if (isMobile) {
-            // Mobile: slide full card width to show one card at a time
-            offset = this.currentIndex * (this.cardWidth + 20);
-        } else {
-            // Desktop: For 3-card layout, we need to update which cards are visible
-            // Instead of sliding, we'll update the content and positions of cards
-            this.updateDesktopCards();
-            // No offset needed as we're updating card content, not sliding
-            offset = 0;
-        }
-        
-        // For RTL, we need to reverse the direction
-        const translateX = this.isRTL ? offset : -offset;
-        
-        if (animate && !this.prefersReducedMotion) {
-            this.track.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-        } else {
-            this.track.style.transition = 'none';
-        }
-        
-        this.track.style.transform = `translateX(${translateX}px)`;
-        
-        this.updateAriaStates();
-        this.announceSlide();
-        
-        if (animate) {
-            // Reset animation state after transition
-            setTimeout(() => {
-                this.isAnimating = false;
-            }, 500);
-        } else {
-            this.isAnimating = false;
-        }
-    }
-    
-    updateDesktopCards() {
-        // Desktop 3-card layout: Update card contents to show current position + next 2
-        // with proper cycling (e.g., position 3 shows [3, 4, 0], position 4 shows [4, 0, 1])
-        const isMobile = window.innerWidth < this.mobileBreakpoint;
-        if (isMobile || this.allCards.length < 3) return;
-        
-        // Ensure we only have exactly 3 cards for desktop layout
-        while (this.allCards.length > 3) {
-            const cardToRemove = this.allCards.pop();
-            if (cardToRemove && cardToRemove.parentNode) {
-                cardToRemove.parentNode.removeChild(cardToRemove);
-            }
-        }
-        
-        // Add cards if we have less than 3
-        while (this.allCards.length < 3) {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'testimonial-card';
-            this.track.appendChild(cardElement);
-            this.allCards.push(cardElement);
-        }
-        
-        // Update the 3 visible cards with the correct testimonials
-        for (let i = 0; i < 3; i++) {
-            const testimonialIndex = (this.currentIndex + i) % this.totalCards;
-            const data = testimonialsData[testimonialIndex];
+    initSwiper() {
+        this.swiper = new Swiper('.testimonials .mySwiper', {
+            slidesPerView: 3,
+            spaceBetween: 5,
+            direction: 'horizontal',
+            // RTL support
+            allowTouchMove: true,
+            reverseDirection: true, // For RTL
             
-            if (this.allCards[i] && data) {
-                this.allCards[i].dataset.testimonialIndex = testimonialIndex;
-                this.allCards[i].innerHTML = this.createTestimonialCardHTML(data, testimonialIndex);
-            }
-        }
-    }
-    
-    
-    updateAriaStates() {
-        // Since we now dynamically generate cards, get current cards from DOM
-        const currentCards = this.container.querySelectorAll('.testimonial-card');
-        
-        currentCards.forEach((card) => {
-            // All currently displayed cards are visible
-            card.setAttribute('aria-hidden', false);
+            pagination: {
+                el: '.testimonials .swiper-pagination',
+                clickable: true,
+            },
+            
+            // Auto-advance settings
+            autoplay: {
+                delay: 7000,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true,
+            },
+            
+            // Responsive breakpoints
+            breakpoints: {
+                300: {
+                    slidesPerView: 1,
+                    spaceBetween: 10
+                },
+                501: {
+                    slidesPerView: 1,
+                    spaceBetween: 10
+                },
+                769: {
+                    slidesPerView: 1.20,
+                    spaceBetween: 10
+                },
+                1025: {
+                    slidesPerView: 1.15,
+                    spaceBetween: 10
+                },
+            },
+            
+            // Accessibility
+            a11y: {
+                prevSlideMessage: 'המלצה קודמת',
+                nextSlideMessage: 'המלצה הבאה',
+                paginationBulletMessage: 'עבור להמלצה {{index}}',
+            },
+            
+            // Keyboard navigation
+            keyboard: {
+                enabled: true,
+                onlyInViewport: true,
+            },
+            
+            // Mouse wheel support
+            mousewheel: {
+                enabled: false,
+            },
+            
+            // Loop mode
+            loop: true,
+            
+            // Smooth transitions
+            speed: 500,
+            effect: 'slide',
+            
+            // Grab cursor
+            grabCursor: true,
+            
+            // Center slides
+            centeredSlides: false,
+            
+            // Watch for overflow
+            watchOverflow: true,
         });
-    }
-    
-    announceSlide() {
-        const announcement = `המלצה ${this.currentIndex + 1} מתוך ${this.totalCards}`;
-        
-        let liveRegion = this.container.querySelector('.sr-only');
-        if (!liveRegion) {
-            liveRegion = document.createElement('div');
-            liveRegion.className = 'sr-only';
-            liveRegion.setAttribute('aria-live', 'polite');
-            liveRegion.style.cssText = 'position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;';
-            this.container.appendChild(liveRegion);
-        }
-        
-        liveRegion.textContent = announcement;
-    }
-    
-    startAutoplay() {
-        if (!this.autoAdvance) return;
-        this.autoplayTimer = setInterval(() => {
-            this.goToNext();
-        }, this.interval);
-    }
-    
-    pauseAutoplay() {
-        if (this.autoplayTimer) {
-            clearInterval(this.autoplayTimer);
-            this.autoplayTimer = null;
-        }
-    }
-    
-    resumeAutoplay() {
-        if (this.autoAdvance && !this.autoplayTimer) {
-            this.startAutoplay();
-        }
-    }
-    
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
     }
     
     destroy() {
-        this.pauseAutoplay();
-        this.container = null;
-        this.track = null;
+        if (this.swiper) {
+            this.swiper.destroy(true, true);
+            this.swiper = null;
+        }
     }
 }
 
