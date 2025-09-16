@@ -1094,14 +1094,6 @@ p {
         transform: rotate(22deg) translateY(-4px) scale(1.05);
     }
 }
-    right: 6%;
-    font-size: 3.5rem;
-    color: #b19cd9;
-    opacity: 0.15;
-    transform: rotate(12deg);
-    text-shadow: 0 0 15px rgba(177, 156, 217, 0.4);
-    animation: floatNote2 10s ease-in-out infinite 2s;
-}
 
 /* Musical Note Floating Animations */
 @keyframes floatNote1 {
