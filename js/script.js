@@ -586,31 +586,36 @@ const testimonialsData = [
         stars: 5,
         text: "המערכת של בחירת השירים פשוט גאונית! כל האורחים בחרו את השירים שהם הכי אוהבים והאווירה הייתה מדהימה. אלון יודע בדיוק איך לקרוא את הקהל ולהתאים את עצמו למצב הרוח. הקלידים שלו פשוט קסומים!",
         author: "משפחת גולדשטיין",
-        event: "אירוע בקיבוץ"
+        event: "אירוע בקיבוץ",
+        icon: "fas fa-users"
     },
     {
         stars: 5,
         text: "הזמנו את אלון ליום הולדת 65 של אמא. הוא הביא את כל שירי ארץ ישראל הישנים שאמא כל כך אוהבת - שלמה ארצי, יהורם גאון, הדודאים. הכל היה מושלם! האווירה הייתה חמה ונוסטלגית בדיוק כמו שרצינו.",
         author: "משפחת רוזנברג",
-        event: "מסיבת יום הולדת פרטית"
+        event: "מסיבת יום הולדת פרטית",
+        icon: "fas fa-birthday-cake"
     },
     {
         stars: 5,
         text: "זה פשוט לא להאמין איך אלון הצליח ליצור תחושה של להקה שלמה לגמרי לבד! הקלידים, הגיטרה, התופים - הכל בסינכרון מושלם. ובנוסף הוא גם הנחה את הערב בצורה כל כך כייפית. ממליצים בחום!",
         author: "מרים ויעקב אבני",
-        event: "אירוע משפחתי קטן"
+        event: "אירוע משפחתי קטן",
+        icon: "fas fa-heart"
     },
     {
         stars: 5,
         text: "הזמנו את אלון לאירוע השנתי של החברה שלנו. מה שהכי הפתיע אותנו זה איך הוא הצליח לחבר בין הדורות - הצעירים שרו עם המבוגרים באותה התלהבות. המערכת הדיגיטלית שלו מאפשרת לכל אחד לתרום לאווירה. בסוף כולם ביקשו לדעת מתי האירוע הבא!",
         author: "צוות שימור לקוחות, ויזה כאל",
-        event: "אירוע חברה - 60 משתתפים"
+        event: "אירוע חברה - 60 משתתפים",
+        icon: "fas fa-building"
     },
     {
         stars: 5,
         text: "בטקס יום הזיכרון שלנו אלון הביא בדיוק את מה שרצינו - ליווי פסנתר רגיש וחם שהתאים בצורה מושלמת לכל זמר וזמרת בהתאם לסגנון ולאופי הייחודי של כל אחד. הוא הצליח ליצור אווירה מרגשת ומכובדת, ובאותו הזמן, כשזה הגיע לשלב שירי הקהל, הוא הוביל אותנו עם הזמר שלו בצורה מרוממת שחיברה את כולם ויצרה רגש אמיתי של אחדות וזיכרון.",
         author: "קהילת ״בני ברית״, רמת גן",
-        event: "טקס יום הזיכרון"
+        event: "טקס יום הזיכרון",
+        icon: "fas fa-flag"
     }
 ];
 
@@ -645,13 +650,16 @@ class TestimonialsSwiper {
     createTestimonialHTML(data, index) {
         const starsHTML = Array(data.stars).fill('<i class="fas fa-star"></i>').join('');
 
+        // Use the icon from the testimonial data object, fallback to music icon if not provided
+        const iconClass = data.icon || 'fas fa-music';
+
         return `
             <div class="testimonial-content">
                 <div class="quote-mark">"</div>
                 <div class="testimonial-header">
                     <div class="testimonial-left">
                         <div class="profile-image">
-                            <i class="fas fa-user-circle"></i>
+                            <i class="${iconClass}"></i>
                         </div>
                     </div>
                     <div class="author-info">
