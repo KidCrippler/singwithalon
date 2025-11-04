@@ -2,6 +2,7 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import VideoGallery from './components/VideoGallery';
 import ContactForm from './components/ContactForm';
+import Testimonials from './components/Testimonials';
 
 function App() {
   return (
@@ -144,20 +145,7 @@ function App() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="testimonials">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">מה אומרים עליי</h2>
-            <p className="section-subtitle">המלצות מלקוחות מרוצים</p>
-          </div>
-          <div className="swiper-container mySwiper">
-            <div className="swiper-wrapper">
-              {/* Testimonials will be dynamically generated here */}
-            </div>
-            <div className="swiper-pagination"></div>
-          </div>
-        </div>
-      </section>
+      <Testimonials />
 
       {/* Contact Section */}
       <ContactForm />
