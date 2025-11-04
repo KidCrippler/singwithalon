@@ -1,6 +1,7 @@
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import VideoGallery from './components/VideoGallery';
+import ContactForm from './components/ContactForm';
 
 function App() {
   return (
@@ -159,77 +160,7 @@ function App() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="contact">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">בואו נתחיל לתכנן את האירוע שלכם</h2>
-            <p className="section-subtitle">צרו איתי קשר ונבנה יחד את החוויה המוזיקלית המושלמת עבורכם</p>
-          </div>
-          <div className="contact-content">
-            <div className="contact-info">
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <i className="fas fa-phone"></i>
-                </div>
-                <div className="contact-details">
-                  <h3>טלפון</h3>
-                  <p><a href="tel:+972528962110" dir="ltr">052-896-2110</a></p>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <i className="fas fa-envelope"></i>
-                </div>
-                <div className="contact-details">
-                  <h3>אימייל</h3>
-                  <p><a href="mailto:contact@singwithalon.com" dir="ltr">contact@singwithalon.com</a></p>
-                </div>
-              </div>
-
-              <div className="contact-item">
-                <div className="contact-icon">
-                  <i className="fab fa-whatsapp"></i>
-                </div>
-                <div className="contact-details">
-                  <h3>WhatsApp</h3>
-                  <p><a href="https://wa.me/972528962110" dir="ltr">052-896-2110</a></p>
-                </div>
-              </div>
-            </div>
-
-            <div className="contact-form">
-              <form id="contact-form">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="name">שם מלא</label>
-                    <input type="text" id="name" name="name" required />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="phone">טלפון</label>
-                    <input type="tel" id="phone" name="phone" required />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="date">תאריך מועדף</label>
-                  <input type="date" id="date" name="date" required />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="message">פרטים נוספים על האירוע</label>
-                  <textarea id="message" name="message" rows="4" placeholder="ספרו לי קצת על האירוע - מספר אורחים, מיקום, סוג האירוע, שירים מיוחדים שתרצו לשמוע..."></textarea>
-                </div>
-
-                <button type="submit" className="btn btn-primary" aria-label="שלח הודעה">
-                  <i className="fab fa-whatsapp"></i>
-                  שלח הודעת WhatsApp
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ContactForm />
 
       {/* Footer */}
       <footer className="footer">
