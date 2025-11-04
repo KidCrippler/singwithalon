@@ -1,5 +1,6 @@
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
+import VideoGallery from './components/VideoGallery';
 
 function App() {
   return (
@@ -68,92 +69,7 @@ function App() {
         </div>
       </section>
 
-      {/* Videos Section */}
-      <section id="videos" className="videos">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">גלריית וידאו</h2>
-            <p className="section-subtitle">צפו בביצועים שלי וקבלו טעימה מהמופעים</p>
-          </div>
-          <div className="videos-grid">
-            <div className="video-card">
-              <div className="video-thumbnail">
-                <picture>
-                  <source srcSet="/assets/rony_poster.webp" type="image/webp" />
-                  <img src="/assets/rony_poster.webp" alt="שירי רוק פופ" width="640" height="352" loading="lazy" />
-                </picture>
-                <div className="play-overlay">
-                  <button className="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/rony.mp4" aria-label="נגן וידאו - שירי רוק פופ">
-                    <i className="fas fa-play"></i>
-                  </button>
-                </div>
-                <div className="video-duration">1:11</div>
-              </div>
-              <div className="video-info">
-                <h3>אנרגיה ישראלית</h3>
-                <p>״רוני״ של גזוז - שמח ומשמח!</p>
-              </div>
-            </div>
-
-            <div className="video-card">
-              <div className="video-thumbnail">
-                <picture>
-                  <source srcSet="/assets/jam_toren_poster.webp" type="image/webp" />
-                  <img src="/assets/jam_toren_poster.webp" alt="ביצוע אקוסטי" width="640" height="304" loading="lazy" />
-                </picture>
-                <div className="play-overlay">
-                  <button className="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/jam_toren.mp4" aria-label="נגן וידאו - ביצוע אקוסטי">
-                    <i className="fas fa-play"></i>
-                  </button>
-                </div>
-                <div className="video-duration">1:37</div>
-              </div>
-              <div className="video-info">
-                <h3>ביצוע אקוסטי</h3>
-                <p>לבן על לבן - מג׳מג׳ם ספונטנית עם דן תורן ז״ל</p>
-              </div>
-            </div>
-
-            <div className="video-card">
-              <div className="video-thumbnail">
-                <picture>
-                  <source srcSet="/assets/borot_poster.webp" type="image/webp" />
-                  <img src="/assets/borot_poster.webp" alt="שירי ארץ ישראל" width="1280" height="720" loading="lazy" />
-                </picture>
-                <div className="play-overlay">
-                  <button className="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/borot.mp4" aria-label="נגן וידאו - שירי ארץ ישראל">
-                    <i className="fas fa-play"></i>
-                  </button>
-                </div>
-                <div className="video-duration">3:16</div>
-              </div>
-              <div className="video-info">
-                <h3>שירי ארץ ישראל</h3>
-                <p>אל בורות המים - קלאסיקה של נעמי שמר</p>
-              </div>
-            </div>
-
-            <div className="video-card">
-              <div className="video-thumbnail">
-                <picture>
-                  <source srcSet="/assets/kvar_avar_poster.webp" type="image/webp" />
-                  <img src="/assets/kvar_avar_poster.webp" alt="שירי זיכרון" width="848" height="478" loading="lazy" />
-                </picture>
-                <div className="play-overlay">
-                  <button className="play-btn" data-video="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4" aria-label="נגן וידאו - שירי זיכרון">
-                    <i className="fas fa-play"></i>
-                  </button>
-                </div>
-                <div className="video-duration">5:07</div>
-              </div>
-              <div className="video-info">
-                <h3>שירי זיכרון</h3>
-                <p>קאבר גיטרה - מה רצינו להגיד (שלמה ארצי)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <VideoGallery />
 
       {/* Services Section */}
       <section id="services" className="services">
