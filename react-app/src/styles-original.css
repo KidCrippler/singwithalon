@@ -187,7 +187,7 @@ p {
     overflow: hidden;
 }
 
-/* Multi-Layer Parallax System */
+/* Static Background Layers */
 .parallax-layer {
     position: absolute;
     top: 0;
@@ -195,29 +195,28 @@ p {
     right: 0;
     bottom: 0;
     background-size: cover;
-    background-position: center;
+    background-position: center center;
     background-repeat: no-repeat;
-    will-change: transform;
     pointer-events: none;
 }
 
-/* Parallax Background Images with Purple Theme Integration */
+/* Static Background Images with Purple Theme Integration */
 .parallax-stars {
-    background-image: url('../assets/parallax/stars.png');
+    background-image: url('/assets/parallax/stars.png');
     z-index: 1;
     filter: saturate(1.2) brightness(0.8);
     opacity: 0.6;
 }
 
 .parallax-mountains-behind {
-    background-image: url('../assets/parallax/mountains_behind.png');
+    background-image: url('/assets/parallax/mountains_behind.png');
     z-index: 2;
     filter: saturate(0.9) brightness(0.7) contrast(1.1);
     opacity: 0.8;
 }
 
 .parallax-moon {
-    background-image: url('../assets/parallax/moon.png');
+    background-image: url('/assets/parallax/moon.png');
     background-size: auto;
     background-position: 20% 30%; /* Position moon behind Hebrew title */
     z-index: 3;
@@ -226,7 +225,7 @@ p {
 }
 
 .parallax-mountains-front {
-    background-image: url('../assets/parallax/mountains_front.png');
+    background-image: url('/assets/parallax/mountains_front.png');
     z-index: 4;
     filter: saturate(1.1) brightness(0.6) contrast(1.2);
     opacity: 0.9;
@@ -316,9 +315,7 @@ p {
     }
 }
 
-/* All parallax layer definitions are above in the main hero section */
-
-/* Old parallax elements removed - now using multi-layer image-based parallax */
+/* All background layer definitions are above in the main hero section */
 
 .hero-overlay {
     position: absolute;
@@ -327,17 +324,15 @@ p {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
-    z-index: 5; /* Above all parallax layers */
-    will-change: transform; /* Optimize for smooth parallax */
+    z-index: 5; /* Above all background layers */
 }
 
 .hero-content {
     position: relative;
-    z-index: 6; /* Above overlay and all parallax layers */
+    z-index: 6; /* Above overlay and all background layers */
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    transform: translateZ(0); /* Create a new stacking context for smoother parallax */
     padding: 100px 20px 50px;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2142,7 +2137,7 @@ p {
         bottom: 10px; /* Move scroll indicator down on mobile to avoid video overlap */
     }
 
-    /* Optimize parallax for mobile performance */
+    /* Optimize background layers for mobile performance */
     .parallax-layer {
         /* Disable complex filters on mobile for better performance */
         filter: none;
@@ -2289,18 +2284,8 @@ p {
     pointer-events: none;
 }
 
-/* Parallax Performance Optimization */
-body:not(.parallax-active) .parallax-layer {
-    transform: none !important;
-    will-change: auto;
-}
-
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-    .parallax-layer {
-        transform: none !important;
-        filter: none !important;
-    }
     
     * {
         animation-duration: 0.01ms !important;
