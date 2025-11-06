@@ -1,76 +1,17 @@
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
+import About from './components/About';
 import VideoGallery from './components/VideoGallery';
 import ContactForm from './components/ContactForm';
 import Testimonials from './components/Testimonials';
+import Footer from './components/Footer';
 
 function App() {
   return (
     <>
       <Navigation />
       <Hero />
-
-      {/* About Section */}
-      <section id="about" className="about">
-        <div className="container">
-          <div className="section-header">
-            <h2 className="section-title">אודות אלון</h2>
-            <p className="section-subtitle">מוזיקאי, נגן וזמר מקצועי עם תשוקה למוזיקה ישראלית</p>
-          </div>
-          <div className="about-content">
-            <div className="about-text">
-              {/* Mobile image - shows only on mobile devices */}
-              <div className="about-image-mobile">
-                <img src="/assets/about_en.webp" alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img-mobile" width="1076" height="1020" loading="lazy" />
-              </div>
-              <div className="about-story">
-                <h3>הסיפור שלי</h3>
-                <p>
-                  לפני הכל אני קלידן המתמחה בהובלת שירה בציבור, אבל גם נגן גיטרה וזמר עם נסיון רב. האהבה האמיתית שלי היא שירי ארץ ישראל הישנה והטובה של פעם
-                  שמביאים את כולם לשיר יחד.
-                </p>
-                <p>
-                  אני מאמין שמוזיקה היא השפה האוניברסלית שמחברת בין הדורות. בכל <a href="#services">מופע שלי</a>, אני מוביל שירה בציבור שמביאה שמחה, נוסטלגיה ותחושת קהילה
-                  שמאחדת את כל המשתתפים. <a href="#videos">צפו בסרטונים שלי</a> כדי לראות את האווירה המיוחדת שנוצרת.
-                </p>
-              </div>
-              <div className="about-highlights">
-                <div className="highlight-item">
-                  <div className="highlight-icon">
-                    <i className="fas fa-compact-disc"></i>
-                  </div>
-                  <div className="highlight-content">
-                    <h4>מעל 200 מופעים</h4>
-                    <p>ניסיון רב בביצועים בכל סוגי האירועים</p>
-                  </div>
-                </div>
-                <div className="highlight-item">
-                  <div className="highlight-icon">
-                    <i className="fas fa-mobile-alt"></i>
-                  </div>
-                  <div className="highlight-content">
-                    <h4>מערכת בחירה אינטראקטיבית</h4>
-                    <p>הקהל בוחר בזמן אמת מתוך מאות שירים ברפרטואר</p>
-                  </div>
-                </div>
-                <div className="highlight-item">
-                  <div className="highlight-icon">
-                    <i className="fas fa-music"></i>
-                  </div>
-                  <div className="highlight-content">
-                    <h4>מוביל שירה בציבור</h4>
-                    <p>מיקרופונים אלחוטיים, הקרנת מילים וליווי מוזיקלי מלא - כולם שרים יחד!</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="about-image">
-              <img src="/assets/about_en.webp" alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img" width="1076" height="1020" loading="lazy" />
-            </div>
-          </div>
-        </div>
-      </section>
-
+      <About />
       <VideoGallery />
 
       {/* Services Section */}
@@ -149,50 +90,7 @@ function App() {
 
       {/* Contact Section */}
       <ContactForm />
-
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-logo">
-              <picture>
-                <source srcSet="/assets/logo.webp" type="image/webp" />
-                <img src="/assets/logo.webp" alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
-              </picture>
-              <p>קלידן, גיטריסט וזמר - שירי ארץ ישראל הישנה והטובה עם מערכת בחירה אינטראקטיבית</p>
-            </div>
-            <div className="footer-links">
-              <h4>קישורים מהירים</h4>
-              <ul>
-                <li><a href="#home">בית</a></li>
-                <li><a href="#about">אודות</a></li>
-                <li><a href="#videos">וידאו</a></li>
-                <li><a href="#services">שירותים</a></li>
-                <li><a href="#contact">צור קשר</a></li>
-              </ul>
-            </div>
-            <div className="footer-contact">
-              <h4>צור קשר</h4>
-              <p dir="ltr">052-896-2110</p>
-              <p dir="ltr">contact@singwithalon.com</p>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <p>&copy; 2025 שרים עם אלון כהן. כל הזכויות שמורות.</p>
-          </div>
-        </div>
-      </footer>
-
-      {/* Video Modal */}
-      <div id="video-modal" className="video-modal">
-        <div className="video-modal-content">
-          <button className="video-modal-close" aria-label="סגור חלון וידאו">&times;</button>
-          <video id="modal-video" controls>
-            <source src="" type="video/mp4" />
-            <track kind="captions" src="#" srcLang="he" label="עברית" default />
-          </video>
-        </div>
-      </div>
+      <Footer />
 
       {/* Chatbot Widget */}
       <div id="chatbot-widget" className="chatbot-widget">
