@@ -502,6 +502,22 @@
     </script>
 
     <!-- ============================= -->
+    <!-- Google Fonts - Heebo & Secular One -->
+    <!-- ============================= -->
+    <style>
+        /* Import fonts directly in critical CSS - eliminates preload warnings */
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap');
+    </style>
+
+    <!-- Optimized font loading strategy -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Load additional font weights lazily after critical path -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap"></noscript>
+
+    <!-- ============================= -->
     <!-- Font Awesome Icons -->
     <!-- ============================= -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
