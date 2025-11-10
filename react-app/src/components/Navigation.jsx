@@ -81,7 +81,7 @@ function Navigation() {
     <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`} id="navbar">
       <div className="nav-container">
         <div className="nav-logo">
-          <img src="/assets/logo_png.webp" alt="שרים עם אלון כהן" className="logo" width="3000" height="2633" />
+          <img src={`${import.meta.env.BASE_URL}assets/logo_png.webp`} alt="שרים עם אלון כהן" className="logo" width="3000" height="2633" />
         </div>
 
         <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`} id="nav-menu">

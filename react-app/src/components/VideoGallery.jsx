@@ -8,7 +8,7 @@ function VideoGallery() {
 
   const videos = [
     {
-      poster: '/assets/rony_poster.webp',
+      poster: `${import.meta.env.BASE_URL}assets/rony_poster.webp`,
       alt: 'שירי רוק פופ',
       width: 640,
       height: 352,
@@ -19,7 +19,7 @@ function VideoGallery() {
       ariaLabel: 'נגן וידאו - שירי רוק פופ'
     },
     {
-      poster: '/assets/jam_toren_poster.webp',
+      poster: `${import.meta.env.BASE_URL}assets/jam_toren_poster.webp`,
       alt: 'ביצוע אקוסטי',
       width: 640,
       height: 304,
@@ -30,7 +30,7 @@ function VideoGallery() {
       ariaLabel: 'נגן וידאו - ביצוע אקוסטי'
     },
     {
-      poster: '/assets/borot_poster.webp',
+      poster: `${import.meta.env.BASE_URL}assets/borot_poster.webp`,
       alt: 'שירי ארץ ישראל',
       width: 1280,
       height: 720,
@@ -41,7 +41,7 @@ function VideoGallery() {
       ariaLabel: 'נגן וידאו - שירי ארץ ישראל'
     },
     {
-      poster: '/assets/kvar_avar_poster.webp',
+      poster: `${import.meta.env.BASE_URL}assets/kvar_avar_poster.webp`,
       alt: 'שירי זיכרון',
       width: 848,
       height: 478,

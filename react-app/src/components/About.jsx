@@ -10,7 +10,7 @@ function About() {
           <div className="about-text">
             {/* Mobile image - shows only on mobile devices */}
             <div className="about-image-mobile">
-              <img src="/assets/about_en.webp" alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img-mobile" width="1076" height="1020" loading="lazy" />
+              <img src={`${import.meta.env.BASE_URL}assets/about_en.webp`} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img-mobile" width="1076" height="1020" loading="lazy" />
             </div>
             <div className="about-story">
               <h3>הסיפור שלי</h3>
@@ -54,7 +54,7 @@ function About() {
             </div>
           </div>
           <div className="about-image">
-            <img src="/assets/about_en.webp" alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img" width="1076" height="1020" loading="lazy" />
+            <img src={`${import.meta.env.BASE_URL}assets/about_en.webp`} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img" width="1076" height="1020" loading="lazy" />
           </div>
         </div>
       </div>

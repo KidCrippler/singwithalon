@@ -5,8 +5,8 @@ function Footer() {
         <div className="footer-content">
           <div className="footer-logo">
             <picture>
-              <source srcSet="/assets/logo.webp" type="image/webp" />
-              <img src="/assets/logo.webp" alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
+              <source srcSet={`${import.meta.env.BASE_URL}assets/logo.webp`} type="image/webp" />
+              <img src={`${import.meta.env.BASE_URL}assets/logo.webp`} alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
             </picture>
             <p>קלידן, גיטריסט וזמר - שירי ארץ ישראל הישנה והטובה עם מערכת בחירה אינטראקטיבית</p>
           </div>
