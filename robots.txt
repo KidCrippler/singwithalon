@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://singwithalon.com/sitemap.xml
