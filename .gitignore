@@ -19,8 +19,20 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
-# Node modules (if ever needed)
+# Node modules
 node_modules/
+react-app/node_modules/
+
+# React build output
+react-app/dist/
+react-app/.vite-react-ssg-temp/
+
+# Build artifacts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Temporary files
 *.tmp

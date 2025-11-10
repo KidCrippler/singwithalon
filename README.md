@@ -4,91 +4,128 @@
 
 ## תכונות
 
+- **React 19** - אפליקציית React מודרנית עם Vite
 - **עיצוב RTL מלא** - תמיכה בעברית מ-HTML ועד CSS
 - **עיצוב רספונסיבי** - נראה מושלם בכל המכשירים
-- **גלריית וידאו** - הצגה מקצועית של קטעי וידאו
-- **טופס יצירת קשר** - עם אימות שדות בעברית
+- **גלריית וידאו** - הצגה מקצועית של קטעי וידאו עם modal
+- **טופס יצירת קשר** - אינטגרציה עם WhatsApp
 - **אנימציות חלקות** - חוויית משתמש מתקדמת
+- **Prerendering אוטומטי** - SEO מושלם עם Puppeteer
 - **ביצועים מותאמים** - טעינה מהירה ואופטימיזציה
 
 ## מבנה הקבצים
 
 ```
 singwithalon/
-├── index.html          # עמוד הבית הראשי
-├── css/
-│   └── styles.css      # עיצוב מלא עם תמיכה RTL
-├── js/
-│   └── script.js       # פונקציונליות אינטראקטיבית
-├── assets/
-│   ├── logo.jpg        # הלוגו שלך
-│   └── [וידאו/תמונות נוספות]
-└── README.md          # הקובץ הזה
+├── react-app/              # אפליקציית React
+│   ├── src/
+│   │   ├── components/    # קומפוננטות React
+│   │   ├── App.jsx       # קומפוננטת האפליקציה הראשית
+│   │   └── main.jsx      # נקודת הכניסה
+│   ├── public/
+│   │   ├── assets/       # תמונות ומדיה
+│   │   ├── CNAME        # הגדרת דומיין מותאם
+│   │   ├── robots.txt   # SEO
+│   │   └── sitemap.xml  # SEO
+│   ├── scripts/
+│   │   └── prerender.js # סקריפט prerendering
+│   ├── package.json
+│   └── vite.config.js
+├── video/                 # דפי וידאו נפרדים (SEO)
+├── CLAUDE.md             # הוראות למערכת Claude Code
+└── README.md            # הקובץ הזה
 ```
 
-## הגדרת תוכן
+## פיתוח מקומי
 
-### שלב 1: הוספת וידאו וכן תמונות
+### התקנה ראשונית
 
-1. העבר את הוידאו המקצועי שלך (2 דקות) לתיקייה `assets/` ושנה את השם ל-`main-video.mp4`
-2. הוסף תמונות נוספות לפי הצורך:
-   - `alon-performance.jpg` - תמונה מביצוע
-   - `video-thumb-1.jpg` עד `video-thumb-4.jpg` - תמונות ממוזערות לוידאו
-   - `testimonial-1.jpg` עד `testimonial-3.jpg` - תמונות המליצים
+```bash
+cd react-app
+npm install --legacy-peer-deps
+```
 
-### שלב 2: עדכון פרטי יצירת קשר
+### הרצת שרת פיתוח
 
-ערוך את הקובץ `index.html` ועדכן:
-- מספר טלפון (כרגע: 050-123-4567)
-- כתובת אימייל (כרגע: alon@singwithalon.com)
-- קישורי רשתות חברתיות
+```bash
+cd react-app
+npm run dev
+```
 
-### שלב 3: התאמת התוכן
+האתר יהיה זמין ב-`http://localhost:5173`
 
-- עדכן את סעיף "אודות אלון" עם הסיפור האמיתי שלך
-- הוסף המלצות אמיתיות מלקוחות
-- התאם את סוגי השירותים לפי מה שאתה מציע
+### בניית האפליקציה
 
-## הרצה מקומית
+```bash
+cd react-app
+npm run build
+```
 
-1. פתח את הקובץ `index.html` בדפדפן
-2. או השתמש בשרת מקומי פשוט:
-   ```bash
-   python3 -m http.server 8000
-   ```
-   ואז גש ל-`http://localhost:8000`
+הפקודה תייצר:
+1. Build של Vite → תיקיית `dist/`
+2. Prerendering אוטומטי עם Puppeteer → `dist/index.html` מלא בתוכן
 
-## פרסום באינטרנט
+## פרסום ל-GitHub Pages
 
-### אפשרות 1: GitHub Pages (חינם)
-1. צור repository חדש ב-GitHub
-2. העלה את כל הקבצים
-3. הפעל GitHub Pages בהגדרות ה-repository
+האתר מפורסם אוטומטית ל-GitHub Pages בדומיין המותאם `singwithalon.com`.
 
-### אפשרות 2: Netlify (חינם)
-1. גש ל-netlify.com
-2. גרור את התיקייה לאתר
-3. קבל URL מיידי
+### פרסום לפרודקשן
 
-### אפשרות 3: Vercel (חינם)
-1. התקן Vercel CLI: `npm i -g vercel`
-2. רוץ `vercel` בתיקייה
-3. עקוב אחר ההוראות
+```bash
+cd react-app
+npm run deploy
+```
 
-## תכונות מתקדמות
+הפקודה תבצע:
+1. בנייה מלאה עם prerendering
+2. פרסום לענף `gh-pages`
+3. האתר יתעדכן ב-`singwithalon.com` תוך דקה-שתיים
 
-- **PWA Ready** - האתר מוכן להפיכה לאפליקציה
-- **SEO Optimized** - מותאם למנועי חיפוש
-- **Accessibility** - נגיש לאנשים עם מוגבלויות
-- **Performance** - טעינה מהירה עם lazy loading
+### הגדרות GitHub Pages
 
-## תמיכה טכנית
+בהגדרות ה-repository:
+- **Source**: Deploy from branch `gh-pages`
+- **Folder**: `/ (root)`
+- **Custom domain**: `singwithalon.com`
+
+### הגדרות DNS (Cloudflare)
+
+רשומות DNS:
+- `A` records ל-GitHub Pages IPs (DNS-only, לא Proxied)
+- `CNAME` record: `www` → `kidcrippler.github.io`
+
+## עריכת תוכן
+
+### עדכון טקסטים
+
+כל התוכן נמצא בקומפוננטות React ב-`react-app/src/components/`:
+- `Hero.jsx` - סקשן ראשי
+- `About.jsx` - סקשן אודות
+- `VideoGallery.jsx` - גלריית וידאו
+- `Services.jsx` - שירותים
+- `Testimonials.jsx` - המלצות
+- `ContactForm.jsx` - טופס יצירת קשר
+- `Footer.jsx` - פוטר
+
+### הוספת תמונות
+
+הוסף תמונות ל-`react-app/public/assets/` ועדכן את הקומפוננטות בהתאם.
+
+**חשוב:** השתמש ב-`import.meta.env.BASE_URL` לנתיבי תמונות:
+```jsx
+<img src={`${import.meta.env.BASE_URL}assets/my-image.webp`} />
+```
+
+## תכונות טכניות
 
 האתר נבנה עם:
-- HTML5 סמנטי
-- CSS3 מודרני עם Flexbox ו-Grid
-- JavaScript Vanilla (ללא ספריות חיצוניות)
-- גופן Heebo עבור עברית
+- **React 19.1** - ספריית UI מודרנית
+- **Vite 7** - כלי build מהיר
+- **Tailwind CSS** - עיצוב utility-first
+- **Embla Carousel** - קרוסלת המלצות
+- **Puppeteer** - prerendering לSEO
+- **GitHub Pages** - אירוח סטטי
+- **גופנים**: Heebo + Secular One עבור עברית
 
 ## רישיון
 
