@@ -1,3 +1,4 @@
+import { Routes, Route } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import About from './components/About';
@@ -7,8 +8,10 @@ import ContactForm from './components/ContactForm';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
+import VideoPage from './components/VideoPage';
 
-function App() {
+// HomePage component - all main sections
+function HomePage() {
   return (
     <>
       <Navigation />
@@ -17,13 +20,23 @@ function App() {
       <VideoGallery />
       <Services />
       <Testimonials />
-
-      {/* Contact Section */}
       <ContactForm />
       <Footer />
       <Chatbot />
     </>
-  )
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      {/* Main homepage */}
+      <Route path="/" element={<HomePage />} />
+
+      {/* Video pages */}
+      <Route path="/video/:videoId" element={<VideoPage />} />
+    </Routes>
+  );
 }
 
 export default App

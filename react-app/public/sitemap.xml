@@ -3,44 +3,44 @@
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://singwithalon.com/</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/" />
   </url>
   <url>
-    <loc>https://singwithalon.com/video/tadmit.html</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <loc>https://singwithalon.com/video/tadmit</loc>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/tadmit.html" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/tadmit" />
   </url>
   <url>
-    <loc>https://singwithalon.com/video/rony.html</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <loc>https://singwithalon.com/video/rony</loc>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/rony.html" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/rony" />
   </url>
   <url>
-    <loc>https://singwithalon.com/video/jam-toren.html</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <loc>https://singwithalon.com/video/jam-toren</loc>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/jam-toren.html" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/jam-toren" />
   </url>
   <url>
-    <loc>https://singwithalon.com/video/borot.html</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <loc>https://singwithalon.com/video/borot</loc>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/borot.html" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/borot" />
   </url>
   <url>
-    <loc>https://singwithalon.com/video/kvar-avar.html</loc>
-    <lastmod>2025-09-01T12:00:00+00:00</lastmod>
+    <loc>https://singwithalon.com/video/kvar-avar</loc>
+    <lastmod>2025-11-11T12:00:00+00:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/kvar-avar.html" />
+    <xhtml:link rel="alternate" hreflang="he" href="https://singwithalon.com/video/kvar-avar" />
   </url>
 </urlset>
