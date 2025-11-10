@@ -1,3 +1,5 @@
+import tadmitPoster from '../assets/tadmit_poster.webp';
+
 function Hero() {
 
   // Scroll indicator click handler
@@ -78,7 +80,7 @@ function Hero() {
               controls
               preload="none"
               loading="lazy"
-              poster={`${import.meta.env.BASE_URL}assets/tadmit_poster.webp`}
+              poster={tadmitPoster}
               width="1920"
               height="1080">
               <source src="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4" type="video/mp4" />

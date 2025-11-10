@@ -1,3 +1,5 @@
+import logoWebp from '../assets/logo.webp';
+
 function Footer() {
   return (
     <footer className="footer">
@@ -5,8 +7,8 @@ function Footer() {
         <div className="footer-content">
           <div className="footer-logo">
             <picture>
-              <source srcSet={`${import.meta.env.BASE_URL}assets/logo.webp`} type="image/webp" />
-              <img src={`${import.meta.env.BASE_URL}assets/logo.webp`} alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
+              <source srcSet={logoWebp} type="image/webp" />
+              <img src={logoWebp} alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
             </picture>
             <p>קלידן, גיטריסט וזמר - שירי ארץ ישראל הישנה והטובה עם מערכת בחירה אינטראקטיבית</p>
           </div>
