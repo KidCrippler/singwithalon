@@ -29,21 +29,58 @@ function Hero() {
     }
   };
 
+  // Generate particles for the orchestra background
+  const generateParticles = (count, layer) => {
+    const particles = [];
+    const symbols = ['♪', '♫', '♬', '●', '○'];
+
+    for (let i = 0; i < count; i++) {
+      const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+      const size = Math.random() * 1.5 + 0.5; // 0.5rem to 2rem
+      const left = Math.random() * 100; // 0% to 100%
+      const top = Math.random() * 100; // 0% to 100%
+      const duration = Math.random() * 15 + 10; // 10s to 25s
+      const delay = Math.random() * 5; // 0s to 5s
+      const glowDuration = Math.random() * 4 + 3; // 3s to 7s
+      const glowDelay = Math.random() * 3; // 0s to 3s
+
+      particles.push(
+        <div
+          key={`${layer}-${i}`}
+          className={`particle particle-${layer}`}
+          style={{
+            left: `${left}%`,
+            top: `${top}%`,
+            fontSize: `${size}rem`,
+            animationDuration: `${duration}s, ${glowDuration}s`,
+            animationDelay: `${delay}s, ${glowDelay}s`,
+          }}
+        >
+          {symbol}
+        </div>
+      );
+    }
+    return particles;
+  };
+
   return (
     <section id="home" className="hero">
-      {/* Static Background Layers */}
-      <div className="parallax-layer parallax-stars"></div>
-      <div className="parallax-layer parallax-mountains-behind"></div>
-      <div className="parallax-layer parallax-moon"></div>
-      <div className="parallax-layer parallax-mountains-front"></div>
+      {/* Particle Orchestra Background - 3 Layers for Depth */}
+      <div className="particle-orchestra">
+        {/* Background layer: slow, subtle */}
+        <div className="particle-layer particle-layer-back">
+          {generateParticles(35, 'back')}
+        </div>
 
-      {/* Musical Note Animations */}
-      <div className="musical-notes-layer">
-        <div className="floating-note note-1">♪</div>
-        <div className="floating-note note-2">♫</div>
-        <div className="floating-note note-3">♬</div>
-        <div className="floating-note note-4">♪</div>
-        <div className="floating-note note-5">♫</div>
+        {/* Mid layer: medium speed */}
+        <div className="particle-layer particle-layer-mid">
+          {generateParticles(50, 'mid')}
+        </div>
+
+        {/* Foreground layer: faster, brighter */}
+        <div className="particle-layer particle-layer-front">
+          {generateParticles(35, 'front')}
+        </div>
       </div>
 
       <div className="hero-overlay"></div>
