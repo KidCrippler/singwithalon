@@ -96,6 +96,11 @@
     <link rel="dns-prefetch" href="//api.whatsapp.com">
 
     <!-- ============================= -->
+    <!-- Preload Critical Images for LCP -->
+    <!-- ============================= -->
+    <link rel="preload" as="image" href="/assets/tadmit_poster.webp" fetchpriority="high">
+
+    <!-- ============================= -->
     <!-- Favicon -->
     <!-- ============================= -->
     <link rel="icon" type="image/webp" href="/assets/logo.webp">
@@ -502,24 +507,39 @@
     <!-- ============================= -->
     <!-- Google Fonts - Heebo & Secular One -->
     <!-- ============================= -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap');
-        /* Import fonts directly in critical CSS - eliminates preload warnings */
-    </style>
-
-    <!-- Optimized font loading strategy -->
+    <!-- Preconnect for faster DNS resolution -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 
+    <!-- Critical fonts loaded asynchronously to prevent render blocking -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&amp;family=Secular+One&amp;display=swap" media="all" onload="this.media='all'">
+    
+    <!-- Fallback for no-JS -->
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap">
+    </noscript>
+
     <!-- Load additional font weights lazily after critical path -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&amp;display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap"></noscript>
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap">
+    </noscript>
 
     <!-- ============================= -->
     <!-- Font Awesome Icons -->
     <!-- ============================= -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <script type="module" crossorigin="" src="/assets/index-CJbhQfVW.js"></script>
+    <!-- Load Font Awesome asynchronously to prevent render blocking -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <noscript>
+      <link rel="stylesheet" 
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+            crossorigin="anonymous" 
+            referrerpolicy="no-referrer">
+    </noscript>
+  <script type="module" crossorigin="" src="/assets/index-DpFgIK96.js"></script>
+  <link rel="modulepreload" crossorigin="" href="/assets/vendor-react-Bzgz95E1.js">
+  <link rel="modulepreload" crossorigin="" href="/assets/vendor-carousel-CV1yO13k.js">
+  <link rel="modulepreload" crossorigin="" href="/assets/vendor-router-zB-7-_56.js">
   <link rel="stylesheet" crossorigin="" href="/assets/index-Bi5P-BNy.css">
 <link rel="canonical" href="https://singwithalon.com/video/kvar-avar" data-rh="true"><meta name="description" content="קאבר גיטרה מרגש לשיר &quot;מה רצינו להגיד&quot; (כבר עבר) של שלמה ארצי" data-rh="true"><meta name="keywords" content="שלמה ארצי, כבר עבר, קאבר, אלון כהן, מוזיקה ישראלית, וידאו" data-rh="true"><meta name="author" content="אלון כהן" data-rh="true"><meta name="robots" content="index, follow" data-rh="true"><meta property="og:title" content="כבר עבר - שלמה ארצי" data-rh="true"><meta property="og:description" content="קאבר גיטרה מרגש לשיר &quot;מה רצינו להגיד&quot; (כבר עבר) של שלמה ארצי" data-rh="true"><meta property="og:type" content="video.other" data-rh="true"><meta property="og:url" content="https://singwithalon.com/video/kvar-avar" data-rh="true"><meta property="og:image" content="https://singwithalon.com/assets/kvar_avar_poster.webp" data-rh="true"><meta property="og:video" content="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4" data-rh="true"><meta property="og:locale" content="he_IL" data-rh="true"><meta property="og:site_name" content="שרים עם אלון כהן" data-rh="true"><meta name="twitter:card" content="player" data-rh="true"><meta name="twitter:title" content="כבר עבר - שלמה ארצי" data-rh="true"><meta name="twitter:description" content="קאבר גיטרה מרגש לשיר &quot;מה רצינו להגיד&quot; (כבר עבר) של שלמה ארצי" data-rh="true"><meta name="twitter:image" content="https://singwithalon.com/assets/kvar_avar_poster.webp" data-rh="true"><meta name="twitter:player" content="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4" data-rh="true"><script type="application/ld+json" data-rh="true">{"@context":"https://schema.org","@type":"VideoObject","name":"כבר עבר - שלמה ארצי","description":"קאבר גיטרה מרגש לשיר \"מה רצינו להגיד\" (כבר עבר) של שלמה ארצי","thumbnailUrl":"https://singwithalon.com/assets/kvar_avar_poster.webp","contentUrl":"https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/kvar_avar.mp4","embedUrl":"https://singwithalon.com/video/kvar-avar","duration":"PT5M7S","genre":"שירי זיכרון","inLanguage":"he","creator":{"@type":"Person","name":"אלון כהן","url":"https://singwithalon.com"},"publisher":{"@type":"Organization","name":"שרים עם אלון כהן","logo":{"@type":"ImageObject","url":"https://singwithalon.com/assets/logo.webp"}}}</script></head>
 <body>
