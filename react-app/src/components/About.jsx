@@ -1,6 +1,8 @@
-import aboutImage from '../assets/about_en.webp';
+import { getAssetPath } from '../utils/assets.js';
 
 function About() {
+  const aboutImage = getAssetPath('about_en.webp');
+
   return (
     <section id="about" className="about">
       <div className="container">

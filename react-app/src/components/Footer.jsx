@@ -1,6 +1,8 @@
-import logoWebp from '../assets/logo.webp';
+import { getAssetPath } from '../utils/assets.js';
 
 function Footer() {
+  const logoWebp = getAssetPath('logo.webp');
+
   return (
     <footer className="footer">
       <div className="container">

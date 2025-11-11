@@ -1,6 +1,7 @@
-import tadmitPoster from '../assets/tadmit_poster.webp';
+import { getAssetPath } from '../utils/assets.js';
 
 function Hero() {
+  const tadmitPoster = getAssetPath('tadmit_poster.webp');
 
   // Scroll indicator click handler
   const handleScrollIndicatorClick = () => {

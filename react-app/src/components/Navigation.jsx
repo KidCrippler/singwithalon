@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import logo from '../assets/logo_png.webp';
+import { getAssetPath } from '../utils/assets.js';
 
 function Navigation() {
+  const logo = getAssetPath('logo_png.webp');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [isScrolled, setIsScrolled] = useState(false);
