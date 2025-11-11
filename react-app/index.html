@@ -98,6 +98,11 @@
     <link rel="dns-prefetch" href="//api.whatsapp.com">
 
     <!-- ============================= -->
+    <!-- Preload Critical Images for LCP -->
+    <!-- ============================= -->
+    <link rel="preload" as="image" href="/assets/tadmit_poster.webp" fetchpriority="high">
+
+    <!-- ============================= -->
     <!-- Favicon -->
     <!-- ============================= -->
     <link rel="icon" type="image/webp" href="/assets/logo.webp">
@@ -504,23 +509,46 @@
     <!-- ============================= -->
     <!-- Google Fonts - Heebo & Secular One -->
     <!-- ============================= -->
-    <style>
-        /* Import fonts directly in critical CSS - eliminates preload warnings */
-        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap');
-    </style>
-
-    <!-- Optimized font loading strategy -->
+    <!-- Preconnect for faster DNS resolution -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+    <!-- Critical fonts loaded asynchronously to prevent render blocking -->
+    <link rel="stylesheet" 
+          href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap"
+          media="print" 
+          onload="this.media='all'">
+    
+    <!-- Fallback for no-JS -->
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&family=Secular+One&display=swap">
+    </noscript>
+
     <!-- Load additional font weights lazily after critical path -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap"></noscript>
+    <link rel="preload" 
+          href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap" 
+          as="style" 
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;900&display=swap">
+    </noscript>
 
     <!-- ============================= -->
     <!-- Font Awesome Icons -->
     <!-- ============================= -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Load Font Awesome asynchronously to prevent render blocking -->
+    <link rel="preload" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+          as="style" 
+          onload="this.onload=null;this.rel='stylesheet'"
+          crossorigin="anonymous" 
+          referrerpolicy="no-referrer">
+    <noscript>
+      <link rel="stylesheet" 
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" 
+            crossorigin="anonymous" 
+            referrerpolicy="no-referrer">
+    </noscript>
 </head>
 <body>
     <!-- React Root -->
