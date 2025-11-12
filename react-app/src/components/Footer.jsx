@@ -1,6 +1,7 @@
 import { getAssetPath } from '../utils/assets.js';
 
 function Footer() {
+  const logoAvif = getAssetPath('logo.avif');
   const logoWebp = getAssetPath('logo.webp');
 
   return (
@@ -9,6 +10,7 @@ function Footer() {
         <div className="footer-content">
           <div className="footer-logo">
             <picture>
+              <source srcSet={logoAvif} type="image/avif" />
               <source srcSet={logoWebp} type="image/webp" />
               <img src={logoWebp} alt="שרים עם אלון כהן" width="68" height="60" loading="lazy" />
             </picture>

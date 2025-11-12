@@ -1,7 +1,8 @@
 import { getAssetPath } from '../utils/assets.js';
 
 function About() {
-  const aboutImage = getAssetPath('about_en.webp');
+  const aboutImageAvif = getAssetPath('about_en.avif');
+  const aboutImageWebp = getAssetPath('about_en.webp');
 
   return (
     <section id="about" className="about">
@@ -14,7 +15,11 @@ function About() {
           <div className="about-text">
             {/* Mobile image - shows only on mobile devices */}
             <div className="about-image-mobile">
-              <img src={aboutImage} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img-mobile" width="1076" height="1020" loading="lazy" />
+              <picture>
+                <source srcSet={aboutImageAvif} type="image/avif" />
+                <source srcSet={aboutImageWebp} type="image/webp" />
+                <img src={aboutImageWebp} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img-mobile" width="1076" height="1020" loading="lazy" />
+              </picture>
             </div>
             <div className="about-story">
               <h3>הסיפור שלי</h3>
@@ -58,7 +63,11 @@ function About() {
             </div>
           </div>
           <div className="about-image">
-            <img src={aboutImage} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img" width="1076" height="1020" loading="lazy" />
+            <picture>
+              <source srcSet={aboutImageAvif} type="image/avif" />
+              <source srcSet={aboutImageWebp} type="image/webp" />
+              <img src={aboutImageWebp} alt="אלון כהן - קלידן, גיטריסט וזמר" className="about-img" width="1076" height="1020" loading="lazy" />
+            </picture>
           </div>
         </div>
       </div>

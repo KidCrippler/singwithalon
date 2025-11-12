@@ -1,7 +1,8 @@
 import { getAssetPath } from '../utils/assets.js';
 
 function Hero() {
-  const tadmitPoster = getAssetPath('tadmit_poster.webp');
+  const tadmitPosterAvif = getAssetPath('tadmit_poster.avif');
+  const tadmitPosterWebp = getAssetPath('tadmit_poster.webp');
 
   // Scroll indicator click handler
   const handleScrollIndicatorClick = () => {
@@ -70,17 +71,17 @@ function Hero() {
       <div className="particle-orchestra">
         {/* Background layer: slow, subtle */}
         <div className="particle-layer particle-layer-back">
-          {generateParticles(35, 'back')}
+          {generateParticles(18, 'back')}
         </div>
 
         {/* Mid layer: medium speed */}
         <div className="particle-layer particle-layer-mid">
-          {generateParticles(50, 'mid')}
+          {generateParticles(25, 'mid')}
         </div>
 
         {/* Foreground layer: faster, brighter */}
         <div className="particle-layer particle-layer-front">
-          {generateParticles(35, 'front')}
+          {generateParticles(17, 'front')}
         </div>
       </div>
 
@@ -118,7 +119,7 @@ function Hero() {
               controls
               preload="none"
               loading="lazy"
-              poster={tadmitPoster}
+              poster={tadmitPosterWebp}
               width="1920"
               height="1080">
               <source src="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4" type="video/mp4" />

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
@@ -8,7 +9,9 @@ import ContactForm from './components/ContactForm';
 import Testimonials from './components/Testimonials';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
-import VideoPage from './components/VideoPage';
+
+// Lazy load VideoPage for better initial load performance
+const VideoPage = lazy(() => import('./components/VideoPage'));
 
 // HomePage component - all main sections
 function HomePage() {
@@ -33,8 +36,15 @@ function App() {
       {/* Main homepage */}
       <Route path="/" element={<HomePage />} />
 
-      {/* Video pages */}
-      <Route path="/video/:videoId" element={<VideoPage />} />
+      {/* Video pages - lazy loaded */}
+      <Route
+        path="/video/:videoId"
+        element={
+          <Suspense fallback={<div style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>טוען...</div>}>
+            <VideoPage />
+          </Suspense>
+        }
+      />
     </Routes>
   );
 }

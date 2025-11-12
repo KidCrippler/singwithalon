@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { getAssetPath } from '../utils/assets.js';
 
 function Navigation() {
-  const logo = getAssetPath('logo_png.webp');
+  const logoAvif = getAssetPath('logo_png.avif');
+  const logoWebp = getAssetPath('logo_png.webp');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -83,7 +84,11 @@ function Navigation() {
     <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`} id="navbar">
       <div className="nav-container">
         <div className="nav-logo">
-          <img src={logo} alt="שרים עם אלון כהן" className="logo" width="3000" height="2633" />
+          <picture>
+            <source srcSet={logoAvif} type="image/avif" />
+            <source srcSet={logoWebp} type="image/webp" />
+            <img src={logoWebp} alt="שרים עם אלון כהן" className="logo" width="600" height="527" />
+          </picture>
         </div>
 
         <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`} id="nav-menu">
