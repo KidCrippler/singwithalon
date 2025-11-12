@@ -4,124 +4,224 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a professional Hebrew RTL (Right-to-Left) landing page for Alon Cohen, a musician specializing in Israeli music. The site features an interactive song selection system where audiences can choose songs in real-time during performances.
+Professional Hebrew RTL (Right-to-Left) React landing page for Alon Cohen, a musician specializing in Israeli music. The site features an interactive song selection system where audiences can choose songs in real-time during performances.
 
-## Development Environment
+**Tech Stack**: React 19 + Vite 7 + React Router + Tailwind CSS (utilities only) + Custom CSS
 
-This is a **static website** using only vanilla HTML, CSS, and JavaScript - no build tools or package managers required.
+**Important**: This project was migrated from vanilla HTML/CSS/JS to React while maintaining pixel-perfect design consistency through `styles-original.css`.
 
-### Local Development Commands
-- **Start local server**: `python3 -m http.server 8000` then visit `http://localhost:8000`
-- **Alternative server**: Use any static file server or simply open `index.html` in a browser
+## Development Commands
 
-### Deployment Options (from README)
-- **GitHub Pages**: Push to GitHub and enable GitHub Pages in repository settings
-- **Netlify**: Drag and drop project folder to netlify.com
-- **Vercel**: Install CLI with `npm i -g vercel`, then run `vercel` in project directory
+All commands must be run from the `react-app/` directory:
 
-## Architecture and Structure
+```bash
+cd react-app
 
-### File Organization
+# Development
+npm install --legacy-peer-deps    # Initial setup (required due to React 19)
+npm run dev                        # Start dev server (http://localhost:5173)
+
+# Building
+npm run build                      # Vite build + automatic prerendering with Puppeteer
+npm run preview                    # Preview production build locally
+
+# Linting
+npm run lint                       # ESLint check
+
+# Deployment
+npm run deploy                     # Build + deploy to GitHub Pages (gh-pages branch)
 ```
-singwithalon/
-├── index.html          # Main homepage with all sections
-├── css/styles.css      # Complete RTL styling with responsive design
-├── js/script.js        # Main JavaScript functionality
-├── assets/             # Images, logos, and media files
-└── README.md          # Project documentation in Hebrew
+
+**Build Process**: `npm run build` does two things:
+1. Vite builds optimized bundles to `dist/`
+2. Puppeteer prerenderer (`scripts/prerender.js`) crawls all routes and generates SEO-ready static HTML
+
+## Architecture
+
+### React Application Structure
+
+```
+react-app/
+├── src/
+│   ├── components/           # React components (all site sections)
+│   │   ├── Navigation.jsx    # Top navbar with hamburger menu
+│   │   ├── Hero.jsx         # Hero section with animated particles
+│   │   ├── About.jsx        # About section
+│   │   ├── VideoGallery.jsx # Video thumbnails grid
+│   │   ├── VideoPage.jsx    # Individual video pages (lazy-loaded)
+│   │   ├── Services.jsx     # Services section
+│   │   ├── Testimonials.jsx # Carousel of testimonials (Embla)
+│   │   ├── ContactForm.jsx  # WhatsApp-integrated contact form
+│   │   ├── Chatbot.jsx      # Floating chat widget
+│   │   └── Footer.jsx       # Footer with links
+│   ├── utils/
+│   │   └── assets.js        # getAssetPath() helper for BASE_URL
+│   ├── App.jsx              # Main router (HomePage + VideoPage routes)
+│   ├── main.jsx             # React entry point
+│   ├── index.css            # Imports styles-original.css + Tailwind utilities
+│   └── styles-original.css  # Complete CSS from vanilla version (~2000 lines)
+├── public/
+│   ├── assets/              # Images (WebP/AVIF optimized)
+│   ├── CNAME               # Domain: singwithalon.com
+│   ├── robots.txt          # SEO
+│   └── sitemap.xml         # SEO
+├── scripts/
+│   └── prerender.js        # Puppeteer script for SSG
+├── vite.config.js          # Vite config with code splitting + compression
+├── tailwind.config.js      # Tailwind utilities only
+└── package.json
 ```
 
-### Main Components
+### Key Architectural Decisions
 
-**MusicianSite Class** (`js/script.js`):
-- Main application controller managing all site functionality
-- Methods: `setupNavigation()`, `setupScrollEffects()`, `setupVideoHandlers()`, `setupContactForm()`, `setupAnimations()`, `setupSmoothScrolling()`
+**Hybrid CSS Approach**:
+- `styles-original.css`: Contains ALL styling from the original vanilla site (imported first)
+- `index.css`: Imports original styles, then adds Tailwind **utilities only** (no base/reset)
+- Reason: Maintains pixel-perfect design while allowing Tailwind utility classes for tweaks
 
-**FormValidator Class** (`js/script.js:372-408`):
-- Validates contact forms with Israeli phone number validation
-- Email and date validation with Hebrew error messages
+**Routing**:
+- **HomePage**: Single-page layout with all sections (Hero, About, Videos, Services, Testimonials, Contact, Footer)
+- **VideoPage**: Lazy-loaded with React.lazy() for code splitting (reduces initial bundle)
+- Routes: `/` (home), `/video/:videoId` (individual video pages)
 
-**PerformanceUtils Class** (`js/script.js:411-445`):
-- Lazy loading for images and performance optimizations
-- Critical resource preloading
+**Code Splitting** (vite.config.js):
+- `vendor-react`: React core (~11KB gzipped)
+- `vendor-carousel`: Embla Carousel (~8KB gzipped)
+- `vendor-router`: React Router + Helmet (~17KB gzipped)
+- `VideoPage`: Lazy-loaded chunk (~6KB gzipped)
 
-### Key Features
+**Prerendering**:
+- `scripts/prerender.js` runs after Vite build
+- Launches Puppeteer headless browser on port 3000
+- Crawls all routes: `/`, `/video/tadmit`, `/video/rony`, `/video/jam-toren`, `/video/borot`, `/video/kvar-avar`
+- Extracts fully-rendered HTML and saves to dist/
+- Creates `404.html` for SPA fallback routing
 
-1. **RTL Design**: Full Hebrew support from HTML `dir="rtl"` to CSS Flexbox/Grid layouts
-2. **Musical Visual Identity**: Enhanced typography with Secular One font, musical symbols, sound wave animations, and warm purple color scheme
-3. **Interactive Video Gallery**: Modal-based video player with custom controls
-4. **WhatsApp Integration**: Contact form automatically creates WhatsApp messages
-5. **Advanced Hero Typography**: Gradient text effects, multi-layer shadows, and subtle breathing animations for musical appeal
-6. **Responsive Design**: Mobile-first approach with music app-inspired touches and hamburger navigation
-7. **Smooth Animations**: Intersection Observer API for scroll-triggered animations plus musical-themed micro-interactions
-8. **Performance Optimized**: Lazy loading, preloading, and efficient event handling
+### Performance Optimizations
 
-### Critical Technical Details
+**Images**:
+- Modern formats: AVIF primary, WebP fallback
+- `<picture>` elements in Navigation, Hero, About, Footer
+- Logo optimized from 318KB to 37KB (89% reduction)
+- Helper: `getAssetPath()` for correct BASE_URL handling
 
-**RTL Implementation**:
-- HTML uses `<html lang="he" dir="rtl">`
-- CSS uses `direction: rtl` on html element
-- Flexbox and Grid layouts are RTL-aware
-- Text alignment and positioning account for RTL flow
+**Bundle Optimization**:
+- Hero particles reduced to 60 (from original 120) for faster FCP/TTI
+- Manual code splitting (see vite.config.js)
+- Console logs dropped in production (esbuild)
+- Gzip + Brotli compression enabled
 
-**Video Handling**:
-- Hero video uses native HTML5 controls
-- Gallery videos open in custom modal (`openVideoModal()`, `closeVideoModal()`)
-- Video sources hosted on external CDN (Cloudflare R2)
+**Font Loading**:
+- Google Fonts: Heebo (body) + Secular One (headings)
+- `display=swap` to prevent FOIT (Flash of Invisible Text)
+- Preloaded in index.html
 
-**Contact Form Flow**:
-- Form validation with Hebrew error messages
-- Generates formatted WhatsApp message with event details
-- Uses `wa.me` API for cross-platform WhatsApp integration
-- Fallback handling for popup blockers
+**Icons**:
+- Font Awesome 6.5.2 via CDN (async loaded)
+- React-icons available but not used (caused hydration issues)
 
-**Mobile Navigation**:
-- Hamburger menu with smooth animations and musical color scheme
-- Music app-inspired navigation styling with gradient backgrounds
-- Auto-closes on link clicks and outside clicks
-- Responsive breakpoints at 768px and 480px with performance-optimized effects
+## RTL (Right-to-Left) Implementation
 
-**Musical Design System**:
-- **Color Palette**: Warm purple gradient (#8b5fbf to #b19cd9) throughout the site
-- **Typography**: Secular One font for headings adds musical personality, Heebo for body text
-- **Hero Section**: Advanced text effects with multi-layer shadows, breathing animations, and solid white text
-- **Musical Elements**: FontAwesome icons and Unicode symbols strategically placed across sections with enhanced visibility
-- **Interactive Features**: Featured service card with musical animations and floating note effects
-- **Background Patterns**: Subtle sound waves in hero section and musical staff lines in content areas
+Critical for Hebrew content:
+- HTML: `<html lang="he" dir="rtl">`
+- CSS: `direction: rtl` on root
+- Flexbox/Grid: Automatically reverse for RTL
+- Text alignment: Right-aligned by default
 
-### Content Management
+**When modifying layouts**: Always test RTL behavior - flex direction, text alignment, and margins/padding will flip.
 
-**Contact Information**:
-- Phone: 052-896-2110 (update in index.html:380,400,460)
-- Email: contact@singwithalon.com
+## Design System
 
-**Video Assets**:
-- All videos hosted on Cloudflare R2 CDN
-- Update video sources and poster images in HTML
-- Video durations hardcoded in HTML (update if videos change)
+**Color Palette**:
+- Primary: Purple gradient `#8b5fbf` to `#b19cd9`
+- Used throughout: buttons, links, accents, navbar
 
-**Testimonials and Services**:
-- Content is hardcoded in HTML
-- Update sections directly in index.html for content changes
+**Typography**:
+- Headings: Secular One (musical personality)
+- Body: Heebo (excellent Hebrew support)
 
-## Important Notes
+**Musical Elements**:
+- Unicode symbols: ♪ ♫ ♬ ● ○
+- Animated particles in Hero section (60 particles across 3 layers)
+- Font Awesome icons for UI elements
 
-- **No Build Process**: Direct file editing, no compilation needed
-- **Hebrew Content**: All user-facing text is in Hebrew with RTL layout
-- **External Dependencies**: Google Fonts (Heebo + Secular One) and Font Awesome icons via CDN
-- **Browser Compatibility**: Modern browsers with ES6+ support required for JavaScript features
-- **Performance**: Uses modern web APIs (Intersection Observer, Service Worker registration)
+## Critical Components
+
+### Hero.jsx - Animated Particles
+- `generateParticles(count, layer)`: Creates floating musical symbols
+- **Current config**: 18 (back) + 25 (mid) + 17 (front) = 60 total particles
+- **Performance impact**: Directly affects FCP/TTI - reduce count for better performance
+- CSS animations defined in styles-original.css
+
+### Navigation.jsx - RTL Navbar
+- Responsive hamburger menu (mobile)
+- Active section highlighting on scroll
+- Auto-closes on outside clicks
+- Logo uses AVIF/WebP `<picture>` element
+
+### ContactForm.jsx - WhatsApp Integration
+- Validates Israeli phone numbers (052-XXX-XXXX format)
+- Generates WhatsApp message with event details
+- Opens `wa.me` API link on submit
+- Hebrew validation error messages
+
+### VideoGallery.jsx + VideoPage.jsx
+- Gallery: Grid of video thumbnails
+- VideoPage: Full video player (lazy-loaded route)
+- Videos hosted on Cloudflare R2 CDN
+- Poster images optimized with AVIF
+
+### Testimonials.jsx - Embla Carousel
+- Auto-rotating testimonials carousel
+- Manual navigation (prev/next buttons + dots)
+- Embla Carousel React + Autoplay plugin
+
+## Deployment
+
+**GitHub Pages Setup**:
+1. Custom domain: `singwithalon.com` (via CNAME file)
+2. DNS (Cloudflare): A records to GitHub IPs + CNAME for www
+3. Deploy branch: `gh-pages`
+4. Deploy command: `npm run deploy` (builds + pushes to gh-pages)
+
+**Build Output**:
+- `dist/index.html`: Prerendered homepage (~63KB)
+- `dist/video/*/index.html`: Prerendered video pages (~27KB each)
+- `dist/assets/`: JS/CSS bundles + images
+- `dist/404.html`: SPA fallback for client-side routing
 
 ## Common Tasks
 
-When making changes to this site:
-1. **Content Updates**: Edit HTML directly in `index.html`
-2. **Styling Changes**: Modify `css/styles.css` (respect RTL layouts and maintain musical color palette)
-3. **Musical Elements**: Update FontAwesome icons and Unicode symbols in CSS ::before/::after pseudo-elements
-4. **Typography Effects**: Adjust hero section animations and text shadows in CSS keyframes
-5. **JavaScript Features**: Extend `MusicianSite` class in `js/script.js`
-6. **New Videos**: Update video URLs and metadata in HTML
-7. **Contact Info**: Update phone/email in multiple locations in HTML
-8. **Color Consistency**: Use established purple palette (#8b5fbf, #b19cd9) for new elements
+**Content Updates**:
+- Edit React components directly (e.g., `Hero.jsx`, `About.jsx`)
+- All content is in Hebrew - maintain RTL layout
+- Update contact info: Phone (052-896-2110), Email (contact@singwithalon.com)
 
-Remember to test RTL layout behavior when making layout changes, maintain musical visual consistency with established design system, and verify WhatsApp integration works across devices when modifying the contact form.
+**Adding New Videos**:
+1. Add video metadata to VideoGallery.jsx
+2. Add route to `scripts/prerender.js` ROUTES array
+3. Rebuild to generate prerendered video page
+
+**Performance Tuning**:
+- Reduce Hero particles: Edit `generateParticles()` calls in Hero.jsx (lines 74, 79, 84)
+- Image optimization: Use AVIF with WebP fallback via `<picture>` element
+- Code splitting: Add new routes to `vite.config.js` manualChunks
+
+**Styling Changes**:
+- Modify `styles-original.css` for global styles (matches original design)
+- Use Tailwind utilities for quick tweaks (avoid overriding base styles)
+- Maintain purple color palette (#8b5fbf, #b19cd9)
+- Test RTL layout after any flexbox/grid changes
+
+**Troubleshooting Build Errors**:
+- `EADDRINUSE port 3000`: Kill processes on port 3000 (`lsof -ti:3000 | xargs kill -9`)
+- Icon rendering issues: Font Awesome via CDN is stable; avoid react-icons (hydration mismatch)
+- Asset path issues: Always use `getAssetPath()` helper from `utils/assets.js`
+
+## Important Notes
+
+- **Legacy peer deps**: Use `--legacy-peer-deps` for npm install (React 19 compatibility)
+- **No .cursorrules relevance**: .cursor-rules file describes old vanilla JS minification process (not applicable to Vite build)
+- **Prerendering port**: Scripts use port 3000 - ensure it's free before building
+- **BASE_URL handling**: Use `import.meta.env.BASE_URL` via getAssetPath() for GitHub Pages compatibility
+- **Browser targets**: Modern browsers only (ES6+, CSS Grid, Intersection Observer)
