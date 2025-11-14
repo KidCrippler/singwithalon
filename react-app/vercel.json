@@ -1,6 +1,0 @@
-{
-  "buildCommand": "npm run next-build",
-  "outputDirectory": "out",
-  "cleanUrls": false,
-  "trailingSlash": true
-}
