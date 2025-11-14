@@ -1,0 +1,3 @@
+module.exports=[95215,a=>{a.n(a.i(42050))},25609,a=>{a.n(a.i(17527))},2568,a=>{a.n(a.i(90612))},74009,a=>{a.n(a.i(1544))},7462,a=>{"use strict";var b=a.i(10560);function c(){return(0,b.jsxs)("div",{style:{padding:"2rem",textAlign:"center"},children:[(0,b.jsx)("h1",{children:"Hello Next.js"}),(0,b.jsx)("p",{children:"Next.js is running side-by-side with Vite"})]})}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=singwithalon_react-app_1b8eab17._.js.map
