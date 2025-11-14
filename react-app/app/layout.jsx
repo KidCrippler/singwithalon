@@ -8,6 +8,11 @@ export const metadata = {
   creator: 'אלון כהן',
   publisher: 'שרים עם אלון כהן',
   robots: 'index, follow',
+  icons: {
+    icon: '/assets/logo.webp',
+    shortcut: '/assets/logo.webp',
+    apple: '/assets/logo.webp',
+  },
   openGraph: {
     title: 'אלון כהן - מוזיקה ישראלית מקורית',
     description: 'אלון כהן - מוזיקאי ישראלי מקצועי מתמחה במוזיקה ישראלית מקורית',
