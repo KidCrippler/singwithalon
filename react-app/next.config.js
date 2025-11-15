@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // Static export for GitHub Pages compatibility
-  images: {
-    unoptimized: true, // Required for static export
-  },
-  trailingSlash: true, // Better for static hosting
+  trailingSlash: true, // Consistent URLs with trailing slashes
+  // Removed output: 'export' - using full Next.js features on Vercel
+  // Removed images.unoptimized - using Vercel's automatic image optimization
 }
 
 export default nextConfig
