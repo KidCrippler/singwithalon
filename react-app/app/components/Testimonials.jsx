@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
+import { SectionHeader } from './ui/SectionHeader';
 
 // Testimonials data
 const testimonialsData = [
@@ -157,14 +158,10 @@ function Testimonials() {
       `}}></style>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-        <div className="section-header">
-          <h2 className="section-title">
-            מה אומרים עליי
-          </h2>
-          <p className="section-subtitle">
-            המלצות מלקוחות מרוצים
-          </p>
-        </div>
+        <SectionHeader
+          title="מה אומרים עליי"
+          subtitle="המלצות מלקוחות מרוצים"
+        />
 
         {/* Embla Carousel */}
         <div className="relative">

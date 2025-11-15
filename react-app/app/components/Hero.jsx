@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getAssetPath } from '../utils/assets';
+import { ButtonPrimary, ButtonSecondary } from './ui/Button';
 
 function Hero() {
   const tadmitPosterAvif = getAssetPath('tadmit_poster.avif');
@@ -108,20 +109,18 @@ function Hero() {
             מוביל שירה בציבור עם רפרטואר עשיר של מאות רבות של שירים ישראליים מכל התקופות ומערכת בחירה אינטראקטיבית ייחודית המאפשרת לקהל לבחור ולשיר יחד איתי בזמן אמת.
           </p>
           <div className="hero-buttons">
-            <a
+            <ButtonPrimary
               href="#contact"
-              className="btn btn-primary"
               onClick={(e) => scrollToSection('contact', e)}
             >
               הזמן שירה בציבור
-            </a>
-            <a
+            </ButtonPrimary>
+            <ButtonSecondary
               href="#videos"
-              className="btn btn-secondary"
               onClick={(e) => scrollToSection('videos', e)}
             >
               צפה בסרטונים
-            </a>
+            </ButtonSecondary>
           </div>
         </div>
         <div className="hero-video">

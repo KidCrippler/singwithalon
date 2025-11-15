@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import { getAssetPath } from '../utils/assets';
 
+/**
+ * Navigation component with Tailwind styling
+ * Replaces .navbar, .nav-container, .nav-logo, .nav-menu, .nav-link, .hamburger from legacy CSS
+ * Underline animation uses custom .nav-link-underline class from globals.css
+ */
+
 function Navigation() {
   const logoAvif = getAssetPath('logo_png.avif');
   const logoWebp = getAssetPath('logo_png.webp');
@@ -83,21 +89,41 @@ function Navigation() {
   };
 
   return (
-    <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`} id="navbar">
-      <div className="nav-container">
-        <div className="nav-logo">
+    <nav
+      className={`fixed top-0 w-full bg-white/95 backdrop-blur-[10px] z-[1000] transition-all duration-300 ${
+        isScrolled ? 'py-[10px] shadow-[0_2px_20px_rgba(0,0,0,0.1)]' : 'py-[15px]'
+      }`}
+      id="navbar"
+    >
+      <div className="max-w-[1200px] mx-auto px-5 flex justify-between items-center">
+        {/* Logo */}
+        <div>
           <picture>
             <source srcSet={logoAvif} type="image/avif" />
             <source srcSet={logoWebp} type="image/webp" />
-            <img src={logoWebp} alt="שרים עם אלון כהן" className="logo" width="600" height="527" />
+            <img
+              src={logoWebp}
+              alt="שרים עם אלון כהן"
+              className="h-[55px] w-auto"
+              width="600"
+              height="527"
+            />
           </picture>
         </div>
 
-        <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`} id="nav-menu">
+        {/* Navigation Menu */}
+        <ul
+          className={`list-none m-0 fixed top-[80px] w-full text-center transition-all duration-300 shadow-[0_10px_27px_rgba(139,95,191,0.1)] py-5 gap-[15px] backdrop-blur-[10px] bg-gradient-to-br from-[#f8f9fa] to-white/98 flex-col md:static md:flex-row md:bg-transparent md:w-auto md:text-right md:shadow-none md:py-0 md:gap-[30px] md:backdrop-blur-0 ${
+            isMenuOpen ? 'right-0 flex' : '-right-full flex'
+          } md:flex`}
+          id="nav-menu"
+        >
           <li>
             <a
               href="#home"
-              className={`nav-link ${activeSection === 'home' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'home' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('home', e)}
             >
               בית
@@ -106,7 +132,9 @@ function Navigation() {
           <li>
             <a
               href="#about"
-              className={`nav-link ${activeSection === 'about' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'about' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('about', e)}
             >
               אודות
@@ -115,7 +143,9 @@ function Navigation() {
           <li>
             <a
               href="#videos"
-              className={`nav-link ${activeSection === 'videos' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'videos' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('videos', e)}
             >
               וידאו
@@ -124,7 +154,9 @@ function Navigation() {
           <li>
             <a
               href="#services"
-              className={`nav-link ${activeSection === 'services' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'services' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('services', e)}
             >
               שירותים
@@ -133,7 +165,9 @@ function Navigation() {
           <li>
             <a
               href="#testimonials"
-              className={`nav-link ${activeSection === 'testimonials' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'testimonials' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('testimonials', e)}
             >
               המלצות
@@ -142,7 +176,9 @@ function Navigation() {
           <li>
             <a
               href="#contact"
-              className={`nav-link ${activeSection === 'contact' ? 'active' : ''}`}
+              className={`no-underline text-[#333] font-medium transition-colors duration-300 relative nav-link-underline hover:text-primary ${
+                activeSection === 'contact' ? 'active text-primary' : ''
+              }`}
               onClick={(e) => scrollToSection('contact', e)}
             >
               צור קשר
@@ -150,14 +186,15 @@ function Navigation() {
           </li>
         </ul>
 
+        {/* Hamburger Menu */}
         <div
-          className={`hamburger ${isMenuOpen ? 'active' : ''}`}
+          className="flex md:hidden flex-col cursor-pointer gap-1"
           onClick={toggleMenu}
           id="hamburger"
         >
-          <span></span>
-          <span></span>
-          <span></span>
+          <span className="w-[25px] h-[3px] bg-primary transition-all duration-300 rounded-sm"></span>
+          <span className="w-[25px] h-[3px] bg-primary transition-all duration-300 rounded-sm"></span>
+          <span className="w-[25px] h-[3px] bg-primary transition-all duration-300 rounded-sm"></span>
         </div>
       </div>
     </nav>

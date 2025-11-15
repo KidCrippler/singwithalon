@@ -1,8 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  important: true, // Ensures Tailwind utilities always override legacy CSS
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -26,6 +28,21 @@ export default {
       boxShadow: {
         'musical': '0 10px 40px -10px rgba(139, 95, 191, 0.6)',
         'musical-glow': '0 0 30px rgba(139, 95, 191, 0.5)',
+        'btn-primary': '0 4px 20px rgba(139, 95, 191, 0.3)',
+        'btn-primary-hover': '0 8px 30px rgba(139, 95, 191, 0.4)',
+        'btn-secondary': '0 8px 25px rgba(139, 95, 191, 0.3)',
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%)',
+      },
+      animation: {
+        'musical-glow': 'musical-glow 4s ease-in-out infinite',
+      },
+      keyframes: {
+        'musical-glow': {
+          '0%, 100%': { boxShadow: '0 15px 35px rgba(139, 95, 191, 0.3)' },
+          '50%': { boxShadow: '0 20px 45px rgba(177, 156, 217, 0.4)' },
+        },
       },
     },
   },

@@ -1,6 +1,14 @@
 'use client'
 
 import { useState } from 'react';
+import { ButtonPrimary } from './ui/Button';
+import { SectionHeader } from './ui/SectionHeader';
+
+/**
+ * ContactForm component with Tailwind styling
+ * Replaces .contact, .contact-content, .contact-info, .contact-item, .contact-icon, .contact-details, .contact-form, .form-row, .form-group from legacy CSS
+ * Musical icon decoration uses custom .contact-musical-icon class from globals.css
+ */
 
 // Form validation utility
 class FormValidator {
@@ -149,52 +157,79 @@ ${data.message || 'לא צוינו פרטים נוספים'}
   };
 
   return (
-    <section id="contact" className="contact">
-      <div className="contact-overlay"></div>
-      <div className="container">
-        <div className="section-header">
-          <h2 className="section-title">בואו נתחיל לתכנן את האירוע שלכם</h2>
-          <p className="section-subtitle">צרו איתי קשר ונבנה יחד את החוויה המוזיקלית המושלמת עבורכם</p>
-        </div>
+    <section
+      id="contact"
+      className="relative py-[100px] contact-musical-icon"
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.96)'
+      }}
+    >
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
+        <SectionHeader
+          title="בואו נתחיל לתכנן את האירוע שלכם"
+          subtitle="צרו איתי קשר ונבנה יחד את החוויה המוזיקלית המושלמת עבורכם"
+        />
 
-        <div className="contact-content">
-          <div className="contact-info">
-            <div className="contact-item">
-              <div className="contact-icon">
+        {/* Contact Content Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-[30px] md:gap-[60px]">
+
+          {/* Contact Info */}
+          <div className="flex flex-col gap-[30px]">
+            {/* Phone */}
+            <div className="flex items-center gap-5">
+              <div className="w-[60px] h-[60px] bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center text-white text-2xl flex-shrink-0">
                 <i className="fas fa-phone"></i>
               </div>
-              <div className="contact-details">
-                <h3>טלפון</h3>
-                <p><a href="tel:+972528962110" dir="ltr">052-896-2110</a></p>
+              <div>
+                <h3 className="text-[#2c3e50] mb-[5px] font-semibold">טלפון</h3>
+                <p className="m-0">
+                  <a href="tel:+972528962110" dir="ltr" className="text-primary no-underline hover:underline">
+                    052-896-2110
+                  </a>
+                </p>
               </div>
             </div>
 
-            <div className="contact-item">
-              <div className="contact-icon">
+            {/* Email */}
+            <div className="flex items-center gap-5">
+              <div className="w-[60px] h-[60px] bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center text-white text-2xl flex-shrink-0">
                 <i className="fas fa-envelope"></i>
               </div>
-              <div className="contact-details">
-                <h3>אימייל</h3>
-                <p><a href="mailto:contact@singwithalon.com" dir="ltr">contact@singwithalon.com</a></p>
+              <div>
+                <h3 className="text-[#2c3e50] mb-[5px] font-semibold">אימייל</h3>
+                <p className="m-0">
+                  <a href="mailto:contact@singwithalon.com" dir="ltr" className="text-primary no-underline hover:underline">
+                    contact@singwithalon.com
+                  </a>
+                </p>
               </div>
             </div>
 
-            <div className="contact-item">
-              <div className="contact-icon">
+            {/* WhatsApp */}
+            <div className="flex items-center gap-5">
+              <div className="w-[60px] h-[60px] bg-gradient-to-br from-primary to-primary-light rounded-full flex items-center justify-center text-white text-2xl flex-shrink-0">
                 <i className="fab fa-whatsapp"></i>
               </div>
-              <div className="contact-details">
-                <h3>WhatsApp</h3>
-                <p><a href="https://wa.me/972528962110" dir="ltr">052-896-2110</a></p>
+              <div>
+                <h3 className="text-[#2c3e50] mb-[5px] font-semibold">WhatsApp</h3>
+                <p className="m-0">
+                  <a href="https://wa.me/972528962110" dir="ltr" className="text-primary no-underline hover:underline">
+                    052-896-2110
+                  </a>
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="contact-form">
+          {/* Contact Form */}
+          <div className="bg-[#f8f9fa] p-10 rounded-[20px]">
             <form id="contact-form" onSubmit={handleSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="name">שם מלא</label>
+              {/* Form Row - Name and Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="name" className="text-[#2c3e50] font-semibold">
+                    שם מלא
+                  </label>
                   <input
                     type="text"
                     id="name"
@@ -202,10 +237,13 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                     value={formData.name}
                     onChange={handleChange}
                     required
+                    className="p-[15px] border-2 border-[#e0e6ed] rounded-[10px] text-base font-sans transition-colors duration-300 focus:outline-none focus:border-primary"
                   />
                 </div>
-                <div className="form-group">
-                  <label htmlFor="phone">טלפון</label>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="phone" className="text-[#2c3e50] font-semibold">
+                    טלפון
+                  </label>
                   <input
                     type="tel"
                     id="phone"
@@ -213,12 +251,16 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                     value={formData.phone}
                     onChange={handleChange}
                     required
+                    className="p-[15px] border-2 border-[#e0e6ed] rounded-[10px] text-base font-sans transition-colors duration-300 focus:outline-none focus:border-primary"
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="date">תאריך מועדף</label>
+              {/* Date Field */}
+              <div className="flex flex-col gap-2 mb-5">
+                <label htmlFor="date" className="text-[#2c3e50] font-semibold">
+                  תאריך מועדף
+                </label>
                 <input
                   type="date"
                   id="date"
@@ -226,11 +268,15 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                   value={formData.date}
                   onChange={handleChange}
                   required
+                  className="p-[15px] border-2 border-[#e0e6ed] rounded-[10px] text-base font-sans transition-colors duration-300 focus:outline-none focus:border-primary"
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="message">פרטים נוספים על האירוע</label>
+              {/* Message Field */}
+              <div className="flex flex-col gap-2 mb-5">
+                <label htmlFor="message" className="text-[#2c3e50] font-semibold">
+                  פרטים נוספים על האירוע
+                </label>
                 <textarea
                   id="message"
                   name="message"
@@ -238,14 +284,16 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="ספרו לי קצת על האירוע - מספר אורחים, מיקום, סוג האירוע, שירים מיוחדים שתרצו לשמוע..."
+                  className="p-[15px] border-2 border-[#e0e6ed] rounded-[10px] text-base font-sans transition-colors duration-300 focus:outline-none focus:border-primary resize-y min-h-[120px]"
                 ></textarea>
               </div>
 
-              <button
+              {/* Submit Button */}
+              <ButtonPrimary
                 type="submit"
-                className="btn btn-primary"
                 disabled={isSubmitting}
                 aria-label="שלח הודעה"
+                className="mt-[25px]"
               >
                 {isSubmitting ? (
                   <>
@@ -258,25 +306,16 @@ ${data.message || 'לא צוינו פרטים נוספים'}
                     שלח הודעת WhatsApp
                   </>
                 )}
-              </button>
+              </ButtonPrimary>
 
               {/* Status Message */}
               {messageStatus && (
                 <div
-                  className={`form-message ${messageStatus.type}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '15px 20px',
-                    marginTop: '20px',
-                    borderRadius: '10px',
-                    fontWeight: '500',
-                    background: messageStatus.type === 'success' ? '#d4edda' : '#f8d7da',
-                    color: messageStatus.type === 'success' ? '#155724' : '#721c24',
-                    border: `1px solid ${messageStatus.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
-                    whiteSpace: 'pre-line'
-                  }}
+                  className={`flex items-center gap-[10px] p-[15px_20px] mt-5 rounded-[10px] font-medium whitespace-pre-line ${
+                    messageStatus.type === 'success'
+                      ? 'bg-[#d4edda] text-[#155724] border border-[#c3e6cb]'
+                      : 'bg-[#f8d7da] text-[#721c24] border border-[#f5c6cb]'
+                  }`}
                 >
                   <i className={`fas fa-${messageStatus.type === 'success' ? 'check-circle' : 'exclamation-circle'}`}></i>
                   <span>{messageStatus.text}</span>
