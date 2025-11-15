@@ -10,10 +10,15 @@
 - ✅ **Phase 1**: Next.js Setup (side-by-side with Vite) - COMPLETE
 - ✅ **Phase 2**: Homepage Component Migration - COMPLETE
 - ✅ **Phase 3**: Video Pages Migration - COMPLETE
-- 🔄 **Phase 3.5**: Deploy to Vercel (Static Export) - IN PROGRESS
-- ⏳ **Phase 4-12**: Remaining phases
+- ✅ **Phase 3.5**: Deploy to Vercel (Full Features) - COMPLETE
+- 🔄 **Phase 4**: CSS Refactoring (Legacy → Pure Tailwind) - IN PROGRESS
+  - ⏳ Phase 4A: CSS Audit & Planning
+  - ⏳ Phase 4B: Incremental Refactoring
+  - ⏳ Phase 4C: Finalization
+- ⏳ **Phase 5-9**: Remaining phases
 
-**Last Updated**: 2025-11-14
+**Last Updated**: 2025-11-15
+**Deployment**: Live on Vercel (nextjs branch)
 
 ---
 
