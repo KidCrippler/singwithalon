@@ -1,6 +1,6 @@
 'use client'
 
-import { getAssetPath } from '../utils/assets.js';
+import { getAssetPath } from '../utils/assets';
 
 function About() {
   const aboutImageAvif = getAssetPath('about_en.avif');

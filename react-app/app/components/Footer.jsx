@@ -1,6 +1,6 @@
 'use client'
 
-import { getAssetPath } from '../utils/assets.js';
+import { getAssetPath } from '../utils/assets';
 
 function Footer() {
   const logoAvif = getAssetPath('logo.avif');

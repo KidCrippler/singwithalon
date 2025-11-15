@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { getAssetPath } from '../utils/assets.js';
+import { getAssetPath } from '../utils/assets';
 
 function Navigation() {
   const logoAvif = getAssetPath('logo_png.avif');

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { getAssetPath } from '../utils/assets.js';
+import { getAssetPath } from '../utils/assets';
 
 function Hero() {
   const tadmitPosterAvif = getAssetPath('tadmit_poster.avif');
