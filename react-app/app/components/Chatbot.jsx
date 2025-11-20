@@ -2,6 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+/**
+ * Chatbot component with Tailwind styling
+ * Replaces all .chatbot-*, .chat-*, .message*, .typing*, .suggestion* classes from legacy CSS
+ * Complex animations use custom classes from globals.css + Tailwind animations
+ * Features: AI chat integration, typing indicators, quick replies, WhatsApp fallback
+ */
+
 function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -322,36 +329,61 @@ function Chatbot() {
   };
 
   return (
-    <div id="chatbot-widget" className="chatbot-widget">
+    <div
+      id="chatbot-widget"
+      className="chatbot-widget fixed bottom-5 right-5 z-[9999] font-sans rtl chatbot-musical-note"
+    >
+      {/* Chat Toggle Button */}
       <button
         ref={chatToggleRef}
         id="chat-toggle"
-        className={`chat-toggle ${isOpen ? 'active' : ''}`}
+        className={`chat-toggle chat-toggle-ring relative w-[60px] h-[60px] rounded-full bg-gradient-to-br from-[#7a4db0] via-primary to-primary-light border-2 border-white/30 text-white text-2xl cursor-pointer shadow-chat-toggle transition-all duration-300 flex items-center justify-center will-change-transform hover:-translate-y-0.5 hover:scale-105 hover:border-white/50 hover:shadow-chat-toggle-hover ${isOpen ? 'active' : ''} max-md:w-[55px] max-md:h-[55px] max-md:text-xl`}
         aria-label="פתח צ'אט"
         onClick={toggleChat}
         disabled={toggleDisabled}
       >
-        <i className="fas fa-comments"></i>
-        <i className="fas fa-times"></i>
-        <div className="chat-notification-badge">💬</div>
+        <i className="fas fa-comments absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 opacity-100 chat-toggle-icon-enter"></i>
+        <i className="fas fa-times absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-300 opacity-0 rotate-90 chat-toggle-icon-exit"></i>
+
+        {/* Notification Badge */}
+        <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-[#4CAF50] to-[#45a049] border-2 border-white rounded-full flex items-center justify-center text-[11px] z-[3] animate-notification-bounce shadow-chat-badge">
+          💬
+        </div>
       </button>
 
-      <div id="chat-tooltip" className={`chat-tooltip ${showTooltip ? 'show' : ''}`}>
+      {/* Tooltip */}
+      <div
+        id="chat-tooltip"
+        className={`chat-tooltip-arrow absolute bottom-[75px] right-[-20px] bg-gradient-to-br from-primary to-primary-light text-white py-3 px-4 rounded-[15px] text-sm font-medium whitespace-nowrap transition-all duration-300 ease-out pointer-events-none shadow-chat-tooltip z-[2] max-md:bottom-[70px] max-md:-right-[15px] max-md:text-[13px] max-md:py-2.5 max-md:px-3.5 ${
+          showTooltip
+            ? 'opacity-100 translate-y-0 scale-100'
+            : 'opacity-0 translate-y-2.5 scale-80'
+        }`}
+      >
         יש לכם שאלות? אני כאן לעזור! 🎵
       </div>
 
-      <div id="chat-modal" className={`chat-modal ${isOpen ? 'open' : ''}`}>
-        <div className="chat-header">
-          <div className="chat-avatar">
+      {/* Chat Modal */}
+      <div
+        id="chat-modal"
+        className={`absolute bottom-20 right-0 w-[380px] max-w-[calc(100vw-40px)] h-[500px] bg-white rounded-[20px] shadow-chat-modal transition-all duration-300 ease-out overflow-hidden border border-primary/10 max-md:w-[calc(100vw-30px)] max-md:h-[70vh] max-md:max-h-[500px] max-md:bottom-[70px] max-sm:w-[calc(100vw-20px)] max-sm:-right-[5px] max-sm:bottom-[65px] ${
+          isOpen
+            ? 'open translate-y-0 opacity-100 pointer-events-auto'
+            : 'translate-y-5 opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Chat Header */}
+        <div className="bg-gradient-to-br from-primary to-primary-light p-5 text-white flex items-center gap-3 relative">
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-lg">
             <i className="fas fa-music"></i>
           </div>
-          <div className="chat-info">
-            <h4>אלון כהן</h4>
-            <span className="chat-status">זמין לשיחה</span>
+          <div className="flex-1">
+            <h4 className="m-0 text-base font-semibold">אלון כהן</h4>
+            <span className="text-xs opacity-90">זמין לשיחה</span>
           </div>
           <button
             id="chat-close"
-            className="chat-close"
+            className="absolute top-[15px] right-[15px] bg-transparent border-none text-white text-lg cursor-pointer w-[30px] h-[30px] rounded-full flex items-center justify-center transition-colors duration-200 hover:bg-white/20"
             aria-label="סגור צ'אט"
             onClick={closeChat}
           >
@@ -359,36 +391,62 @@ function Chatbot() {
           </button>
         </div>
 
-        <div id="chat-messages" className="chat-messages" ref={messagesRef}>
+        {/* Chat Messages */}
+        <div
+          id="chat-messages"
+          className="chat-scrollbar h-[340px] overflow-y-auto p-5 bg-[#f8f9fa] max-md:h-[calc(70vh-160px)] max-md:max-h-[340px]"
+          ref={messagesRef}
+        >
           {messages.map((message, index) => (
-            <div key={index} className={`message ${message.sender}-message`}>
-              <div className="message-avatar">
+            <div
+              key={index}
+              className={`flex gap-2.5 mb-4 animate-message-slide-in ${
+                message.sender === 'user' ? 'flex-row-reverse' : ''
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${
+                message.sender === 'bot'
+                  ? 'bg-gradient-to-br from-primary to-primary-light text-white'
+                  : 'bg-[#e9ecef] text-[#6c757d]'
+              }`}>
                 <i className={`fas ${message.sender === 'bot' ? 'fa-music' : 'fa-user'}`}></i>
               </div>
-              <div className="message-content">
-                <p dangerouslySetInnerHTML={{
-                  __html: message.sender === 'bot' ? processTextForLinks(message.text) : message.text
-                }} />
-                <span className="message-time">{message.time}</span>
+              <div className={`bg-white py-3 px-4 rounded-[18px] max-w-[250px] relative shadow-chat-message max-sm:max-w-[200px] ${
+                message.sender === 'bot'
+                  ? 'rounded-bl-[6px]'
+                  : 'bg-gradient-to-br from-primary to-primary-light text-white rounded-br-[6px]'
+              }`}>
+                <p
+                  className="m-0 text-sm leading-[1.4]"
+                  dangerouslySetInnerHTML={{
+                    __html: message.sender === 'bot' ? processTextForLinks(message.text) : message.text
+                  }}
+                />
+                <span className="text-[11px] opacity-70 mt-1 block">{message.time}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="chat-input-container">
+        {/* Chat Input Container */}
+        <div className="bg-white border-t border-[#eee]">
+          {/* Typing Indicator */}
           <div
-            className="chat-typing"
+            className={`py-3 px-5 items-center gap-2 text-xs text-[#6c757d] bg-[#f8f9fa] ${
+              isTyping ? 'flex' : 'hidden'
+            }`}
             id="chat-typing"
-            style={{ display: isTyping ? 'flex' : 'none' }}
           >
-            <div className="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
+            <div className="flex gap-0.5">
+              <span className="w-1 h-1 rounded-full bg-primary animate-typing-dots"></span>
+              <span className="w-1 h-1 rounded-full bg-primary animate-typing-dots [animation-delay:0.2s]"></span>
+              <span className="w-1 h-1 rounded-full bg-primary animate-typing-dots [animation-delay:0.4s]"></span>
             </div>
             <span>אלון מקליד...</span>
           </div>
-          <div className="chat-input">
+
+          {/* Chat Input */}
+          <div className="flex p-[15px_20px] gap-2.5 items-center">
             <input
               type="text"
               id="chat-input-field"
@@ -398,10 +456,11 @@ function Chatbot() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={inputDisabled}
+              className="flex-1 border border-[#ddd] rounded-[25px] py-3 px-4 text-sm outline-none transition-colors duration-200 focus:border-primary rtl text-right placeholder:text-[#999]"
             />
             <button
               id="chat-send"
-              className="chat-send"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-light border-none text-white cursor-pointer flex items-center justify-center transition-all duration-200 text-sm hover:scale-105 disabled:bg-[#ccc] disabled:cursor-not-allowed"
               disabled={isSendDisabled()}
               aria-label="שלח הודעה בצ'אט"
               onClick={sendMessage}
@@ -409,23 +468,25 @@ function Chatbot() {
               <i className="fas fa-paper-plane"></i>
             </button>
           </div>
-          <div className="chat-suggestions">
+
+          {/* Chat Suggestions */}
+          <div className="p-[10px_20px_20px] flex flex-col gap-2 rtl">
             <button
-              className="suggestion-btn"
+              className="bg-transparent border border-primary text-primary py-2 px-3 rounded-[20px] text-xs cursor-pointer transition-all duration-200 text-right hover:bg-primary hover:text-white"
               aria-label="שאל על מה כלול במופע אינטראקטיבי"
               onClick={() => handleSuggestionClick('מה כלול במופע אינטראקטיבי?')}
             >
               מה כלול במופע אינטראקטיבי?
             </button>
             <button
-              className="suggestion-btn"
+              className="bg-transparent border border-primary text-primary py-2 px-3 rounded-[20px] text-xs cursor-pointer transition-all duration-200 text-right hover:bg-primary hover:text-white"
               aria-label="שאל על מחיר מופע לאירוע של 50 איש"
               onClick={() => handleSuggestionClick('כמה עולה מופע לאירוע של 50 איש?')}
             >
               כמה עולה מופע לאירוע של 50 איש?
             </button>
             <button
-              className="suggestion-btn"
+              className="bg-transparent border border-primary text-primary py-2 px-3 rounded-[20px] text-xs cursor-pointer transition-all duration-200 text-right hover:bg-primary hover:text-white"
               aria-label="שאל על מערכת בחירת השירים"
               onClick={() => handleSuggestionClick('איך פועלת מערכת בחירת השירים?')}
             >

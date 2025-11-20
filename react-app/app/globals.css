@@ -169,3 +169,90 @@
   33% { transform: translateY(-5px) rotate(5deg); }
   66% { transform: translateY(-2px) rotate(-3deg); }
 }
+
+/* Chatbot Component Styles */
+
+/* Custom scrollbar for chat messages */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(139, 95, 191, 0.3);
+  border-radius: 3px;
+}
+
+/* Chat toggle icon transitions */
+.chat-toggle-icon-enter {
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.chat-toggle-icon-exit {
+  opacity: 0;
+  transform: rotate(-90deg);
+  transition: all 0.3s ease;
+}
+
+.chat-toggle.active .chat-toggle-icon-enter {
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+.chat-toggle.active .chat-toggle-icon-exit {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+/* Tooltip arrow */
+.chat-tooltip-arrow::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 30px;
+  border: 8px solid transparent;
+  border-top-color: #8b5fbf;
+}
+
+/* Chatbot musical note decoration */
+.chatbot-musical-note::after {
+  content: '♫';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 14px;
+  color: rgba(139, 95, 191, 0.6);
+  animation: gentle-note-float 6s infinite ease-in-out;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Glow ring effect around chat toggle button */
+.chat-toggle-ring::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: linear-gradient(45deg,
+    transparent,
+    rgba(139, 95, 191, 0.2),
+    rgba(177, 156, 217, 0.15),
+    transparent,
+    rgba(139, 95, 191, 0.2),
+    transparent
+  );
+  animation: gentle-ring-glow 4s linear infinite;
+  z-index: -1;
+}
+
+/* Periodic glow effect applied dynamically to chat toggle */
+.glow-effect {
+  animation: gentle-glow 2s ease-in-out !important;
+}

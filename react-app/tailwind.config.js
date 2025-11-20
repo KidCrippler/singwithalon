@@ -31,17 +31,63 @@ export default {
         'btn-primary': '0 4px 20px rgba(139, 95, 191, 0.3)',
         'btn-primary-hover': '0 8px 30px rgba(139, 95, 191, 0.4)',
         'btn-secondary': '0 8px 25px rgba(139, 95, 191, 0.3)',
+        // Chatbot specific shadows
+        'chat-toggle': '0 4px 15px rgba(139, 95, 191, 0.4), 0 0 20px rgba(177, 156, 217, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+        'chat-toggle-hover': '0 6px 25px rgba(139, 95, 191, 0.5), 0 0 30px rgba(177, 156, 217, 0.3), 0 0 0 3px rgba(139, 95, 191, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+        'chat-modal': '0 20px 60px rgba(0, 0, 0, 0.15)',
+        'chat-message': '0 2px 8px rgba(0, 0, 0, 0.1)',
+        'chat-tooltip': '0 8px 25px rgba(139, 95, 191, 0.3)',
+        'chat-badge': '0 2px 8px rgba(76, 175, 80, 0.4)',
       },
       backgroundImage: {
         'gradient-primary': 'linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%)',
       },
       animation: {
         'musical-glow': 'musical-glow 4s ease-in-out infinite',
+        // Chatbot animations
+        'message-slide-in': 'messageSlideIn 0.3s ease',
+        'typing-dots': 'typingDots 1.4s infinite',
+        'gentle-glow': 'gentle-glow 2s ease-in-out',
+        'notification-bounce': 'notification-bounce 2s infinite',
+        'gentle-note-float': 'gentle-note-float 6s infinite ease-in-out',
+        'gentle-ring-glow': 'gentle-ring-glow 4s linear infinite',
       },
       keyframes: {
         'musical-glow': {
           '0%, 100%': { boxShadow: '0 15px 35px rgba(139, 95, 191, 0.3)' },
           '50%': { boxShadow: '0 20px 45px rgba(177, 156, 217, 0.4)' },
+        },
+        // Chatbot keyframes
+        'messageSlideIn': {
+          'from': { opacity: '0', transform: 'translateY(10px)' },
+          'to': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'typingDots': {
+          '0%, 60%, 100%': { transform: 'translateY(0)', opacity: '0.4' },
+          '30%': { transform: 'translateY(-8px)', opacity: '1' },
+        },
+        'gentle-glow': {
+          '0%, 100%': {
+            boxShadow: '0 4px 15px rgba(139, 95, 191, 0.4), 0 0 20px rgba(177, 156, 217, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+          },
+          '50%': {
+            boxShadow: '0 6px 25px rgba(139, 95, 191, 0.6), 0 0 30px rgba(177, 156, 217, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35)'
+          },
+        },
+        'notification-bounce': {
+          '0%, 100%': { transform: 'translateY(0) scale(1)' },
+          '25%': { transform: 'translateY(-3px) scale(1.1)' },
+          '50%': { transform: 'translateY(0) scale(1)' },
+          '75%': { transform: 'translateY(-2px) scale(1.05)' },
+        },
+        'gentle-note-float': {
+          '0%, 85%, 100%': { opacity: '0', transform: 'translateY(0) scale(0.8)' },
+          '15%, 70%': { opacity: '0.5', transform: 'translateY(-8px) scale(1)' },
+        },
+        'gentle-ring-glow': {
+          '0%': { transform: 'rotate(0deg)', opacity: '0.4' },
+          '50%': { opacity: '0.6' },
+          '100%': { transform: 'rotate(360deg)', opacity: '0.4' },
         },
       },
     },
