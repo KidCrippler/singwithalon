@@ -27,7 +27,7 @@ function Footer() {
                 width="68"
                 height="60"
                 loading="lazy"
-                className="h-[60px] mb-5 rounded-lg mx-auto md:mx-0 md:mr-auto"
+                className="h-[60px] mb-5 rounded-lg mx-auto md:mx-0"
               />
             </picture>
             <p className="text-[#bdc3c7] leading-relaxed">
