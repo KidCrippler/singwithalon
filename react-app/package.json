@@ -4,20 +4,22 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node scripts/prerender.js",
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "build:vite": "vite build && node scripts/prerender.js",
+    "dev:vite": "vite",
+    "preview:vite": "vite preview",
+    "deploy:vite": "npm run build:vite && gh-pages -d dist"
   },
   "dependencies": {
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "next": "^16.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-helmet-async": "^2.0.5",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^7.9.5"
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
