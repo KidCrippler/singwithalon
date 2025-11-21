@@ -113,7 +113,7 @@ function Navigation() {
 
         {/* Navigation Menu */}
         <ul
-          className={`list-none m-0 fixed top-[80px] w-full text-center transition-all duration-300 shadow-[0_10px_27px_rgba(139,95,191,0.1)] py-5 gap-[15px] backdrop-blur-[10px] bg-gradient-to-br from-[#f8f9fa] to-white/98 flex-col md:static md:flex-row md:bg-transparent md:w-auto md:text-right md:shadow-none md:py-0 md:gap-[30px] md:backdrop-blur-0 ${
+          className={`list-none m-0 fixed top-[80px] w-full text-center transition-all duration-300 shadow-[0_10px_27px_rgba(139,95,191,0.1)] py-5 gap-[15px] bg-white flex-col md:static md:flex-row md:bg-transparent md:w-auto md:text-right md:shadow-none md:py-0 md:gap-[30px] ${
             isMenuOpen ? 'right-0 flex' : '-right-full flex'
           } md:flex`}
           id="nav-menu"
