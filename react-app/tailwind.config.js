@@ -38,6 +38,8 @@ export default {
         'chat-message': '0 2px 8px rgba(0, 0, 0, 0.1)',
         'chat-tooltip': '0 8px 25px rgba(139, 95, 191, 0.3)',
         'chat-badge': '0 2px 8px rgba(76, 175, 80, 0.4)',
+        // Hero specific shadows
+        'hero-video': '0 20px 60px rgba(0, 0, 0, 0.3)',
       },
       backgroundImage: {
         'gradient-primary': 'linear-gradient(135deg, #8b5fbf 0%, #b19cd9 100%)',
@@ -51,6 +53,11 @@ export default {
         'notification-bounce': 'notification-bounce 2s infinite',
         'gentle-note-float': 'gentle-note-float 6s infinite ease-in-out',
         'gentle-ring-glow': 'gentle-ring-glow 4s linear infinite',
+        // Hero animations
+        'particle-float': 'particleFloat 20s ease-in-out infinite',
+        'particle-glow': 'particleGlow 5s ease-in-out infinite',
+        'musical-breathe': 'musicalBreathe 6s ease-in-out infinite',
+        'musical-pulse': 'musicalPulse 1.5s ease-in-out infinite',
       },
       keyframes: {
         'musical-glow': {
@@ -88,6 +95,39 @@ export default {
           '0%': { transform: 'rotate(0deg)', opacity: '0.4' },
           '50%': { opacity: '0.6' },
           '100%': { transform: 'rotate(360deg)', opacity: '0.4' },
+        },
+        // Hero keyframes
+        'particleFloat': {
+          '0%, 100%': { transform: 'translate3d(0, 0, 0) rotate(0deg)' },
+          '25%': { transform: 'translate3d(-20px, -30px, 0) rotate(5deg)' },
+          '50%': { transform: 'translate3d(15px, -15px, 0) rotate(-3deg)' },
+          '75%': { transform: 'translate3d(-10px, -40px, 0) rotate(7deg)' },
+        },
+        'particleGlow': {
+          '0%, 100%': {
+            opacity: '0.3',
+            textShadow: '0 0 10px rgba(177, 156, 217, 0.6), 0 0 20px rgba(139, 95, 191, 0.4), 0 0 30px rgba(139, 95, 191, 0.2)',
+          },
+          '50%': {
+            opacity: '1',
+            textShadow: '0 0 20px rgba(177, 156, 217, 1), 0 0 40px rgba(139, 95, 191, 0.8), 0 0 60px rgba(139, 95, 191, 0.6)',
+          },
+        },
+        'musicalBreathe': {
+          '0%, 100%': {
+            transform: 'scale(1)',
+            textShadow: '0 3px 6px rgba(0, 0, 0, 0.6), 0 6px 15px rgba(139, 95, 191, 0.4), 0 0 40px rgba(255, 255, 255, 0.3), 0 1px 0 rgba(255, 255, 255, 0.2)',
+          },
+          '50%': {
+            transform: 'scale(1.02)',
+            textShadow: '0 3px 8px rgba(0, 0, 0, 0.7), 0 8px 20px rgba(139, 95, 191, 0.5), 0 0 50px rgba(255, 255, 255, 0.4), 0 1px 0 rgba(255, 255, 255, 0.3)',
+          },
+        },
+        'musicalPulse': {
+          '0%, 100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+          '25%': { transform: 'translateY(-8px) scale(1.1)', opacity: '0.8' },
+          '50%': { transform: 'translateY(-12px) scale(1.2)', opacity: '0.9' },
+          '75%': { transform: 'translateY(-8px) scale(1.1)', opacity: '0.8' },
         },
       },
     },

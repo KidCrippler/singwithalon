@@ -55,13 +55,14 @@ function Hero() {
         particles.push(
           <div
             key={`${layer}-${i}`}
-            className={`particle particle-${layer}`}
+            className={`particle particle-${layer} absolute pointer-events-none animate-particle-float`}
             style={{
               left: `${left}%`,
               top: `${top}%`,
               fontSize: `${size}rem`,
               animationDuration: `${duration}s, ${glowDuration}s`,
               animationDelay: `${delay}s, ${glowDelay}s`,
+              animationName: 'particleFloat, particleGlow',
             }}
           >
             {symbol}
@@ -79,36 +80,36 @@ function Hero() {
   }, []);
 
   return (
-    <section id="home" className="hero">
+    <section id="home" className="min-h-screen flex items-center relative bg-gradient-to-br from-primary to-primary-light overflow-hidden">
       {/* Particle Orchestra Background - 3 Layers for Depth */}
-      <div className="particle-orchestra">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Background layer: slow, subtle */}
-        <div className="particle-layer particle-layer-back">
+        <div className="absolute inset-0 pointer-events-none z-[1] opacity-40">
           {particles.back}
         </div>
 
         {/* Mid layer: medium speed */}
-        <div className="particle-layer particle-layer-mid">
+        <div className="absolute inset-0 pointer-events-none z-[2] opacity-60">
           {particles.mid}
         </div>
 
         {/* Foreground layer: faster, brighter */}
-        <div className="particle-layer particle-layer-front">
+        <div className="absolute inset-0 pointer-events-none z-[3] opacity-80">
           {particles.front}
         </div>
       </div>
 
-      <div className="hero-overlay"></div>
-      <div className="hero-content">
-        <div className="hero-text">
-          <h1 className="hero-title" style={{fontSize: '2.5rem'}}>
-            <span className="title-main">שרים עם אלון כהן</span>
-            <span className="title-subtitle">שירה בציבור - מוזיקה ישראלית מכל התקופות</span>
+      <div className="absolute inset-0 bg-black/30 z-[5]"></div>
+      <div className="relative z-[6] w-full max-w-7xl mx-auto px-5 pt-[100px] pb-[50px] grid grid-cols-2 gap-[60px] items-center max-md:grid-cols-1 max-md:gap-10 max-md:text-center">
+        <div className="text-white">
+          <h1 className="mb-[30px]">
+            <span className="title-main block text-[3.8rem] font-normal mb-[15px] text-white animate-musical-breathe tracking-wide max-md:text-[2.5rem] max-md:animate-none max-sm:text-[2rem]">שרים עם אלון כהן</span>
+            <span className="title-subtitle block text-[1.3rem] font-light font-sans text-[#E6D7FF] opacity-95 [word-spacing:3px]">שירה בציבור - מוזיקה ישראלית מכל התקופות</span>
           </h1>
-          <p className="hero-description">
+          <p className="hero-description text-xl leading-relaxed mb-10 text-[#F5F0FF] opacity-90 max-sm:text-base">
             מוביל שירה בציבור עם רפרטואר עשיר של מאות רבות של שירים ישראליים מכל התקופות ומערכת בחירה אינטראקטיבית ייחודית המאפשרת לקהל לבחור ולשיר יחד איתי בזמן אמת.
           </p>
-          <div className="hero-buttons">
+          <div className="flex gap-5 flex-wrap max-md:justify-center">
             <ButtonPrimary
               href="#contact"
               onClick={(e) => scrollToSection('contact', e)}
@@ -123,8 +124,8 @@ function Hero() {
             </ButtonSecondary>
           </div>
         </div>
-        <div className="hero-video">
-          <div className="video-container">
+        <div className="relative">
+          <div className="video-container relative rounded-[20px] overflow-hidden shadow-hero-video aspect-video max-w-[700px] w-full">
             <video
               id="hero-video"
               controls
@@ -132,21 +133,22 @@ function Hero() {
               loading="lazy"
               poster={tadmitPosterWebp}
               width="1920"
-              height="1080">
+              height="1080"
+              className="w-full h-full object-cover">
               <source src="https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/tadmit.mp4" type="video/mp4" />
               <track kind="captions" src="#" srcLang="he" label="עברית" default />
               הדפדפן שלך אינו תומך בתגי וידאו.
             </video>
-            <div className="video-overlay">
-              <button className="video-play-btn" id="video-play-btn" aria-label="נגן את הסרטון הראשי">
+            <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+              <button className="hidden" id="video-play-btn" aria-label="נגן את הסרטון הראשי">
                 <i className="fas fa-play"></i>
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div className="scroll-indicator" onClick={handleScrollIndicatorClick}>
-        <div className="scroll-arrow">
+      <div className="absolute bottom-[30px] left-1/2 -translate-x-1/2 z-[7] cursor-pointer max-md:bottom-[10px]" onClick={handleScrollIndicatorClick}>
+        <div className="scroll-arrow text-white text-2xl animate-musical-pulse">
           <i className="fas fa-music"></i>
         </div>
       </div>

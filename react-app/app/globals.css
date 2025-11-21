@@ -256,3 +256,120 @@
 .glow-effect {
   animation: gentle-glow 2s ease-in-out !important;
 }
+
+/* ============================= */
+/* Hero Section Custom CSS */
+/* ============================= */
+
+/* Particle layer blur filters - can't be expressed in Tailwind utilities */
+.particle-back {
+  filter: blur(1px);
+}
+
+.particle-mid {
+  filter: blur(0.5px);
+}
+
+.particle-front {
+  filter: blur(0px);
+  text-shadow:
+    0 0 15px rgba(177, 156, 217, 1),
+    0 0 30px rgba(139, 95, 191, 0.8),
+    0 0 45px rgba(139, 95, 191, 0.6);
+}
+
+/* Base particle styling with complex text shadows */
+.particle {
+  color: rgba(177, 156, 217, 1);
+  text-shadow:
+    0 0 10px rgba(177, 156, 217, 0.8),
+    0 0 20px rgba(139, 95, 191, 0.6),
+    0 0 30px rgba(139, 95, 191, 0.4);
+  will-change: transform, opacity, text-shadow;
+  user-select: none;
+}
+
+/* Hero title subtitle text shadow */
+.title-subtitle {
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+/* Hero description text shadow */
+.hero-description {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Webkit video controls custom styling */
+.video-container video::-webkit-media-controls-panel {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 0 0 20px 20px;
+}
+
+.video-container video::-webkit-media-controls-play-button,
+.video-container video::-webkit-media-controls-volume-slider,
+.video-container video::-webkit-media-controls-timeline {
+  filter: brightness(1.2);
+}
+
+/* Accessibility: Respect user's reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none !important;
+    opacity: 0.5;
+  }
+
+  .scroll-arrow {
+    animation: none;
+  }
+
+  .title-main {
+    animation: none;
+  }
+}
+
+/* Mobile optimizations - reduce particle count and effects */
+@media (max-width: 768px) {
+  /* Hide some particles on tablet for performance */
+  .particle-back:nth-child(n+25),
+  .particle-mid:nth-child(n+35),
+  .particle-front:nth-child(n+25) {
+    display: none;
+  }
+
+  .particle-back,
+  .particle-mid {
+    filter: none; /* Remove blur for performance */
+  }
+
+  .particle-front {
+    filter: none;
+    text-shadow:
+      0 0 10px rgba(177, 156, 217, 0.8),
+      0 0 20px rgba(139, 95, 191, 0.6);
+  }
+}
+
+@media (max-width: 480px) {
+  /* Further reduce particles on mobile */
+  .particle-back:nth-child(n+15),
+  .particle-mid:nth-child(n+20),
+  .particle-front:nth-child(n+15) {
+    display: none;
+  }
+
+  .particle {
+    text-shadow:
+      0 0 8px rgba(177, 156, 217, 0.6),
+      0 0 15px rgba(139, 95, 191, 0.4);
+  }
+
+  .particle-front {
+    text-shadow:
+      0 0 10px rgba(177, 156, 217, 0.7),
+      0 0 20px rgba(139, 95, 191, 0.5);
+  }
+}
