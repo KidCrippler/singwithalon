@@ -1,17 +1,11 @@
 /**
- * CSS Loading Strategy for Migration:
+ * CSS Loading Strategy:
  *
- * Problem: Legacy CSS has .btn and .btn-primary classes that we're NOT using,
- * but Tailwind was only loading @tailwind utilities (no base/components).
- *
- * Solution:
- * 1. Load legacy CSS first (needed for non-migrated components)
- * 2. Load Tailwind base + components + utilities AFTER
- * 3. Add utility layer to ensure Tailwind utilities always win
+ * All components have been successfully migrated to Tailwind CSS.
+ * This file now contains only:
+ * 1. Tailwind CSS layers (base, components, utilities)
+ * 2. Custom CSS for complex effects that can't be expressed with Tailwind utilities
  */
-
-/* Import legacy CSS first */
-@import '../src/styles-original.css';
 
 /* Tailwind CSS layers */
 @tailwind base;
@@ -371,5 +365,45 @@
     text-shadow:
       0 0 10px rgba(177, 156, 217, 0.7),
       0 0 20px rgba(139, 95, 191, 0.5);
+  }
+}
+
+/* ============================= */
+/* Testimonials Section Custom CSS */
+/* ============================= */
+
+/* Remove musical note decorations from testimonials section */
+#testimonials::before,
+#testimonials::after {
+  display: none !important;
+}
+
+/* Embla Carousel Styles */
+.embla {
+  overflow: hidden;
+}
+
+.embla__container {
+  display: flex;
+  direction: rtl;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.embla__slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+@media (min-width: 768px) {
+  .embla__slide {
+    flex: 0 0 50%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .embla__slide {
+    flex: 0 0 33.333%;
   }
 }

@@ -129,34 +129,6 @@ function Testimonials() {
     <section id="testimonials" className="relative py-24 md:py-32 overflow-hidden" style={{
       background: 'linear-gradient(135deg, rgba(248, 249, 250, 0.98) 0%, rgba(250, 250, 255, 0.96) 100%), radial-gradient(ellipse at top left, rgba(139, 95, 191, 0.04) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(177, 156, 217, 0.03) 0%, transparent 50%)'
     }}>
-      <style dangerouslySetInnerHTML={{__html: `
-        #testimonials::before, #testimonials::after { display: none !important; }
-        
-        
-        /* Ensure FontAwesome icons display properly */
-        #testimonials .fas::before,
-        #testimonials .far::before,
-        #testimonials .fab::before,
-        #testimonials .fa::before {
-          display: inline-block;
-          font-style: normal;
-          font-variant: normal;
-          text-rendering: auto;
-          -webkit-font-smoothing: antialiased;
-        }
-        
-        /* Embla carousel styles */
-        .embla { overflow: hidden; }
-        .embla__container { display: flex; direction: rtl; -webkit-user-select: none; user-select: none; }
-        .embla__slide { flex: 0 0 100%; min-width: 0; padding: 0 12px; }
-        @media (min-width: 768px) {
-          .embla__slide { flex: 0 0 50%; }
-        }
-        @media (min-width: 1024px) {
-          .embla__slide { flex: 0 0 33.333%; }
-        }
-      `}}></style>
-      
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
         <SectionHeader
           title="מה אומרים עליי"
