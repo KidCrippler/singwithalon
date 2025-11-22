@@ -4,11 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Professional Hebrew RTL (Right-to-Left) React landing page for Alon Cohen, a musician specializing in Israeli music. The site features an interactive song selection system where audiences can choose songs in real-time during performances.
+Professional Hebrew RTL (Right-to-Left) landing page for Alon Cohen, a musician specializing in Israeli music. The site features an interactive song selection system where audiences can choose songs in real-time during performances.
 
-**Tech Stack**: React 19 + Vite 7 + React Router + Tailwind CSS (utilities only) + Custom CSS
+**Tech Stack**: Next.js 15 (App Router) + React 19 + Tailwind CSS + Embla Carousel
 
-**Important**: This project was migrated from vanilla HTML/CSS/JS to React while maintaining pixel-perfect design consistency through `styles-original.css`.
+**Current State**: Migrated from Vite/React Router to Next.js. The `main` branch still contains legacy Vite code. The `nextjs` branch contains the fully-migrated Next.js application with complete Tailwind CSS refactoring (no legacy CSS remaining).
+
+## Active Branches
+
+- **`main`**: Legacy Vite + React Router application (GitHub Pages deployment)
+- **`nextjs`**: Next.js 15 migration with Tailwind CSS refactoring (Vercel deployment) - **ACTIVE DEVELOPMENT**
+- **`gh-pages`**: Static build output for GitHub Pages (auto-generated, do not edit)
 
 ## Development Commands
 
@@ -17,116 +23,124 @@ All commands must be run from the `react-app/` directory:
 ```bash
 cd react-app
 
-# Development
+# Next.js Development (Current - nextjs branch)
 npm install --legacy-peer-deps    # Initial setup (required due to React 19)
-npm run dev                        # Start dev server (http://localhost:5173)
-
-# Building
-npm run build                      # Vite build + automatic prerendering with Puppeteer
-npm run preview                    # Preview production build locally
-
-# Linting
+npm run dev                        # Start Next.js dev server (http://localhost:3001)
+npm run build                      # Next.js production build
+npm run start                      # Preview production build locally
 npm run lint                       # ESLint check
 
-# Deployment
-npm run deploy                     # Build + deploy to GitHub Pages (gh-pages branch)
+# Legacy Vite Commands (main branch only - deprecated)
+npm run dev:vite                   # Vite dev server (http://localhost:5173)
+npm run build:vite                 # Vite build + Puppeteer prerendering
+npm run deploy:vite                # Deploy to GitHub Pages (gh-pages branch)
 ```
 
-**Build Process**: `npm run build` does two things:
-1. Vite builds optimized bundles to `dist/`
-2. Puppeteer prerenderer (`scripts/prerender.js`) crawls all routes and generates SEO-ready static HTML
+**Important**: Use `--legacy-peer-deps` for all npm commands due to React 19 peer dependency warnings.
 
 ## Architecture
 
-### React Application Structure
+### Next.js App Router Structure
 
 ```
 react-app/
-├── src/
-│   ├── components/           # React components (all site sections)
+├── app/
+│   ├── components/           # All React components
+│   │   ├── ui/              # Reusable UI components
+│   │   │   ├── Button.jsx           # ButtonPrimary, ButtonSecondary
+│   │   │   └── SectionHeader.jsx    # Reusable section headers
 │   │   ├── Navigation.jsx    # Top navbar with hamburger menu
-│   │   ├── Hero.jsx         # Hero section with animated particles
+│   │   ├── Hero.jsx         # Hero section with 60 animated particles
 │   │   ├── About.jsx        # About section
 │   │   ├── VideoGallery.jsx # Video thumbnails grid
-│   │   ├── VideoPage.jsx    # Individual video pages (lazy-loaded)
 │   │   ├── Services.jsx     # Services section
 │   │   ├── Testimonials.jsx # Carousel of testimonials (Embla)
 │   │   ├── ContactForm.jsx  # WhatsApp-integrated contact form
 │   │   ├── Chatbot.jsx      # Floating chat widget
 │   │   └── Footer.jsx       # Footer with links
+│   ├── data/
+│   │   └── videos.js        # Video metadata for gallery
 │   ├── utils/
-│   │   └── assets.js        # getAssetPath() helper for BASE_URL
-│   ├── App.jsx              # Main router (HomePage + VideoPage routes)
-│   ├── main.jsx             # React entry point
-│   ├── index.css            # Imports styles-original.css + Tailwind utilities
-│   └── styles-original.css  # Complete CSS from vanilla version (~2000 lines)
+│   │   └── assets.js        # getAssetPath() helper (deprecated in Next.js)
+│   ├── video/
+│   │   └── [videoId]/       # Dynamic video pages
+│   │       └── page.jsx     # Video page component
+│   ├── layout.jsx           # Root layout with metadata
+│   ├── page.jsx             # Homepage (all sections)
+│   └── globals.css          # Global styles + Tailwind utilities + custom CSS
 ├── public/
-│   ├── assets/              # Images (WebP/AVIF optimized)
-│   ├── CNAME               # Domain: singwithalon.com
-│   ├── robots.txt          # SEO
-│   └── sitemap.xml         # SEO
-├── scripts/
-│   └── prerender.js        # Puppeteer script for SSG
-├── vite.config.js          # Vite config with code splitting + compression
-├── tailwind.config.js      # Tailwind utilities only
+│   └── assets/              # Images (WebP/AVIF optimized), videos
+├── src/                     # Legacy Vite code (main branch only)
+├── next.config.js           # Next.js configuration
+├── tailwind.config.js       # Tailwind config with custom animations
 └── package.json
 ```
 
 ### Key Architectural Decisions
 
-**Hybrid CSS Approach**:
-- `styles-original.css`: Contains ALL styling from the original vanilla site (imported first)
-- `index.css`: Imports original styles, then adds Tailwind **utilities only** (no base/reset)
-- Reason: Maintains pixel-perfect design while allowing Tailwind utility classes for tweaks
+**CSS Architecture** (Post-Migration):
+- **Tailwind CSS**: Primary styling method using utility classes
+- **globals.css**: Contains Tailwind imports + custom CSS for complex effects (~416 lines)
+- **No legacy CSS**: `styles-original.css` has been fully removed (3,021 lines migrated)
+- **Custom CSS in globals.css**:
+  - Navigation underline animations
+  - Musical note decorations for sections (About, Videos, Services, Contact)
+  - Hero particle effects (blur filters, text shadows, accessibility)
+  - Embla carousel styles
+  - Complex gradients and animations
+
+**Tailwind Configuration Extensions**:
+- **Colors**: `primary` (#8b5fbf), `primary-light` (#b19cd9), `primary-dark`
+- **Box Shadows**: `musical`, `musical-glow`, `btn-primary`, `btn-primary-hover`, `hero-video`
+- **Background Images**: `gradient-primary`
+- **Animations**: 14 custom keyframe animations including:
+  - `particle-float`, `particle-glow` (Hero particles)
+  - `musical-breathe`, `musical-pulse` (Musical elements)
+  - `fade-in-up`, `fade-in-down` (Section animations)
+- **Important Mode**: Enabled (`important: true`)
 
 **Routing**:
-- **HomePage**: Single-page layout with all sections (Hero, About, Videos, Services, Testimonials, Contact, Footer)
-- **VideoPage**: Lazy-loaded with React.lazy() for code splitting (reduces initial bundle)
-- Routes: `/` (home), `/video/:videoId` (individual video pages)
+- **Homepage** (`/`): Single-page layout with all sections
+- **Video Pages** (`/video/[videoId]/`): Dynamic routes with `generateStaticParams()`
+- **Static Generation**: All routes pre-rendered at build time
+- **Trailing Slashes**: Enabled for consistent URLs
 
-**Code Splitting** (vite.config.js):
-- `vendor-react`: React core (~11KB gzipped)
-- `vendor-carousel`: Embla Carousel (~8KB gzipped)
-- `vendor-router`: React Router + Helmet (~17KB gzipped)
-- `VideoPage`: Lazy-loaded chunk (~6KB gzipped)
-
-**Prerendering**:
-- `scripts/prerender.js` runs after Vite build
-- Launches Puppeteer headless browser on port 3000
-- Crawls all routes: `/`, `/video/tadmit`, `/video/rony`, `/video/jam-toren`, `/video/borot`, `/video/kvar-avar`
-- Extracts fully-rendered HTML and saves to dist/
-- Creates `404.html` for SPA fallback routing
+**Code Organization**:
+- All components use `'use client'` directive (interactive features)
+- Reusable UI components in `app/components/ui/`
+- Video data centralized in `app/data/videos.js`
+- Metadata defined in `app/layout.jsx` and video page route
 
 ### Performance Optimizations
 
 **Images**:
 - Modern formats: AVIF primary, WebP fallback
-- `<picture>` elements in Navigation, Hero, About, Footer
-- Logo optimized from 318KB to 37KB (89% reduction)
-- Helper: `getAssetPath()` for correct BASE_URL handling
+- `<picture>` elements for responsive images
+- Vercel automatic image optimization (when deployed)
 
 **Bundle Optimization**:
-- Hero particles reduced to 60 (from original 120) for faster FCP/TTI
-- Manual code splitting (see vite.config.js)
-- Console logs dropped in production (esbuild)
-- Gzip + Brotli compression enabled
+- Hero particles: 60 total (18 back + 25 mid + 17 front)
+- Mobile optimizations reduce particle count via CSS media queries
+- Next.js automatic code splitting
+- Tailwind CSS purges unused styles in production
 
 **Font Loading**:
 - Google Fonts: Heebo (body) + Secular One (headings)
-- `display=swap` to prevent FOIT (Flash of Invisible Text)
-- Preloaded in index.html
+- Preconnect to Google Fonts in layout.jsx
+- `display=swap` to prevent FOIT
 
 **Icons**:
-- Font Awesome 6.5.2 via CDN (async loaded)
-- React-icons available but not used (caused hydration issues)
+- Font Awesome 6.5.2 via CDN
+- Musical symbols: Unicode (♪ ♫ ♬ ● ○)
 
 ## RTL (Right-to-Left) Implementation
 
 Critical for Hebrew content:
-- HTML: `<html lang="he" dir="rtl">`
-- CSS: `direction: rtl` on root
+- `<html lang="he" dir="rtl">` in layout.jsx
+- CSS: `direction: rtl` on root elements
 - Flexbox/Grid: Automatically reverse for RTL
 - Text alignment: Right-aligned by default
+- Embla Carousel: Configured with `direction: 'rtl'`
 
 **When modifying layouts**: Always test RTL behavior - flex direction, text alignment, and margins/padding will flip.
 
@@ -143,85 +157,187 @@ Critical for Hebrew content:
 **Musical Elements**:
 - Unicode symbols: ♪ ♫ ♬ ● ○
 - Animated particles in Hero section (60 particles across 3 layers)
-- Font Awesome icons for UI elements
+- Musical note decorations in section backgrounds
 
 ## Critical Components
 
 ### Hero.jsx - Animated Particles
 - `generateParticles(count, layer)`: Creates floating musical symbols
-- **Current config**: 18 (back) + 25 (mid) + 17 (front) = 60 total particles
-- **Performance impact**: Directly affects FCP/TTI - reduce count for better performance
-- CSS animations defined in styles-original.css
+- **Particle counts**: 18 (back) + 25 (mid) + 17 (front) = 60 total
+- **Performance**: Mobile devices show fewer particles via CSS `display: none`
+- **Animations**: Custom keyframes in tailwind.config.js + blur/glow effects in globals.css
+- **Accessibility**: Respects `prefers-reduced-motion` media query
 
 ### Navigation.jsx - RTL Navbar
 - Responsive hamburger menu (mobile)
 - Active section highlighting on scroll
-- Auto-closes on outside clicks
-- Logo uses AVIF/WebP `<picture>` element
+- Custom underline animation (`.nav-link-underline` in globals.css)
+- Scroll effects: backdrop blur + shadow appear on scroll
 
 ### ContactForm.jsx - WhatsApp Integration
 - Validates Israeli phone numbers (052-XXX-XXXX format)
 - Generates WhatsApp message with event details
-- Opens `wa.me` API link on submit
+- Opens `wa.me/{phoneNumber}?text={message}` on submit
 - Hebrew validation error messages
 
-### VideoGallery.jsx + VideoPage.jsx
-- Gallery: Grid of video thumbnails
-- VideoPage: Full video player (lazy-loaded route)
-- Videos hosted on Cloudflare R2 CDN
-- Poster images optimized with AVIF
+### VideoGallery.jsx + Video Pages
+- Gallery: Responsive grid of video thumbnails (2x2 on desktop, 1 column mobile)
+- Video Pages: Dynamic route `/video/[videoId]/`
+- `generateStaticParams()` pre-renders all video pages at build time
+- Videos: Cloudflare R2 CDN with poster images (AVIF optimized)
 
 ### Testimonials.jsx - Embla Carousel
-- Auto-rotating testimonials carousel
-- Manual navigation (prev/next buttons + dots)
-- Embla Carousel React + Autoplay plugin
+- Auto-rotating carousel (7s delay)
+- RTL support: `direction: 'rtl'` in Embla config
+- Manual navigation: prev/next buttons + dot indicators
+- Keyboard navigation: Arrow keys (RTL-aware)
+- Responsive: 1 card (mobile), 2 cards (tablet), 3 cards (desktop)
+
+### Chatbot.jsx - Important Pattern
+**Critical**: Always use conditional Tailwind classes for visibility, never mix with inline styles
+```jsx
+// ✅ CORRECT - Conditional classes
+className={`py-3 px-5 ${isTyping ? 'flex' : 'hidden'}`}
+
+// ❌ WRONG - Mixing Tailwind class with inline style (broken with important: true)
+className="py-3 px-5 flex"
+style={{ display: isTyping ? 'flex' : 'none' }}
+```
 
 ## Deployment
 
-**GitHub Pages Setup**:
-1. Custom domain: `singwithalon.com` (via CNAME file)
-2. DNS (Cloudflare): A records to GitHub IPs + CNAME for www
-3. Deploy branch: `gh-pages`
-4. Deploy command: `npm run deploy` (builds + pushes to gh-pages)
+### Current Setup (Dual Deployment)
 
-**Build Output**:
-- `dist/index.html`: Prerendered homepage (~63KB)
-- `dist/video/*/index.html`: Prerendered video pages (~27KB each)
-- `dist/assets/`: JS/CSS bundles + images
-- `dist/404.html`: SPA fallback for client-side routing
+**Vercel** (nextjs branch):
+- Primary deployment for Next.js app
+- Auto-deploys on push to `nextjs` branch
+- URL: `singwithalon.com` (custom domain configured)
+- Build command: `npm run build`
+- Output: Next.js optimized build
+
+**GitHub Pages** (main branch - legacy):
+- Legacy Vite deployment via `gh-pages` branch
+- Deploy command: `npm run deploy:vite` (from main branch only)
+- Puppeteer prerendering for SEO
+- Will be deprecated after nextjs→main merge
+
+### Post-Merge Deployment Strategy
+
+After merging `nextjs` to `main`:
+
+1. **Update Vercel**: Change production branch from `nextjs` to `main`
+2. **Auto-deploy**: Every push to `main` triggers Vercel deployment
+3. **Manual deploy**: Use `vercel --prod` from CLI (works without git push)
+4. **Cleanup**: Delete `nextjs` branch and `gh-pages` branch (no longer needed)
+
+### Build Verification
+
+Before deploying:
+```bash
+npm run build          # Should complete without errors
+npm run start          # Test production build locally
+```
 
 ## Common Tasks
 
-**Content Updates**:
-- Edit React components directly (e.g., `Hero.jsx`, `About.jsx`)
+### Adding New Videos
+
+1. Add video metadata to `app/data/videos.js`
+2. Upload video to Cloudflare R2 CDN
+3. Add poster image to `public/assets/`
+4. Rebuild - Next.js auto-generates static page via `generateStaticParams()`
+
+### Styling Changes
+
+**Tailwind Utilities** (Preferred):
+```jsx
+<div className="bg-primary text-white p-4 rounded-lg shadow-musical">
+```
+
+**Complex Effects** (globals.css):
+- Multi-layer gradients
+- Complex animations with multiple keyframes
+- Blur filters and text shadows
+- Musical note decorations
+
+**Important**: When using inline `style` attribute for one CSS property (e.g., `backgroundImage`), include ALL related properties in the same inline object to avoid specificity conflicts:
+```jsx
+// ✅ CORRECT
+<section style={{
+  backgroundColor: 'rgba(255, 255, 255, 0.96)',
+  backgroundImage: 'linear-gradient(...)',
+  backgroundSize: '20px 60px'
+}}>
+
+// ❌ WRONG - Tailwind class won't apply due to inline style specificity
+<section className="bg-white/96" style={{
+  backgroundImage: 'linear-gradient(...)'
+}}>
+```
+
+### Performance Tuning
+
+**Reduce Hero Particles**:
+Edit `Hero.jsx` lines where `generateParticles()` is called:
+```jsx
+setParticles({
+  back: generateParticles(18, 'back'),   // Reduce from 18
+  mid: generateParticles(25, 'mid'),     // Reduce from 25
+  front: generateParticles(17, 'front'), // Reduce from 17
+});
+```
+
+**Mobile Optimizations**:
+Particles are automatically reduced on mobile via CSS in `globals.css`:
+```css
+@media (max-width: 768px) {
+  .particle-back:nth-child(n+25),
+  .particle-mid:nth-child(n+35),
+  .particle-front:nth-child(n+25) {
+    display: none;
+  }
+}
+```
+
+### Content Updates
+
+- Edit React components directly in `app/components/`
 - All content is in Hebrew - maintain RTL layout
-- Update contact info: Phone (052-896-2110), Email (contact@singwithalon.com)
+- Contact info: Phone (052-896-2110), Email (contact@singwithalon.com)
+- WhatsApp number: 972528962110 (ContactForm.jsx and Chatbot.jsx)
 
-**Adding New Videos**:
-1. Add video metadata to VideoGallery.jsx
-2. Add route to `scripts/prerender.js` ROUTES array
-3. Rebuild to generate prerendered video page
+## Troubleshooting
 
-**Performance Tuning**:
-- Reduce Hero particles: Edit `generateParticles()` calls in Hero.jsx (lines 74, 79, 84)
-- Image optimization: Use AVIF with WebP fallback via `<picture>` element
-- Code splitting: Add new routes to `vite.config.js` manualChunks
+**Build Errors**:
+- `npm install --legacy-peer-deps` - Always use this flag with React 19
+- Missing dependencies - Check package.json and reinstall
+- Port conflicts - Next.js uses port 3001 (configurable in package.json)
 
-**Styling Changes**:
-- Modify `styles-original.css` for global styles (matches original design)
-- Use Tailwind utilities for quick tweaks (avoid overriding base styles)
-- Maintain purple color palette (#8b5fbf, #b19cd9)
-- Test RTL layout after any flexbox/grid changes
+**Styling Issues**:
+- Tailwind classes not applying - Check `important: true` config
+- Inline styles override Tailwind - Move all related properties to inline object
+- Animations not working - Verify keyframes in tailwind.config.js
 
-**Troubleshooting Build Errors**:
-- `EADDRINUSE port 3000`: Kill processes on port 3000 (`lsof -ti:3000 | xargs kill -9`)
-- Icon rendering issues: Font Awesome via CDN is stable; avoid react-icons (hydration mismatch)
-- Asset path issues: Always use `getAssetPath()` helper from `utils/assets.js`
+**Deployment Issues**:
+- Vercel build fails - Check build logs, ensure all deps in package.json
+- 404 on routes - Verify `trailingSlash: true` in next.config.js
+- Assets not loading - Check paths start with `/assets/` not relative
 
-## Important Notes
+## Migration Status
 
-- **Legacy peer deps**: Use `--legacy-peer-deps` for npm install (React 19 compatibility)
-- **No .cursorrules relevance**: .cursor-rules file describes old vanilla JS minification process (not applicable to Vite build)
-- **Prerendering port**: Scripts use port 3000 - ensure it's free before building
-- **BASE_URL handling**: Use `import.meta.env.BASE_URL` via getAssetPath() for GitHub Pages compatibility
-- **Browser targets**: Modern browsers only (ES6+, CSS Grid, Intersection Observer)
+**Completed** ✅:
+- Next.js 15 setup with App Router
+- All 12 components migrated to Next.js
+- Complete Tailwind CSS refactoring (100%)
+- Legacy CSS removed (3,021 lines deleted)
+- Vercel deployment configured
+- RTL layout verified
+- All animations preserved
+
+**Pending** (After nextjs→main merge):
+- Legacy Vite code removal from main branch
+- Delete `gh-pages` branch
+- Update documentation
+- Final E2E testing
+
+See `MIGRATION_PLAN.md` for detailed migration history and technical decisions.
