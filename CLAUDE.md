@@ -8,13 +8,9 @@ Professional Hebrew RTL (Right-to-Left) landing page for Alon Cohen, a musician 
 
 **Tech Stack**: Next.js 15 (App Router) + React 19 + Tailwind CSS + Embla Carousel
 
-**Current State**: Migrated from Vite/React Router to Next.js. The `main` branch still contains legacy Vite code. The `nextjs` branch contains the fully-migrated Next.js application with complete Tailwind CSS refactoring (no legacy CSS remaining).
+**Current State**: Successfully migrated from Vite/React Router to Next.js 15. The `main` branch contains the fully-migrated Next.js application with complete Tailwind CSS refactoring. All legacy code has been removed.
 
-## Active Branches
-
-- **`main`**: Legacy Vite + React Router application (GitHub Pages deployment)
-- **`nextjs`**: Next.js 15 migration with Tailwind CSS refactoring (Vercel deployment) - **ACTIVE DEVELOPMENT**
-- **`gh-pages`**: Static build output for GitHub Pages (auto-generated, do not edit)
+**Historical Note**: Previously used Vite + React Router with GitHub Pages deployment (deprecated November 2024). All legacy branches (`nextjs`, `gh-pages`) have been deleted after successful migration.
 
 ## Development Commands
 
@@ -23,17 +19,12 @@ All commands must be run from the `react-app/` directory:
 ```bash
 cd react-app
 
-# Next.js Development (Current - nextjs branch)
+# Development
 npm install --legacy-peer-deps    # Initial setup (required due to React 19)
 npm run dev                        # Start Next.js dev server (http://localhost:3001)
 npm run build                      # Next.js production build
 npm run start                      # Preview production build locally
 npm run lint                       # ESLint check
-
-# Legacy Vite Commands (main branch only - deprecated)
-npm run dev:vite                   # Vite dev server (http://localhost:5173)
-npm run build:vite                 # Vite build + Puppeteer prerendering
-npm run deploy:vite                # Deploy to GitHub Pages (gh-pages branch)
 ```
 
 **Important**: Use `--legacy-peer-deps` for all npm commands due to React 19 peer dependency warnings.
@@ -61,7 +52,7 @@ react-app/
 │   ├── data/
 │   │   └── videos.js        # Video metadata for gallery
 │   ├── utils/
-│   │   └── assets.js        # getAssetPath() helper (deprecated in Next.js)
+│   │   └── assets.js        # Asset path helpers (deprecated - use Next.js /public directly)
 │   ├── video/
 │   │   └── [videoId]/       # Dynamic video pages
 │   │       └── page.jsx     # Video page component
@@ -70,7 +61,6 @@ react-app/
 │   └── globals.css          # Global styles + Tailwind utilities + custom CSS
 ├── public/
 │   └── assets/              # Images (WebP/AVIF optimized), videos
-├── src/                     # Legacy Vite code (main branch only)
 ├── next.config.js           # Next.js configuration
 ├── tailwind.config.js       # Tailwind config with custom animations
 └── package.json
@@ -206,29 +196,25 @@ style={{ display: isTyping ? 'flex' : 'none' }}
 
 ## Deployment
 
-### Current Setup (Dual Deployment)
+### Current Setup (Vercel)
 
-**Vercel** (nextjs branch):
-- Primary deployment for Next.js app
-- Auto-deploys on push to `nextjs` branch
-- URL: `singwithalon.com` (custom domain configured)
+**Production Deployment**:
+- Platform: Vercel
+- Domain: `singwithalon.com` (custom domain)
+- Branch: `main`
+- Auto-deploy: Every push to `main` triggers automatic deployment
 - Build command: `npm run build`
 - Output: Next.js optimized build
 
-**GitHub Pages** (main branch - legacy):
-- Legacy Vite deployment via `gh-pages` branch
-- Deploy command: `npm run deploy:vite` (from main branch only)
-- Puppeteer prerendering for SEO
-- Will be deprecated after nextjs→main merge
+**Manual Deployment** (optional):
+```bash
+cd react-app
+vercel --prod  # Deploy directly from local machine without git push
+```
 
-### Post-Merge Deployment Strategy
-
-After merging `nextjs` to `main`:
-
-1. **Update Vercel**: Change production branch from `nextjs` to `main`
-2. **Auto-deploy**: Every push to `main` triggers Vercel deployment
-3. **Manual deploy**: Use `vercel --prod` from CLI (works without git push)
-4. **Cleanup**: Delete `nextjs` branch and `gh-pages` branch (no longer needed)
+**DNS Configuration**:
+- Cloudflare DNS points to Vercel
+- SSL certificate auto-managed by Vercel
 
 ### Build Verification
 
@@ -325,19 +311,16 @@ Particles are automatically reduced on mobile via CSS in `globals.css`:
 
 ## Migration Status
 
-**Completed** ✅:
+**Migration Complete** ✅ (November 2024):
 - Next.js 15 setup with App Router
 - All 12 components migrated to Next.js
 - Complete Tailwind CSS refactoring (100%)
 - Legacy CSS removed (3,021 lines deleted)
-- Vercel deployment configured
+- Legacy Vite code removed (src/, vite.config.js, scripts/)
+- Vercel deployment live at singwithalon.com
+- DNS configured (Cloudflare → Vercel)
+- All branches cleaned up (gh-pages, nextjs deleted)
 - RTL layout verified
 - All animations preserved
-
-**Pending** (After nextjs→main merge):
-- Legacy Vite code removal from main branch
-- Delete `gh-pages` branch
-- Update documentation
-- Final E2E testing
 
 See `MIGRATION_PLAN.md` for detailed migration history and technical decisions.

@@ -5,7 +5,6 @@ import { getAssetPath } from '../utils/assets';
 import { ButtonPrimary, ButtonSecondary } from './ui/Button';
 
 function Hero() {
-  const tadmitPosterAvif = getAssetPath('tadmit_poster.avif');
   const tadmitPosterWebp = getAssetPath('tadmit_poster.webp');
   const [particles, setParticles] = useState({ back: [], mid: [], front: [] });
 
