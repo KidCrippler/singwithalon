@@ -211,7 +211,7 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     if (trimmed === '') {
       parsedLines.push({ type: 'empty', text: '' });
     } else if (isDirective(trimmed)) {
-      parsedLines.push({ type: 'directive', text: trimmed.slice(1, -1) }); // Remove { }
+      parsedLines.push({ type: 'directive', text: extractDirectiveText(trimmed) });
     } else if (isChordLine(trimmed)) {
       // For RTL songs, reverse chord lines so they display correctly
       const chordLine = isRtl ? reverseChordLineForRtl(line) : line;
@@ -248,8 +248,27 @@ function detectDirection(text: string, override?: 'ltr' | 'rtl'): 'ltr' | 'rtl' 
   return hebrewCount > 10 ? 'rtl' : 'ltr';
 }
 
+/**
+ * Strip Unicode directional control characters that interfere with parsing.
+ * These include RTL/LTR marks and other invisible formatting characters.
+ */
+function stripDirectionalChars(text: string): string {
+  // Remove: RTL Mark (U+200F), LTR Mark (U+200E), Arabic Letter Mark (U+061C),
+  // Directional isolates (U+2066-U+2069), Directional formatting (U+202A-U+202E)
+  return text.replace(/[\u200E\u200F\u061C\u2066-\u2069\u202A-\u202E]/g, '');
+}
+
 function isDirective(line: string): boolean {
-  return line.startsWith('{') && line.endsWith('}');
+  const cleaned = stripDirectionalChars(line).trim();
+  return cleaned.startsWith('{') && cleaned.endsWith('}');
+}
+
+/**
+ * Extract directive text, stripping directional characters
+ */
+function extractDirectiveText(line: string): string {
+  const cleaned = stripDirectionalChars(line).trim();
+  return cleaned.slice(1, -1); // Remove { }
 }
 
 // Chord detection regex - matches common chord patterns
@@ -284,8 +303,10 @@ export function isValidChordToken(token: string): boolean {
 }
 
 function isChordLine(line: string): boolean {
-  const tokens = line.trim().split(/\s+/);
-  if (tokens.length === 0) return false;
+  // Strip directional control characters before checking
+  const cleaned = stripDirectionalChars(line).trim();
+  const tokens = cleaned.split(/\s+/);
+  if (tokens.length === 0 || (tokens.length === 1 && tokens[0] === '')) return false;
   
   // Check if ALL tokens are valid chords or special markers
   return tokens.every(isValidChordToken);

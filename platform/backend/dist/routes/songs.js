@@ -179,7 +179,7 @@ function parseSongMarkup(text, song) {
             parsedLines.push({ type: 'empty', text: '' });
         }
         else if (isDirective(trimmed)) {
-            parsedLines.push({ type: 'directive', text: trimmed.slice(1, -1) }); // Remove { }
+            parsedLines.push({ type: 'directive', text: extractDirectiveText(trimmed) });
         }
         else if (isChordLine(trimmed)) {
             // For RTL songs, reverse chord lines so they display correctly
@@ -213,8 +213,25 @@ function detectDirection(text, override) {
     // If significant Hebrew content, use RTL
     return hebrewCount > 10 ? 'rtl' : 'ltr';
 }
+/**
+ * Strip Unicode directional control characters that interfere with parsing.
+ * These include RTL/LTR marks and other invisible formatting characters.
+ */
+function stripDirectionalChars(text) {
+    // Remove: RTL Mark (U+200F), LTR Mark (U+200E), Arabic Letter Mark (U+061C),
+    // Directional isolates (U+2066-U+2069), Directional formatting (U+202A-U+202E)
+    return text.replace(/[\u200E\u200F\u061C\u2066-\u2069\u202A-\u202E]/g, '');
+}
 function isDirective(line) {
-    return line.startsWith('{') && line.endsWith('}');
+    const cleaned = stripDirectionalChars(line).trim();
+    return cleaned.startsWith('{') && cleaned.endsWith('}');
+}
+/**
+ * Extract directive text, stripping directional characters
+ */
+function extractDirectiveText(line) {
+    const cleaned = stripDirectionalChars(line).trim();
+    return cleaned.slice(1, -1); // Remove { }
 }
 // Chord detection regex - matches common chord patterns
 // Supports: Am, G7, Cmaj7, Bm7b5, F#dim, Dsus4, Eadd9, A/C#, Fo7, Am!, [Em], etc.
@@ -250,8 +267,10 @@ export function isValidChordToken(token) {
     return CHORD_REGEX.test(token);
 }
 function isChordLine(line) {
-    const tokens = line.trim().split(/\s+/);
-    if (tokens.length === 0)
+    // Strip directional control characters before checking
+    const cleaned = stripDirectionalChars(line).trim();
+    const tokens = cleaned.split(/\s+/);
+    if (tokens.length === 0 || (tokens.length === 1 && tokens[0] === ''))
         return false;
     // Check if ALL tokens are valid chords or special markers
     return tokens.every(isValidChordToken);
