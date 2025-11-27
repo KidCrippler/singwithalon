@@ -453,6 +453,13 @@ body {
   font-weight: 500;
 }
 
+/* RTL chord lines: display LTR text, right-aligned */
+.rtl .line-chords {
+  direction: ltr;
+  text-align: right;
+  unicode-bidi: bidi-override;
+}
+
 .line-directive .directive {
   color: var(--directive-color);
   font-style: italic;

@@ -94,6 +94,9 @@ A real-time web application for managing sing-along events and band performances
   - Click song → go to Presentation View (that song)
   - Viewer can click "Add to Queue" (prompts for name, shows confirmation)
   - Admin can click "Present Now" (immediately goes to Playing Now)
+- **Sorting**: Songs are sorted lexicographically by name:
+  - Hebrew songs first (sorted alphabetically in Hebrew)
+  - English songs second (sorted alphabetically in English)
 - **RTL Layout**: Default is RTL; song list displays right-to-left
 - **Responsive Layout**: Song list uses multi-column grid that adapts to screen width:
   - Mobile (<640px): 1 column
@@ -351,6 +354,7 @@ D         C#7     F#m  A7
   1. Reverse the entire chord line string character by character
   2. For each token, reverse it back to restore chord names
   - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
+- **CSS for RTL chord lines:** Reversed chord lines are displayed with `direction: ltr` (to preserve spacing) and `text-align: right` (to align with RTL lyrics)
 
 **5. Spacing Preservation:**
 - Chord lines must preserve exact character spacing from source file

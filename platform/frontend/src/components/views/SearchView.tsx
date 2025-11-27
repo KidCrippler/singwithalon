@@ -23,14 +23,35 @@ export function SearchView() {
       .finally(() => setIsLoading(false));
   }, []);
 
+  // Check if a string starts with a Hebrew character
+  const startsWithHebrew = (str: string): boolean => {
+    const firstChar = str.trim().charAt(0);
+    return /[\u0590-\u05FF]/.test(firstChar);
+  };
+
+  // Sort songs: Hebrew first (alphabetically), then English (alphabetically)
+  const sortedSongs = useMemo(() => {
+    return [...songs].sort((a, b) => {
+      const aIsHebrew = startsWithHebrew(a.name);
+      const bIsHebrew = startsWithHebrew(b.name);
+      
+      // Hebrew songs come first
+      if (aIsHebrew && !bIsHebrew) return -1;
+      if (!aIsHebrew && bIsHebrew) return 1;
+      
+      // Within same group, sort alphabetically by name
+      return a.name.localeCompare(b.name, aIsHebrew ? 'he' : 'en');
+    });
+  }, [songs]);
+
   const filteredSongs = useMemo(() => {
-    if (!searchTerm.trim()) return songs;
+    if (!searchTerm.trim()) return sortedSongs;
     const term = searchTerm.toLowerCase();
-    return songs.filter(song => 
+    return sortedSongs.filter(song => 
       song.name.toLowerCase().includes(term) ||
       song.singer.toLowerCase().includes(term)
     );
-  }, [songs, searchTerm]);
+  }, [sortedSongs, searchTerm]);
 
   const handleViewSong = (songId: number) => {
     navigate(`/song/${songId}`);
