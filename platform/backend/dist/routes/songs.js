@@ -221,45 +221,89 @@ function isDirective(line) {
 const CHORD_REGEX = /^[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
 // Matches chords wrapped in square brackets like [Em] or [Am7]
 const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
+// Matches bass-only notation like /F, /Bb, /A, /F# (just a slash followed by a note)
+const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
+/**
+ * Check if a token is a valid chord token.
+ * Exported for testing purposes.
+ */
+export function isValidChordToken(token) {
+    // Handle continuation marker
+    if (token === '--->')
+        return true;
+    // Handle single hyphen (used as separator between chords)
+    if (token === '-')
+        return true;
+    // Handle repeat notation: 'x' and digits like '2', '3', '4'
+    if (token === 'x' || /^\d+$/.test(token))
+        return true;
+    // Handle parenthesized tokens (opening or closing parens in chord progressions)
+    if (token.startsWith('(') || token.endsWith(')'))
+        return true;
+    // Test against bracketed chord regex (e.g., [Em], [Am7])
+    if (BRACKETED_CHORD_REGEX.test(token))
+        return true;
+    // Test against bass-only notation (e.g., /F, /Bb, /A)
+    if (BASS_ONLY_REGEX.test(token))
+        return true;
+    // Test against standard chord regex (including chords with !)
+    return CHORD_REGEX.test(token);
+}
 function isChordLine(line) {
     const tokens = line.trim().split(/\s+/);
     if (tokens.length === 0)
         return false;
     // Check if ALL tokens are valid chords or special markers
-    return tokens.every(token => {
-        // Handle continuation marker
-        if (token === '--->')
-            return true;
-        // Handle single hyphen (used as separator between chords)
-        if (token === '-')
-            return true;
-        // Handle parenthesized chords like (Em) or repeated patterns like (Em A D) x 2
-        if (token.startsWith('(') || token.endsWith(')') || token === 'x' || /^\d+$/.test(token))
-            return true;
-        // Test against bracketed chord regex (e.g., [Em], [Am7])
-        if (BRACKETED_CHORD_REGEX.test(token))
-            return true;
-        // Test against standard chord regex (including chords with !)
-        return CHORD_REGEX.test(token);
-    });
+    return tokens.every(isValidChordToken);
 }
 /**
  * Reverse a chord line for RTL display.
  * Algorithm:
  * 1. Reverse the entire string character by character
- * 2. For each token (non-whitespace sequence), reverse it back
+ * 2. For each token, reverse it back to restore chord names
+ * 3. For tokens with unbalanced brackets, move bracket to opposite side and swap type
  *
  * Example: "   C  G Am  D  Em    Em"
  * Step 1 (reverse all): "mE    mE  D  mA G  C   "
  * Step 2 (reverse tokens): "Em    Em  D  Am G  C   "
+ *
+ * Example with parens: "(Cm   Ab   Eb   Bb) x 2"
+ * Step 1 (reverse): "2 x )bB   bE   bA   mC("
+ * Step 2 (reverse tokens): "2 x Bb)   Eb   Ab   (Cm"
+ * Step 3 (fix brackets): "2 x (Bb   Eb   Ab   Cm)"
+ *
+ * Exported for testing purposes.
  */
-function reverseChordLineForRtl(line) {
+export function reverseChordLineForRtl(line) {
     // Step 1: Reverse the entire string
     const reversed = line.split('').reverse().join('');
-    // Step 2: Find each token and reverse it back
-    // Use regex to match tokens (non-whitespace sequences) and reverse each one
+    // Step 2: For each token, reverse it and fix bracket positions
     return reversed.replace(/\S+/g, (token) => {
-        return token.split('').reverse().join('');
+        // Reverse the token to restore chord names
+        let result = token.split('').reverse().join('');
+        // Check if brackets are balanced (at both ends) - if so, leave alone
+        const startsWithOpen = result.startsWith('(') || result.startsWith('[');
+        const endsWithClose = result.endsWith(')') || result.endsWith(']');
+        if (startsWithOpen && endsWithClose) {
+            // Balanced brackets like (Em) or [Am7] - leave as is
+            return result;
+        }
+        // Fix unbalanced bracket positions: move to opposite side and swap type
+        // Opening bracket at start → move to end as closing bracket
+        if (result.startsWith('(')) {
+            result = result.slice(1) + ')';
+        }
+        else if (result.startsWith('[')) {
+            result = result.slice(1) + ']';
+        }
+        // Closing bracket at end → move to start as opening bracket
+        else if (result.endsWith(')')) {
+            result = '(' + result.slice(0, -1);
+        }
+        else if (result.endsWith(']')) {
+            result = '[' + result.slice(0, -1);
+        }
+        return result;
     });
 }
 function calculateVerseBreaks(lines, linesPerVerse = 8) {

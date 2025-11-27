@@ -329,13 +329,18 @@ D         C#7     F#m  A7
 - A line is a chord line IF AND ONLY IF **all whitespace-separated tokens** match the chord pattern
 - Chord regex pattern: `[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
 - Bracketed chord pattern: `\[[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
+- Bass-only pattern: `\/[A-G][#b]?` (just a note, e.g., `/F`, `/Bb`, `/A`, `/F#`)
 - Special notation: `o` = diminished (e.g., `Fo7` = `Fdim7`)
 - **Extended notation support:**
   - Chords with exclamation marks: `Am!`, `G7!` (emphasis/accent)
   - Bracketed chords: `[Em]`, `[Am7]` (optional/alternative)
   - Single hyphen: `-` (separator between chords)
+  - Bass-only notation: `/F`, `/Bb`, `/A` (valid), but NOT `/C7`, `/Fm7`, `/F#o7` (invalid - qualities not allowed)
+  - Repeat markers: `x` followed by digit (e.g., `x 2`, `x 3`)
+  - Parenthesized progressions: `(Cm Ab Eb Bb) x 2`
 - Edge cases like single-letter tokens: `A` alone is a valid chord
 - Example of valid chord line: `Am   Dm - E - [Am]   [Am]   Am!`
+- **Unit tests:** See `backend/src/tests/chord-validation.test.ts` for comprehensive test suite
 - Nice-to-have: Override mechanism for edge cases
 
 **3. Special Markers:**
@@ -353,7 +358,10 @@ D         C#7     F#m  A7
 - **Hebrew songs: Chord lines are reversed server-side** for proper RTL display:
   1. Reverse the entire chord line string character by character
   2. For each token, reverse it back to restore chord names
+  3. For tokens with unbalanced brackets, move bracket to opposite side and swap type
   - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
+  - Example with parens: `"(Cm   Ab   Eb   Bb) x 2"` → `"2 x (Bb   Eb   Ab   Cm)"`
+  - Example with mixed brackets: `"(Dm   Am   [E]   Am) x 3"` → `"3 x (Am   [E]   Am   Dm)"`
 - **CSS for RTL chord lines:** Reversed chord lines are displayed with `direction: ltr` (to preserve spacing) and `text-align: right` (to align with RTL lyrics)
 
 **5. Spacing Preservation:**

@@ -8,6 +8,7 @@ This guide covers how to build, run, and manage the SingWithAlon platform.
 
 - [Building](#building)
 - [Running](#running)
+- [Testing](#testing)
 - [Stopping Services](#stopping-services)
 - [SQLite Database Queries](#sqlite-database-queries)
 - [cURL API Examples](#curl-api-examples)
@@ -79,6 +80,27 @@ cd platform/frontend
 npm run build
 npm run preview
 ```
+
+---
+
+## Testing
+
+### Backend Unit Tests
+
+Run the chord validation test suite:
+```bash
+cd platform/backend
+npm test
+```
+
+This runs tests for chord token validation including:
+- Basic chords (Am, G7, Cmaj7, etc.)
+- Accidentals (F#, Bb, F#m, etc.)
+- Slash chords (A/C#, G/B, etc.)
+- Bass-only notation (/F, /Bb, etc.)
+- Bracketed chords ([Em], [Am7], etc.)
+- Special markers (--->, -, x, digits)
+- Invalid tokens (regular words, Hebrew text, etc.)
 
 ---
 
