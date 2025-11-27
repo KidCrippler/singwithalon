@@ -327,11 +327,15 @@ D         C#7     F#m  A7
 
 **2. Chord Line Detection (content-based with regex):**
 - A line is a chord line IF AND ONLY IF **all whitespace-separated tokens** match the chord pattern
-- Chord regex pattern: `[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
-- Bracketed chord pattern: `\[[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
+- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
+- Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
 - Bass-only pattern: `\/[A-G][#b]?` (just a note, e.g., `/F`, `/Bb`, `/A`, `/F#`)
-- Special notation: `o` = diminished (e.g., `Fo7` = `Fdim7`)
+- Bracketed bass-only pattern: `\[\/[A-G][#b]?\]` (e.g., `[/A]`, `[/F#]`)
+- Empty brackets: `[]` (valid placeholder token in chord lines)
+- Special notation: `o` = diminished (e.g., `Fo7` = `Fdim7`), `+` = augmented
 - **Extended notation support:**
+  - Major chord suffixes: `maj`, `Maj`, `M` (e.g., `CMaj7`, `DM9`, `Fmaj7`)
+  - Minor chord suffixes: `m`, `min`, `Min` (e.g., `Am`, `Cmin7`, `DMin7`)
   - Chords with exclamation marks: `Am!`, `G7!` (emphasis/accent)
   - Bracketed chords: `[Em]`, `[Am7]` (optional/alternative)
   - Single hyphen: `-` (separator between chords)
@@ -339,29 +343,34 @@ D         C#7     F#m  A7
   - Repeat markers: `x` followed by digit (e.g., `x 2`, `x 3`)
   - Parenthesized progressions: `(Cm Ab Eb Bb) x 2`
 - Edge cases like single-letter tokens: `A` alone is a valid chord
-- Example of valid chord line: `Am   Dm - E - [Am]   [Am]   Am!`
+- Example of valid chord line: `Am   Dm - E - [Am]   [/A]   [] Am!`
 - **Unit tests:** See `backend/src/tests/chord-validation.test.ts` for comprehensive test suite
 - Nice-to-have: Override mechanism for edge cases
 
 **3. Special Markers:**
 | Marker | Meaning | Display (Chords Mode) | Display (Lyrics Mode) |
 |--------|---------|----------------------|----------------------|
-| `{...}` | Band directive | Green, italic | Hidden |
-| `[...]` | Crowd cue | Red | Red |
+| `{...}` | Band directive | Green (not italic) | Hidden |
+| `[...]` | Crowd cue (non-chord text) | Red | Red |
 | `--->` | Chord continuation | Blue (treat as chord) | Hidden |
 | `(...)` | Inline notation | Keep as-is | Keep as-is |
+
+**Note on `[...]` detection:** Bracketed content is a **cue** only if the inner text is NOT a valid chord token. If the content is a chord (e.g., `[Am]`, `[/A]`), it's treated as a bracketed chord on a chord line. If it's non-chord text (e.g., `[Hey!]`, `[Clap]`), it's a crowd cue displayed in red.
 
 **4. RTL Detection:**
 - Scan lyrics lines (not chord lines) for Hebrew Unicode characters (`\u0590-\u05FF`)
 - If significant Hebrew content detected → RTL mode
 - JSON `direction` field overrides auto-detection if present
+- **RTL Directional Characters:** Lines may contain invisible Unicode directional control characters (`U+200E` LRM, `U+200F` RLM, `U+061C` ALM, `U+2066-U+2069` isolates). These are stripped before chord detection and RTL reversal to ensure correct parsing.
 - **Hebrew songs: Chord lines are reversed server-side** for proper RTL display:
-  1. Reverse the entire chord line string character by character
-  2. For each token, reverse it back to restore chord names
-  3. For tokens with unbalanced brackets, move bracket to opposite side and swap type
+  1. Strip any directional control characters from the line
+  2. Reverse the entire chord line string character by character
+  3. For each token, reverse it back to restore chord names
+  4. For tokens with unbalanced brackets, move bracket to opposite side and swap type
   - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
   - Example with parens: `"(Cm   Ab   Eb   Bb) x 2"` → `"2 x (Bb   Eb   Ab   Cm)"`
   - Example with mixed brackets: `"(Dm   Am   [E]   Am) x 3"` → `"3 x (Am   [E]   Am   Dm)"`
+  - Example with bass-only: `"/E /E /A [/A]"` → `"[/A] /A /E /E"`
 - **CSS for RTL chord lines:** Reversed chord lines are displayed with `direction: ltr` (to preserve spacing) and `text-align: right` (to align with RTL lyrics)
 
 **5. Spacing Preservation:**
@@ -826,9 +835,10 @@ platform/
 - [x] Implement markupUrl fetching with error handling
 - [x] Build song parser (extract metadata, detect chord lines, parse markers)
 - [x] Implement RTL/LTR auto-detection
-- [ ] Create LyricsDisplay component (monospace, exact spacing)
-- [ ] Apply color coding (blue chords, green directives, red cues)
+- [x] Create LyricsDisplay component (monospace, exact spacing)
+- [x] Apply color coding (blue chords, green directives, red cues)
 - [x] Build SearchView with filtering
+- [x] Implement dynamic font sizing (auto-shrink to fit screen)
 
 ### Phase 3: Transposition
 - [ ] Implement chord regex parser
@@ -852,12 +862,12 @@ platform/
 - [x] Implement verse:next/prev events
 - [ ] Add verse mode toggle for viewers
 
-### Phase 6: Projection Mode
-- [ ] Implement lyrics-only display mode
+### Phase 6: Projection Mode (partial)
+- [x] Implement lyrics-only display mode
 - [ ] Add background image system (random selection)
 - [ ] Create semi-transparent overlays for text contrast
-- [ ] Build responsive layout for projector
-- [ ] Handle font auto-sizing
+- [x] Build responsive layout for projector (multi-column, max 5 columns)
+- [x] Handle font auto-sizing (dynamic sizing algorithm)
 
 ### Phase 7: Queue System (partial)
 - [x] Implement queue database operations
@@ -875,6 +885,39 @@ platform/
 - [x] Connection status indicators
 - [ ] Final UI/UX polish (theme, logo integration)
 
+### Phase 9: Database Migration to Turso (post-deployment)
+Migrate from local SQLite to Turso (hosted SQLite/LibSQL) for serverless deployment compatibility.
+
+**Why Turso:**
+- SQLite-compatible API (minimal code changes)
+- Serverless-friendly (database persists independently of app lifecycle)
+- Free tier: 9GB storage, 500 databases
+- Perfect for sporadic usage patterns (app may be idle 99% of time)
+
+**Migration Steps:**
+- [ ] Create Turso account and database
+- [ ] Install `@libsql/client` package
+- [ ] Update `db/index.ts` to use Turso client instead of `better-sqlite3`
+- [ ] Configure environment variables (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`)
+- [ ] Test all database operations (queue, sessions, playing state)
+- [ ] Update deployment configuration (Vercel env vars)
+
+**Code Change (simplified):**
+```typescript
+// Before (better-sqlite3)
+import Database from 'better-sqlite3';
+const db = new Database('./database/singalong.db');
+
+// After (Turso/LibSQL)
+import { createClient } from '@libsql/client';
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+```
+
+**Note:** This phase is not urgent for initial deployment but recommended before heavy usage to ensure database persistence across serverless cold starts.
+
 ---
 
 ## 15. Configuration & Environment Variables
@@ -885,8 +928,12 @@ platform/
 PORT=3001
 HOST=0.0.0.0
 
-# Database
+# Database (local SQLite - for development)
 DATABASE_PATH=./database/singalong.db
+
+# Database (Turso - for production/serverless)
+# TURSO_DATABASE_URL=libsql://your-db-name.turso.io
+# TURSO_AUTH_TOKEN=your-auth-token
 
 # Authentication
 JWT_SECRET=your-secret-key-here
