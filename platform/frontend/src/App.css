@@ -10,9 +10,9 @@
   --error-color: #dc3545;
   --warning-color: #ffc107;
   
-  /* Lyrics colors */
-  --chord-color: #2196f3;
-  --directive-color: #4caf50;
+  /* Lyrics colors - matching SyncTheBand reference */
+  --chord-color: #0000ff;
+  --directive-color: #a52a2a;
   --cue-color: #f44336;
   
   --header-height: 60px;
@@ -359,41 +359,71 @@ body {
   cursor: pointer;
 }
 
-/* Song View */
+/* Song View - FULLSCREEN LAYOUT */
 .song-view {
-  max-width: 1000px;
-  margin: 0 auto;
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  overflow: hidden; /* NO SCROLLING */
 }
 
+/* Compact top bar - minimal height */
 .song-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
+  padding: 0.35rem 0.5rem;
+  background: #f5f5f5;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.song-title-compact {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  text-align: center;
+}
+
+.song-title-compact .artist {
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
 }
 
 .back-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.5rem;
   background: white;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
+  font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 .mode-toggle {
   display: flex;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .mode-toggle button {
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.6rem;
   border: none;
   background: white;
   cursor: pointer;
+  font-size: 0.8rem;
 }
 
 .mode-toggle button.active {
@@ -403,54 +433,74 @@ body {
 
 .action-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
+.action-buttons .present-btn,
+.action-buttons .queue-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Hidden song header - info moved to top bar */
 .song-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  display: none;
 }
 
-.song-header h1 {
-  font-size: 1.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.song-header h2 {
-  font-size: 1.125rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-}
-
-.song-header .credits {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  margin-top: 0.5rem;
-}
-
-/* Lyrics Container */
+/* Lyrics Container - FULLSCREEN with dynamic columns */
 .lyrics-container {
+  flex: 1;
   background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  font-family: 'Courier New', Courier, monospace;
+  padding: 0.5rem;
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   white-space: pre-wrap;
-  overflow-x: auto;
+  overflow: hidden; /* NO SCROLLING */
+  
+  /* CSS Columns */
+  column-gap: 1rem;
+  column-rule: 1px solid #ddd;
+  column-fill: balance;
+  
+  /* Font size will be set dynamically by JS */
+  font-size: var(--dynamic-font-size, 1rem);
+  line-height: 1.35;
 }
 
+/* CHORDS MODE: Use Cousine monospace - has true Hebrew monospace support */
+.lyrics-container.chords {
+  font-family: 'Cousine', 'Courier New', Courier, monospace;
+  font-weight: 700;
+}
+
+/* LYRICS MODE: Use nice readable proportional font */
 .lyrics-container.lyrics {
-  font-family: 'Heebo', sans-serif;
-  font-size: 1.25rem;
-  line-height: 1.8;
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Column counts - MAX 5 COLUMNS, scale down on smaller screens */
+.lyrics-container { column-count: 1; }
+@media (min-width: 500px) { .lyrics-container { column-count: 2; } }
+@media (min-width: 700px) { .lyrics-container { column-count: 3; } }
+@media (min-width: 900px) { .lyrics-container { column-count: 4; } }
+@media (min-width: 1100px) { .lyrics-container { column-count: 5; } } /* MAX - never more than 5 */
+
+/* Each section/verse - stays together */
+.lyrics-section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 0.8em;
 }
 
 .line {
-  min-height: 1.5em;
+  min-height: 1.2em;
+  white-space: pre; /* Preserve spaces AND prevent line wrapping */
 }
 
 .line-chords .chords {
-  color: var(--chord-color);
-  font-weight: 500;
+  color: #0000ff;
+  font-weight: 700;
+  /* font-family inherited from .lyrics-container.chords (monospace) */
 }
 
 /* RTL chord lines: display LTR text, right-aligned */
@@ -461,27 +511,46 @@ body {
 }
 
 .line-directive .directive {
-  color: var(--directive-color);
-  font-style: italic;
+  color: #a52a2a;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 1.1em;
 }
 
 .line-lyric .lyric {
-  color: var(--text-primary);
+  color: #1a1a1a;
 }
 
-/* Playing Now View */
+/* Playing Now View - FULLSCREEN */
 .playing-now-view {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  padding: 0 1rem;
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  overflow: hidden; /* NO SCROLLING */
+}
+
+/* Reuse song-top-bar styles for playing now */
+.playing-now-view .song-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  background: #f5f5f5;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 0.5rem;
 }
 
 .playing-now-splash {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--header-height) - 2rem);
+  flex: 1;
 }
 
 .splash-content {
@@ -504,28 +573,24 @@ body {
   border-radius: 8px;
 }
 
+/* Admin controls - positioned in the top bar area */
 .admin-controls {
-  position: fixed;
-  top: calc(var(--header-height) + 1rem);
-  left: 1rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 50;
+  gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .admin-controls button {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
   border: 1px solid var(--border-color);
   background: white;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .admin-controls button:hover {
@@ -533,10 +598,7 @@ body {
 }
 
 .verse-indicator {
-  text-align: center;
-  padding: 1rem;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
+  display: none; /* Hide verse indicator - not needed in fullscreen mode */
 }
 
 /* Queue View */
