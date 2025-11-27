@@ -43,17 +43,29 @@ const testCases = [
     { input: 'Am!', expected: true, description: 'Chord with emphasis' },
     { input: 'G7!', expected: true, description: 'Seventh chord with emphasis' },
     { input: 'F#m!', expected: true, description: 'Sharp minor with emphasis' },
+    // === Major Chord Variations ===
+    { input: 'CMaj7', expected: true, description: 'Major 7 with capital Maj' },
+    { input: 'BbMaj7', expected: true, description: 'Flat major 7 with capital Maj' },
+    { input: 'F#Maj9', expected: true, description: 'Sharp major 9 with capital Maj' },
+    { input: 'CM7', expected: true, description: 'Major 7 with capital M' },
+    { input: 'DM9', expected: true, description: 'Major 9 with capital M' },
+    { input: 'EbM7', expected: true, description: 'Flat major 7 with capital M' },
+    { input: 'Cmin7', expected: true, description: 'Minor with min suffix' },
+    { input: 'DMin7', expected: true, description: 'Minor with capital Min suffix' },
     // === Bracketed Chords ===
     { input: '[Em]', expected: true, description: 'Bracketed chord' },
     { input: '[Am7]', expected: true, description: 'Bracketed seventh chord' },
     { input: '[F#m]', expected: true, description: 'Bracketed sharp minor' },
     { input: '[Bb]', expected: true, description: 'Bracketed flat chord' },
     { input: '[E]', expected: true, description: 'Bracketed simple chord' },
+    { input: '[BbMaj7]', expected: true, description: 'Bracketed major 7 with capital Maj' },
     // === Bracketed Bass-Only Notation ===
     { input: '[/A]', expected: true, description: 'Bracketed bass-only' },
     { input: '[/F#]', expected: true, description: 'Bracketed bass-only sharp' },
     { input: '[/Bb]', expected: true, description: 'Bracketed bass-only flat' },
     { input: '[/E]', expected: true, description: 'Bracketed bass-only simple' },
+    // === Empty Brackets (placeholder/rest) ===
+    { input: '[]', expected: true, description: 'Empty brackets as rest/placeholder' },
     // === Special Markers ===
     { input: '--->', expected: true, description: 'Continuation marker' },
     { input: '-', expected: true, description: 'Single hyphen separator' },
