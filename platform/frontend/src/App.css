@@ -1,0 +1,725 @@
+/* CSS Variables */
+:root {
+  --primary-color: #4a90d9;
+  --primary-dark: #357abd;
+  --secondary-color: #f8f9fa;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --border-color: #e0e0e0;
+  --success-color: #28a745;
+  --error-color: #dc3545;
+  --warning-color: #ffc107;
+  
+  /* Lyrics colors */
+  --chord-color: #2196f3;
+  --directive-color: #4caf50;
+  --cue-color: #f44336;
+  
+  --header-height: 60px;
+  --content-padding: 1rem;
+}
+
+/* Global Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--secondary-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  padding: var(--content-padding);
+  padding-top: calc(var(--header-height) + var(--content-padding));
+}
+
+/* RTL Support */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Header */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.connection-status {
+  font-size: 0.75rem;
+}
+
+.connection-status.connected {
+  color: var(--success-color);
+}
+
+.connection-status.disconnected {
+  color: var(--error-color);
+}
+
+.header-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.header-nav a {
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.header-nav a:hover {
+  background: var(--secondary-color);
+}
+
+.header-nav a.active {
+  color: var(--primary-color);
+  background: rgba(74, 144, 217, 0.1);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logout-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error States */
+.error-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-container button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Search View */
+.search-view {
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1rem;
+}
+
+.search-header {
+  margin-bottom: 1.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.search-header h1 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.search-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  direction: rtl;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.reload-btn {
+  padding: 0.75rem 1rem;
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Songs List - Responsive Multi-Column Grid */
+.songs-list {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+/* Responsive columns based on screen width */
+@media (min-width: 640px) {
+  .songs-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .songs-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1400px) {
+  .songs-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1800px) {
+  .songs-list {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.no-results {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+.song-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  direction: rtl;
+}
+
+.song-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.song-info:hover .song-name {
+  color: var(--primary-color);
+}
+
+.song-name {
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.song-artist {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.private-badge {
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.song-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.present-btn, .queue-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.present-btn {
+  background: var(--primary-color);
+  color: white;
+}
+
+.present-btn:hover {
+  background: var(--primary-dark);
+}
+
+.queue-btn {
+  background: var(--success-color);
+  color: white;
+}
+
+.queue-form, .queue-form-inline {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.queue-form input, .queue-form-inline input {
+  width: 120px;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.queue-form button, .queue-form-inline button {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+/* Song View */
+.song-view {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.song-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mode-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mode-toggle button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+}
+
+.mode-toggle button.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.song-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.song-header h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.song-header h2 {
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.song-header .credits {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+/* Lyrics Container */
+.lyrics-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.lyrics-container.lyrics {
+  font-family: 'Heebo', sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.8;
+}
+
+.line {
+  min-height: 1.5em;
+}
+
+.line-chords .chords {
+  color: var(--chord-color);
+  font-weight: 500;
+  /* Chords inherit direction from container - RTL for Hebrew, LTR for English */
+  unicode-bidi: plaintext;
+}
+
+/* In RTL mode, chord lines should display right-to-left */
+.rtl .line-chords {
+  direction: rtl;
+  text-align: right;
+}
+
+.ltr .line-chords {
+  direction: ltr;
+  text-align: left;
+}
+
+.line-directive .directive {
+  color: var(--directive-color);
+  font-style: italic;
+}
+
+.line-lyric .lyric {
+  color: var(--text-primary);
+}
+
+/* Playing Now View */
+.playing-now-view {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 1rem;
+}
+
+.playing-now-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height) - 2rem);
+}
+
+.splash-content {
+  text-align: center;
+}
+
+.splash-content h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.qr-placeholder {
+  width: 200px;
+  height: 200px;
+  margin: 2rem auto;
+  background: var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.admin-controls {
+  position: fixed;
+  top: calc(var(--header-height) + 1rem);
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 50;
+}
+
+.admin-controls button {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-controls button:hover {
+  background: var(--secondary-color);
+}
+
+.verse-indicator {
+  text-align: center;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Queue View */
+.queue-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.queue-view h1 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.empty-queue {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.queue-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.queue-group {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--secondary-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.requester-name {
+  font-weight: 600;
+}
+
+.request-count {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.group-entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.queue-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.queue-entry:last-child {
+  border-bottom: none;
+}
+
+.queue-entry.played {
+  opacity: 0.5;
+  background: var(--secondary-color);
+}
+
+.entry-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.played-badge {
+  color: var(--success-color);
+  font-size: 0.875rem;
+}
+
+/* Login View */
+.login-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height) - 2rem);
+}
+
+.login-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card h1 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.1);
+}
+
+.error-message {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #ffebee;
+  color: var(--error-color);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.login-card button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-card button[type="submit"]:hover {
+  background: var(--primary-dark);
+}
+
+.login-card button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 0.5rem;
+  }
+  
+  .header-nav a {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .song-top-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .admin-controls {
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    flex-direction: row;
+  }
+}
