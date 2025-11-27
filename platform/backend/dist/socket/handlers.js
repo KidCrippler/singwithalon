@@ -134,6 +134,34 @@ export function setupSocketHandlers(io) {
             const groupedQueue = queueQueries.getGrouped();
             io.to('admin').emit('queue:updated', { queue: groupedQueue });
         });
+        // Admin-only: Delete a single entry from queue
+        socket.on('queue:deleteEntry', ({ queueId }) => {
+            if (!socketData.user?.isAdmin)
+                return;
+            const removed = queueQueries.removeById(queueId);
+            if (removed) {
+                const groupedQueue = queueQueries.getGrouped();
+                io.to('admin').emit('queue:updated', { queue: groupedQueue });
+            }
+        });
+        // Admin-only: Delete all entries for a session (delete group)
+        socket.on('queue:deleteGroup', ({ sessionId: targetSessionId }) => {
+            if (!socketData.user?.isAdmin)
+                return;
+            const count = queueQueries.removeBySessionId(targetSessionId);
+            if (count > 0) {
+                const groupedQueue = queueQueries.getGrouped();
+                io.to('admin').emit('queue:updated', { queue: groupedQueue });
+            }
+        });
+        // Admin-only: Clear entire queue
+        socket.on('queue:truncate', () => {
+            if (!socketData.user?.isAdmin)
+                return;
+            queueQueries.truncate();
+            const groupedQueue = queueQueries.getGrouped();
+            io.to('admin').emit('queue:updated', { queue: groupedQueue });
+        });
         // === Projector Events ===
         socket.on('projector:register', ({ width, height, linesPerVerse }) => {
             socket.join('projector');

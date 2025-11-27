@@ -47,6 +47,22 @@ export function QueueView() {
     navigate('/playing-now');
   };
 
+  const handleDeleteEntry = (queueId: number) => {
+    socket?.emit('queue:deleteEntry', { queueId });
+  };
+
+  const handleDeleteGroup = (sessionId: string, requesterName: string) => {
+    if (confirm(`האם למחוק את כל השירים של ${requesterName}?`)) {
+      socket?.emit('queue:deleteGroup', { sessionId });
+    }
+  };
+
+  const handleTruncateQueue = () => {
+    if (confirm('האם לרוקן את כל התור? פעולה זו תמחק את כל הבקשות.')) {
+      socket?.emit('queue:truncate');
+    }
+  };
+
   if (!isAdmin) {
     return null;
   }
@@ -62,7 +78,18 @@ export function QueueView() {
 
   return (
     <div className="queue-view">
-      <h1>📋 תור הבקשות</h1>
+      <div className="queue-header">
+        <h1>📋 תור הבקשות</h1>
+        {queue.length > 0 && (
+          <button 
+            onClick={handleTruncateQueue}
+            className="truncate-btn"
+            title="רוקן את כל התור"
+          >
+            🗑️ רוקן תור
+          </button>
+        )}
+      </div>
       
       {queue.length === 0 ? (
         <div className="empty-queue">
@@ -73,8 +100,17 @@ export function QueueView() {
           {queue.map((group, groupIndex) => (
             <div key={`${group.sessionId}-${groupIndex}`} className="queue-group">
               <div className="group-header">
-                <span className="requester-name">{group.requesterName}</span>
-                <span className="request-count">{group.entries.length} שירים</span>
+                <div className="group-info">
+                  <span className="requester-name">{group.requesterName}</span>
+                  <span className="request-count">{group.entries.length} שירים</span>
+                </div>
+                <button 
+                  onClick={() => handleDeleteGroup(group.sessionId, group.requesterName)}
+                  className="delete-group-btn"
+                  title="מחק את כל השירים של מבקש זה"
+                >
+                  ✕
+                </button>
               </div>
               <div className="group-entries">
                 {group.entries.map(entry => (
@@ -86,17 +122,37 @@ export function QueueView() {
                       <span className="song-name">{entry.songName}</span>
                       <span className="song-artist">{entry.songArtist}</span>
                     </div>
-                    {entry.status === 'pending' && (
-                      <button 
-                        onClick={() => handlePresent(entry.id)}
-                        className="present-btn"
-                      >
-                        ▶ הצג
-                      </button>
-                    )}
-                    {entry.status === 'played' && (
-                      <span className="played-badge">✓ הושר</span>
-                    )}
+                    <div className="entry-actions">
+                      {entry.status === 'pending' && (
+                        <>
+                          <button 
+                            onClick={() => handlePresent(entry.id)}
+                            className="present-btn"
+                          >
+                            ▶ הצג
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteEntry(entry.id)}
+                            className="delete-entry-btn"
+                            title="מחק שיר זה"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      )}
+                      {entry.status === 'played' && (
+                        <>
+                          <span className="played-badge">✓ בוצע</span>
+                          <button 
+                            onClick={() => handleDeleteEntry(entry.id)}
+                            className="delete-entry-btn"
+                            title="מחק שיר זה"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

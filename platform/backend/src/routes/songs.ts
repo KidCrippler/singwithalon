@@ -201,6 +201,7 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
 
   // Detect direction
   const direction = detectDirection(text, song.direction);
+  const isRtl = direction === 'rtl';
 
   // Parse remaining lines
   for (let i = lineIndex; i < lines.length; i++) {
@@ -212,7 +213,9 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     } else if (isDirective(trimmed)) {
       parsedLines.push({ type: 'directive', text: trimmed.slice(1, -1) }); // Remove { }
     } else if (isChordLine(trimmed)) {
-      parsedLines.push({ type: 'chords', text: line, raw: line }); // Preserve original spacing
+      // For RTL songs, reverse chord lines so they display correctly
+      const chordLine = isRtl ? reverseChordLineForRtl(line) : line;
+      parsedLines.push({ type: 'chords', text: chordLine, raw: chordLine });
     } else {
       parsedLines.push({ type: 'lyric', text: line });
     }
@@ -272,6 +275,27 @@ function isChordLine(line: string): boolean {
     if (BRACKETED_CHORD_REGEX.test(token)) return true;
     // Test against standard chord regex (including chords with !)
     return CHORD_REGEX.test(token);
+  });
+}
+
+/**
+ * Reverse a chord line for RTL display.
+ * Algorithm:
+ * 1. Reverse the entire string character by character
+ * 2. For each token (non-whitespace sequence), reverse it back
+ * 
+ * Example: "   C  G Am  D  Em    Em"
+ * Step 1 (reverse all): "mE    mE  D  mA G  C   "
+ * Step 2 (reverse tokens): "Em    Em  D  Am G  C   "
+ */
+function reverseChordLineForRtl(line: string): string {
+  // Step 1: Reverse the entire string
+  const reversed = line.split('').reverse().join('');
+  
+  // Step 2: Find each token and reverse it back
+  // Use regex to match tokens (non-whitespace sequences) and reverse each one
+  return reversed.replace(/\S+/g, (token) => {
+    return token.split('').reverse().join('');
   });
 }
 

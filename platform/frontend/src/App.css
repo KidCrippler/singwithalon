@@ -451,19 +451,6 @@ body {
 .line-chords .chords {
   color: var(--chord-color);
   font-weight: 500;
-  /* Chords inherit direction from container - RTL for Hebrew, LTR for English */
-  unicode-bidi: plaintext;
-}
-
-/* In RTL mode, chord lines should display right-to-left */
-.rtl .line-chords {
-  direction: rtl;
-  text-align: right;
-}
-
-.ltr .line-chords {
-  direction: ltr;
-  text-align: left;
 }
 
 .line-directive .directive {
@@ -551,9 +538,32 @@ body {
   margin: 0 auto;
 }
 
-.queue-view h1 {
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.queue-view h1 {
+  margin: 0;
   text-align: center;
+}
+
+.truncate-btn {
+  padding: 0.5rem 1rem;
+  background: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.truncate-btn:hover {
+  background: #c82333;
 }
 
 .empty-queue {
@@ -578,9 +588,15 @@ body {
 .group-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 0.75rem 1rem;
   background: var(--secondary-color);
   border-bottom: 1px solid var(--border-color);
+}
+
+.group-info {
+  display: flex;
+  flex-direction: column;
 }
 
 .requester-name {
@@ -590,6 +606,27 @@ body {
 .request-count {
   color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+.delete-group-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--error-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-group-btn:hover {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
 }
 
 .group-entries {
@@ -617,6 +654,34 @@ body {
 .entry-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
+}
+
+.entry-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.delete-entry-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-entry-btn:hover {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
 }
 
 .played-badge {

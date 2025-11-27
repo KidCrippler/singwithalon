@@ -15,6 +15,9 @@ export declare const queueQueries: {
     getGrouped(): GroupedQueue[];
     countBySession(sessionId: string): number;
     getBySession(sessionId: string): QueueEntry[];
+    removeById(id: number): boolean;
+    removeBySessionId(sessionId: string): number;
+    truncate(): number;
 };
 export declare const playingStateQueries: {
     get(): PlayingState;

@@ -174,8 +174,13 @@ A real-time web application for managing sing-along events and band performances
   - Clear visual separation between groups with requester name as group header
 - **Song Entry Display**:
   - Song name + artist
-  - "Present" button
+  - "Present" button (▶)
+  - Delete button (✕) to remove individual song from queue
   - Visual state: pending (normal) / played (grayed out, at bottom of group)
+- **Group Management**:
+  - Delete group button (✕) on group header to remove all songs from a requester
+- **Queue Management**:
+  - "Truncate Queue" button at top to clear entire queue (with confirmation)
 - **Behavior on "Present"**:
   - Song goes to "Playing Now" immediately
   - Queue entry marked as "played" (grayed, moves to bottom of its group)
@@ -342,7 +347,10 @@ D         C#7     F#m  A7
 - Scan lyrics lines (not chord lines) for Hebrew Unicode characters (`\u0590-\u05FF`)
 - If significant Hebrew content detected → RTL mode
 - JSON `direction` field overrides auto-detection if present
-- **Hebrew songs: Chord lines also display RTL** (chords read from right to left)
+- **Hebrew songs: Chord lines are reversed server-side** for proper RTL display:
+  1. Reverse the entire chord line string character by character
+  2. For each token, reverse it back to restore chord names
+  - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
 
 **5. Spacing Preservation:**
 - Chord lines must preserve exact character spacing from source file
@@ -466,6 +474,9 @@ DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
 | `queue:add` | `{ songId, requesterName }` | Viewer adds song to queue |
 | `queue:remove` | `{ queueId }` | Viewer removes their own request |
 | `queue:present` | `{ queueId }` | Admin presents song from queue |
+| `queue:deleteEntry` | `{ queueId }` | Admin deletes single queue entry |
+| `queue:deleteGroup` | `{ sessionId }` | Admin deletes all entries from a requester |
+| `queue:truncate` | `{}` | Admin clears entire queue |
 | `projector:register` | `{ width, height, linesPerVerse }` | Projector reports its resolution |
 
 **Note:** The `ping` event updates `sessions.last_seen` for session retention (see Section 5.4).

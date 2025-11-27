@@ -92,6 +92,21 @@ export const queueQueries = {
     getBySession(sessionId) {
         return getDb().prepare('SELECT * FROM queue WHERE session_id = ? ORDER BY created_at ASC').all(sessionId);
     },
+    // Admin-only: Remove any entry by ID (no session check)
+    removeById(id) {
+        const result = getDb().prepare('DELETE FROM queue WHERE id = ?').run(id);
+        return result.changes > 0;
+    },
+    // Admin-only: Remove all entries for a session (delete group)
+    removeBySessionId(sessionId) {
+        const result = getDb().prepare('DELETE FROM queue WHERE session_id = ?').run(sessionId);
+        return result.changes;
+    },
+    // Admin-only: Clear entire queue
+    truncate() {
+        const result = getDb().prepare('DELETE FROM queue').run();
+        return result.changes;
+    },
 };
 // Playing state queries
 export const playingStateQueries = {
