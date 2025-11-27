@@ -1,0 +1,31 @@
+# Build output
+dist/
+
+# Database files (runtime state - recreated on startup)
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor directories
+.vscode/
+.idea/
+*.sw?
+
+# OS files
+.DS_Store
+
