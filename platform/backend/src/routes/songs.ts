@@ -211,10 +211,16 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     if (trimmed === '') {
       parsedLines.push({ type: 'empty', text: '' });
     } else if (isDirective(trimmed)) {
+      // {} directives - shown in green in chords mode only
       parsedLines.push({ type: 'directive', text: extractDirectiveText(trimmed) });
+    } else if (isCue(trimmed)) {
+      // [] cues - shown in red in both modes
+      parsedLines.push({ type: 'cue', text: extractDirectiveText(trimmed) });
     } else if (isChordLine(trimmed)) {
       // For RTL songs, reverse chord lines so they display correctly
-      const chordLine = isRtl ? reverseChordLineForRtl(line) : line;
+      // Strip directional chars before reversing to avoid corruption
+      const cleanedLine = stripDirectionalChars(line);
+      const chordLine = isRtl ? reverseChordLineForRtl(cleanedLine) : cleanedLine;
       parsedLines.push({ type: 'chords', text: chordLine, raw: chordLine });
     } else {
       parsedLines.push({ type: 'lyric', text: line });
@@ -264,11 +270,31 @@ function isDirective(line: string): boolean {
 }
 
 /**
+ * Check if line is a cue (square brackets with non-chord content like [פזמון])
+ * This is different from bracketed chords like [Am] or [/A]
+ */
+function isCue(line: string): boolean {
+  const cleaned = stripDirectionalChars(line).trim();
+  if (!cleaned.startsWith('[') || !cleaned.endsWith(']')) return false;
+  
+  // Extract content inside brackets
+  const content = cleaned.slice(1, -1).trim();
+  if (content.length === 0) return false;
+  
+  // If the content is a valid chord token, it's NOT a cue
+  // Cues contain non-chord text like Hebrew section names
+  // Check if it looks like a chord (starts with A-G or /)
+  if (/^[A-G\/]/.test(content)) return false;
+  
+  return true;
+}
+
+/**
  * Extract directive text, stripping directional characters
  */
 function extractDirectiveText(line: string): string {
   const cleaned = stripDirectionalChars(line).trim();
-  return cleaned.slice(1, -1); // Remove { }
+  return cleaned.slice(1, -1); // Remove { } or [ ]
 }
 
 // Chord detection regex - matches common chord patterns
@@ -280,6 +306,9 @@ const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|maj|min|dim|aug|sus[24]?|add|o|\+
 
 // Matches bass-only notation like /F, /Bb, /A, /F# (just a slash followed by a note)
 const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
+
+// Matches bracketed bass-only notation like [/A], [/F#], [/Bb]
+const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
 
 /**
  * Check if a token is a valid chord token.
@@ -298,6 +327,8 @@ export function isValidChordToken(token: string): boolean {
   if (BRACKETED_CHORD_REGEX.test(token)) return true;
   // Test against bass-only notation (e.g., /F, /Bb, /A)
   if (BASS_ONLY_REGEX.test(token)) return true;
+  // Test against bracketed bass-only notation (e.g., [/A], [/F#])
+  if (BRACKETED_BASS_ONLY_REGEX.test(token)) return true;
   // Test against standard chord regex (including chords with !)
   return CHORD_REGEX.test(token);
 }

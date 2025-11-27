@@ -22,7 +22,9 @@ export interface Song {
 }
 
 // Parsed song line types
-export type LineType = 'directive' | 'chords' | 'lyric' | 'empty';
+// directive = {} brackets (green, chords mode only)
+// cue = [] brackets with non-chord text (red, both modes)
+export type LineType = 'directive' | 'cue' | 'chords' | 'lyric' | 'empty';
 
 export interface ParsedLine {
   type: LineType;

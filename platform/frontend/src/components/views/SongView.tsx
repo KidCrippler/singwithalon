@@ -80,13 +80,14 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
   }, [calculateOptimalLayout, ...deps]);
 }
 
-// Group lines into sections (verses) separated by empty lines or directives
+// Group lines into sections (verses) separated by empty lines or directives/cues
 function groupIntoSections(lines: ParsedLine[], displayMode: 'lyrics' | 'chords'): ParsedLine[][] {
   const sections: ParsedLine[][] = [];
   let currentSection: ParsedLine[] = [];
 
   for (const line of lines) {
-    // In lyrics mode, skip directives and chord-only lines entirely
+    // In lyrics mode, skip {} directives and chord-only lines
+    // But keep [] cues (they show in both modes)
     if (displayMode === 'lyrics') {
       if (line.type === 'directive' || line.type === 'chords') continue;
     }
@@ -100,8 +101,8 @@ function groupIntoSections(lines: ParsedLine[], displayMode: 'lyrics' | 'chords'
       continue;
     }
 
-    // Directive starts a new section
-    if (line.type === 'directive') {
+    // Directive or cue starts a new section
+    if (line.type === 'directive' || line.type === 'cue') {
       if (currentSection.length > 0) {
         sections.push(currentSection);
         currentSection = [];
@@ -276,6 +277,8 @@ export function SongView() {
                 <div key={lineIndex} className={`line line-${line.type}`}>
                   {line.type === 'directive' ? (
                     <span className="directive">{line.text}</span>
+                  ) : line.type === 'cue' ? (
+                    <span className="cue">{line.text}</span>
                   ) : line.type === 'chords' ? (
                     <span className="chords">{line.raw || line.text}</span>
                   ) : (

@@ -10,10 +10,10 @@
   --error-color: #dc3545;
   --warning-color: #ffc107;
   
-  /* Lyrics colors - matching SyncTheBand reference */
+  /* Lyrics colors */
   --chord-color: #0000ff;
-  --directive-color: #a52a2a;
-  --cue-color: #f44336;
+  --directive-color: #228b22; /* Green for {} directives */
+  --cue-color: #dc143c; /* Red for [] cues */
   
   --header-height: 60px;
   --content-padding: 1rem;
@@ -510,8 +510,17 @@ body {
   unicode-bidi: bidi-override;
 }
 
+/* {} Directives - Green, shown in chords mode only */
 .line-directive .directive {
-  color: #a52a2a;
+  color: var(--directive-color);
+  font-weight: 600;
+  font-style: normal;
+  font-size: 1.1em;
+}
+
+/* [] Cues - Red, shown in both modes */
+.line-cue .cue {
+  color: var(--cue-color);
   font-weight: 600;
   font-style: normal;
   font-size: 1.1em;

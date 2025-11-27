@@ -69,6 +69,12 @@ const testCases: TestCase[] = [
   { input: '[Bb]', expected: true, description: 'Bracketed flat chord' },
   { input: '[E]', expected: true, description: 'Bracketed simple chord' },
   
+  // === Bracketed Bass-Only Notation ===
+  { input: '[/A]', expected: true, description: 'Bracketed bass-only' },
+  { input: '[/F#]', expected: true, description: 'Bracketed bass-only sharp' },
+  { input: '[/Bb]', expected: true, description: 'Bracketed bass-only flat' },
+  { input: '[/E]', expected: true, description: 'Bracketed bass-only simple' },
+  
   // === Special Markers ===
   { input: '--->', expected: true, description: 'Continuation marker' },
   { input: '-', expected: true, description: 'Single hyphen separator' },
@@ -128,6 +134,18 @@ const reversalTestCases: ReversalTestCase[] = [
     input: '(Em)',
     expected: '(Em)',
     description: 'Single fully parenthesized chord',
+  },
+  // Multiple chords in brackets
+  {
+    input: 'F    [/E]   Am  [Am] ',
+    expected: ' [Am]  Am   [/E]    F',
+    description: 'Multiple bracketed chords',
+  },
+  // Base inside brackets
+  {
+    input: '/E  /E  /A  [/A]',
+    expected: '[/A]  /A  /E  /E',
+    description: 'Base inside brackets',
   },
 ];
 

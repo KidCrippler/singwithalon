@@ -17,7 +17,7 @@ export interface Song {
     dateCreated?: number;
     dateModified?: number;
 }
-export type LineType = 'directive' | 'chords' | 'lyric' | 'empty';
+export type LineType = 'directive' | 'cue' | 'chords' | 'lyric' | 'empty';
 export interface ParsedLine {
     type: LineType;
     text: string;
