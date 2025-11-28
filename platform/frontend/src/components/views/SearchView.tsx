@@ -30,8 +30,12 @@ export function SearchView() {
   };
 
   // Sort songs: Hebrew first (alphabetically), then English (alphabetically)
+  // Also filter out private songs when in viewer mode (not admin)
   const sortedSongs = useMemo(() => {
-    return [...songs].sort((a, b) => {
+    // Filter out private songs when not in admin mode
+    const visibleSongs = isAdmin ? songs : songs.filter(song => !song.isPrivate);
+    
+    return [...visibleSongs].sort((a, b) => {
       const aIsHebrew = startsWithHebrew(a.name);
       const bIsHebrew = startsWithHebrew(b.name);
       
@@ -42,7 +46,7 @@ export function SearchView() {
       // Within same group, sort alphabetically by name
       return a.name.localeCompare(b.name, aIsHebrew ? 'he' : 'en');
     });
-  }, [songs]);
+  }, [songs, isAdmin]);
 
   const filteredSongs = useMemo(() => {
     if (!searchTerm.trim()) return sortedSongs;
@@ -54,12 +58,12 @@ export function SearchView() {
   }, [sortedSongs, searchTerm]);
 
   const handleViewSong = (songId: number) => {
-    navigate(`/song/${songId}`);
+    navigate(isAdmin ? `/admin/song/${songId}` : `/song/${songId}`);
   };
 
   const handlePresentNow = (songId: number) => {
     setSong(songId);
-    navigate('/playing-now');
+    navigate('/admin/playing-now');
   };
 
   const handleAddToQueue = async (songId: number) => {

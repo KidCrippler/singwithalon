@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { useSocket } from './SocketContext';
 import type { AuthUser } from '../types';
 
 interface AuthContextValue {
   user: AuthUser | null;
-  isAdmin: boolean;
+  isAuthenticated: boolean;  // Has valid admin credentials
+  isAdmin: boolean;          // Acting as admin (authenticated + on admin route)
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -13,10 +15,18 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// Check if current path is an admin route
+function isAdminRoute(pathname: string): boolean {
+  return pathname.startsWith('/admin') || 
+         pathname === '/queue' || 
+         pathname === '/login';
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { setAdminAuth } = useSocket();
+  const location = useLocation();
 
   // Check auth status on mount
   useEffect(() => {
@@ -49,10 +59,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const isAdmin = user?.isAdmin ?? false;
+  // isAuthenticated: user has valid admin credentials (cookie-based)
+  const isAuthenticated = user?.isAdmin ?? false;
+  
+  // isAdmin: only true when authenticated AND on an admin route
+  // This allows the same browser to act as viewer on "/" and admin on "/admin"
+  const isAdmin = isAuthenticated && isAdminRoute(location.pathname);
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isAdmin, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

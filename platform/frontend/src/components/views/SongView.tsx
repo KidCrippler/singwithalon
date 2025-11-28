@@ -166,7 +166,7 @@ export function SongView() {
   const handlePresentNow = () => {
     if (!id) return;
     setSong(parseInt(id, 10));
-    navigate('/playing-now');
+    navigate('/admin/playing-now');
   };
 
   const handleAddToQueue = async () => {

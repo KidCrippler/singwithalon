@@ -33,8 +33,8 @@ export function Header() {
               חיפוש
             </Link>
             <Link 
-              to="/playing-now"
-              className={location.pathname === '/playing-now' ? 'active' : ''}
+              to="/admin/playing-now"
+              className={location.pathname === '/admin/playing-now' ? 'active' : ''}
             >
               מתנגן עכשיו
             </Link>

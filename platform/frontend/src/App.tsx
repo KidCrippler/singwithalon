@@ -28,6 +28,8 @@ function AppContent() {
           
           {/* Admin routes */}
           <Route path="/admin" element={<SearchView />} />
+          <Route path="/admin/song/:id" element={<SongView />} />
+          <Route path="/admin/playing-now" element={<PlayingNowView />} />
           <Route path="/queue" element={<QueueView />} />
           <Route path="/login" element={<LoginView />} />
           
