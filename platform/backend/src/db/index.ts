@@ -167,6 +167,10 @@ export const playingStateQueries = {
       fields.push('display_mode = ?');
       values.push(updates.display_mode);
     }
+    if (updates.verses_enabled !== undefined) {
+      fields.push('verses_enabled = ?');
+      values.push(updates.verses_enabled);
+    }
     if (updates.projector_width !== undefined) {
       fields.push('projector_width = ?');
       values.push(updates.projector_width);

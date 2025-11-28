@@ -606,8 +606,127 @@ body {
   background: var(--secondary-color);
 }
 
+.admin-controls button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-controls button.disabled:hover {
+  background: white;
+}
+
+.admin-controls button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
 .verse-indicator {
-  display: none; /* Hide verse indicator - not needed in fullscreen mode */
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  background: var(--secondary-color);
+  border-radius: 4px;
+  margin-right: 0.25rem;
+}
+
+/* Viewer controls - for non-admin users */
+.viewer-controls {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.viewer-controls button {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-controls button:hover {
+  background: var(--secondary-color);
+}
+
+.viewer-controls button.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* === VERSE MODE STYLES === */
+
+/* Admin view with verse highlight - enable click cursor on lines */
+.lyrics-container.with-verse-highlight .line {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.lyrics-container.with-verse-highlight .line:hover {
+  background-color: rgba(128, 0, 128, 0.05);
+}
+
+/* Purple highlight on lines in current verse */
+.line.verse-highlighted {
+  background-color: rgba(128, 0, 128, 0.12) !important;
+  border-radius: 2px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* Single verse display (viewer mode 3) - centered, large font */
+.lyrics-container.verse-single {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 1rem 2rem;
+  column-count: 1 !important;
+}
+
+.lyrics-container.verse-single .line {
+  white-space: pre-wrap; /* Allow wrapping in verse mode */
+  text-align: center;
+}
+
+/* Slide animations for verse changes */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lyrics-container.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.lyrics-container.slide-down {
+  animation: slideDown 0.3s ease-out;
 }
 
 /* Queue View */

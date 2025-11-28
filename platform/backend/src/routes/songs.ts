@@ -227,9 +227,6 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     }
   }
 
-  // Calculate verse breaks (default 8 lines per verse)
-  const verseBreaks = calculateVerseBreaks(parsedLines);
-
   return {
     metadata: {
       title,
@@ -238,7 +235,6 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
       direction,
     },
     lines: parsedLines,
-    verseBreaks,
   };
 }
 
@@ -400,22 +396,4 @@ export function reverseChordLineForRtl(line: string): string {
   });
 }
 
-function calculateVerseBreaks(lines: ParsedSong['lines'], linesPerVerse = 8): number[] {
-  const breaks: number[] = [0];
-  let lyricLineCount = 0;
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    // Count lyric lines and empty lines (but not chord-only or directive lines)
-    if (line.type === 'lyric' || line.type === 'empty') {
-      lyricLineCount++;
-      if (lyricLineCount >= linesPerVerse && i < lines.length - 1) {
-        breaks.push(i + 1);
-        lyricLineCount = 0;
-      }
-    }
-  }
-  
-  return breaks;
-}
 

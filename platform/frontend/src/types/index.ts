@@ -31,7 +31,7 @@ export interface SongMetadata {
 export interface ParsedSong {
   metadata: SongMetadata;
   lines: ParsedLine[];
-  verseBreaks: number[];
+  // Note: verse calculation now handled by frontend via verseCalculator utility
 }
 
 // Queue types
@@ -60,6 +60,7 @@ export interface PlayingState {
   currentVerseIndex: number;
   currentKeyOffset: number;
   displayMode: 'lyrics' | 'chords';
+  versesEnabled: boolean;
   projectorWidth: number | null;
   projectorHeight: number | null;
   projectorLinesPerVerse: number | null;

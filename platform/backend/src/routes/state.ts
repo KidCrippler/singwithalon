@@ -27,6 +27,7 @@ export async function stateRoutes(fastify: FastifyInstance) {
       currentVerseIndex: state.current_verse_index,
       currentKeyOffset: state.current_key_offset,
       displayMode: state.display_mode,
+      versesEnabled: state.verses_enabled === 1,
       projectorWidth: state.projector_width,
       projectorHeight: state.projector_height,
       projectorLinesPerVerse: state.projector_lines_per_verse,

@@ -55,6 +55,7 @@ export function setupSocketHandlers(io: Server) {
         verseIndex: state.current_verse_index,
         keyOffset: state.current_key_offset,
         displayMode: state.display_mode,
+        versesEnabled: state.verses_enabled === 1,
       });
     });
 
@@ -102,6 +103,15 @@ export function setupSocketHandlers(io: Server) {
 
       playingStateQueries.update({ display_mode: displayMode });
       io.to('playing-now').emit('mode:changed', { displayMode });
+    });
+
+    socket.on('verses:toggle', () => {
+      if (!socketData.user?.isAdmin) return;
+
+      const state = playingStateQueries.get();
+      const newValue = state.verses_enabled === 1 ? 0 : 1;
+      playingStateQueries.update({ verses_enabled: newValue });
+      io.to('playing-now').emit('verses:toggled', { versesEnabled: newValue === 1 });
     });
 
     // === Queue Events ===
@@ -165,6 +175,7 @@ export function setupSocketHandlers(io: Server) {
         verseIndex: state.current_verse_index,
         keyOffset: state.current_key_offset,
         displayMode: state.display_mode,
+        versesEnabled: state.verses_enabled === 1,
       });
 
       // Notify admins of queue update

@@ -42,7 +42,7 @@ export interface SongMetadata {
 export interface ParsedSong {
   metadata: SongMetadata;
   lines: ParsedLine[];
-  verseBreaks: number[];
+  // Note: verseBreaks removed - verse calculation now handled by frontend
 }
 
 // Database types
@@ -69,6 +69,7 @@ export interface PlayingState {
   current_verse_index: number;
   current_key_offset: number;
   display_mode: 'lyrics' | 'chords';
+  verses_enabled: number; // 0 = off, 1 = on
   projector_width: number | null;
   projector_height: number | null;
   projector_lines_per_verse: number | null;
@@ -92,6 +93,11 @@ export interface SongChangedPayload {
   verseIndex: number;
   keyOffset: number;
   displayMode: 'lyrics' | 'chords';
+  versesEnabled: boolean;
+}
+
+export interface VersesTogglePayload {
+  versesEnabled: boolean;
 }
 
 export interface VerseChangedPayload {

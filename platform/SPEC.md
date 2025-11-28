@@ -551,6 +551,8 @@ When generating transposed chords, prefer:
 
 ## 8. Verse Calculation
 
+> **Note:** Verse calculation is performed entirely in the frontend (`utils/verseCalculator.ts`). See `VERSES.md` for detailed implementation specification.
+
 ### 8.1 Algorithm
 1. **If projector is connected**:
    - First projector to connect reports: `linesPerVerse` (calculated client-side based on actual rendered font size and viewport height)
@@ -847,20 +849,24 @@ platform/
 - [ ] Add per-viewer override capability
 - [ ] Implement "sync to admin" functionality
 
-### Phase 4: Playing Now (Real-time) (partial)
+### Phase 4: Playing Now (Real-time) ✅
 - [x] Set up Socket.io rooms (playing-now, admin)
 - [x] Implement song:changed broadcast
 - [x] Build PlayingNowView with live updates
 - [x] Create admin controls overlay (verse nav, mode toggles)
-- [ ] Implement keyboard shortcuts (global, cross-tab)
 - [x] Build idle/splash screen for no-song state
+- [ ] Implement keyboard shortcuts (global, cross-tab) - deferred
 
-### Phase 5: Verse System (partial)
-- [x] Implement verse calculation algorithm
+### Phase 5: Verse System ✅
+- [x] Implement verse calculation algorithm (frontend-only, see `utils/verseCalculator.ts`)
 - [x] Build projector registration flow
-- [ ] Create client-side lines-per-verse measurement
+- [x] Create client-side lines-per-verse measurement
 - [x] Implement verse:next/prev events
-- [ ] Add verse mode toggle for viewers
+- [x] Add verse mode toggle (admin controls viewers, viewers can override)
+- [x] Admin always sees chords with purple highlight overlay when verses+lyrics mode
+- [x] Viewer 3 modes: chords / full lyrics / single verse
+- [x] Click-to-navigate on verse lines (admin only)
+- [x] See `VERSES.md` for detailed specification
 
 ### Phase 6: Projection Mode (partial)
 - [x] Implement lyrics-only display mode

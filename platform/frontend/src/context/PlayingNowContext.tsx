@@ -6,6 +6,12 @@ import type { PlayingState } from '../types';
 interface PlayingNowContextValue {
   state: PlayingState;
   isLoading: boolean;
+  // Viewer's local override for verse mode (null = use admin preference)
+  viewerVerseOverride: boolean | null;
+  setViewerVerseOverride: (override: boolean | null) => void;
+  // Computed effective verse mode
+  effectiveVersesEnabled: boolean;
+  // Actions
   setSong: (songId: number) => void;
   clearSong: () => void;
   nextVerse: () => void;
@@ -13,6 +19,7 @@ interface PlayingNowContextValue {
   setVerse: (index: number) => void;
   setKeyOffset: (offset: number) => void;
   setDisplayMode: (mode: 'lyrics' | 'chords') => void;
+  toggleVersesEnabled: () => void;
 }
 
 const defaultState: PlayingState = {
@@ -20,6 +27,7 @@ const defaultState: PlayingState = {
   currentVerseIndex: 0,
   currentKeyOffset: 0,
   displayMode: 'lyrics',
+  versesEnabled: false,
   projectorWidth: null,
   projectorHeight: null,
   projectorLinesPerVerse: null,
@@ -31,7 +39,12 @@ const PlayingNowContext = createContext<PlayingNowContextValue | null>(null);
 export function PlayingNowProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayingState>(defaultState);
   const [isLoading, setIsLoading] = useState(true);
+  // Viewer's local override for verse mode (null = use admin preference, false = force full view)
+  const [viewerVerseOverride, setViewerVerseOverride] = useState<boolean | null>(null);
   const { socket } = useSocket();
+
+  // Computed effective verse mode: viewer override takes precedence if set
+  const effectiveVersesEnabled = viewerVerseOverride ?? state.versesEnabled;
 
   // Fetch initial state
   useEffect(() => {
@@ -45,14 +58,17 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('song:changed', (payload: { songId: number; verseIndex: number; keyOffset: number; displayMode: 'lyrics' | 'chords' }) => {
+    socket.on('song:changed', (payload: { songId: number; verseIndex: number; keyOffset: number; displayMode: 'lyrics' | 'chords'; versesEnabled: boolean }) => {
       setState(prev => ({
         ...prev,
         currentSongId: payload.songId,
         currentVerseIndex: payload.verseIndex,
         currentKeyOffset: payload.keyOffset,
         displayMode: payload.displayMode,
+        versesEnabled: payload.versesEnabled,
       }));
+      // Reset viewer override when song changes
+      setViewerVerseOverride(null);
     });
 
     socket.on('song:cleared', () => {
@@ -95,6 +111,13 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       }));
     });
 
+    socket.on('verses:toggled', (payload: { versesEnabled: boolean }) => {
+      setState(prev => ({
+        ...prev,
+        versesEnabled: payload.versesEnabled,
+      }));
+    });
+
     return () => {
       socket.off('song:changed');
       socket.off('song:cleared');
@@ -102,6 +125,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('key:changed');
       socket.off('mode:changed');
       socket.off('projector:resolution');
+      socket.off('verses:toggled');
     };
   }, [socket]);
 
@@ -133,10 +157,17 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     socket?.emit('mode:set', { displayMode });
   }, [socket]);
 
+  const toggleVersesEnabled = useCallback(() => {
+    socket?.emit('verses:toggle');
+  }, [socket]);
+
   return (
     <PlayingNowContext.Provider value={{
       state,
       isLoading,
+      viewerVerseOverride,
+      setViewerVerseOverride,
+      effectiveVersesEnabled,
       setSong,
       clearSong,
       nextVerse,
@@ -144,6 +175,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       setVerse,
       setKeyOffset,
       setDisplayMode,
+      toggleVersesEnabled,
     }}>
       {children}
     </PlayingNowContext.Provider>
