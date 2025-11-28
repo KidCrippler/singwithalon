@@ -39,16 +39,28 @@ async function main() {
 
   // Add session ID extraction from cookie or generate new one
   fastify.decorateRequest('sessionId', '');
-  fastify.addHook('preHandler', async (request) => {
+  fastify.addHook('preHandler', async (request, reply) => {
     // Try to get session ID from cookie first
     let sessionId = request.cookies['singalong_viewer_session'];
+    let isNewSession = false;
     
     if (!sessionId) {
       // Generate a new session ID
       sessionId = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      isNewSession = true;
     }
     
     request.sessionId = sessionId;
+    
+    // Set/refresh the session cookie (expires in 30 days)
+    if (isNewSession) {
+      reply.setCookie('singalong_viewer_session', sessionId, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+      });
+    }
   });
 
   // Register auth hook (adds user to request if authenticated)

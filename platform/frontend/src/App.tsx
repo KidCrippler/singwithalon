@@ -21,15 +21,13 @@ function AppContent() {
       <Header />
       <main className="app-main">
         <Routes>
-          {/* Viewer routes */}
+          {/* Shared routes - mode is determined by context, not route */}
           <Route path="/" element={<SearchView />} />
           <Route path="/song/:id" element={<SongView />} />
           <Route path="/playing-now" element={<PlayingNowView />} />
           
-          {/* Admin routes */}
+          {/* Admin entry points - these set admin mode */}
           <Route path="/admin" element={<SearchView />} />
-          <Route path="/admin/song/:id" element={<SongView />} />
-          <Route path="/admin/playing-now" element={<PlayingNowView />} />
           <Route path="/queue" element={<QueueView />} />
           <Route path="/login" element={<LoginView />} />
           

@@ -58,12 +58,12 @@ export function SearchView() {
   }, [sortedSongs, searchTerm]);
 
   const handleViewSong = (songId: number) => {
-    navigate(isAdmin ? `/admin/song/${songId}` : `/song/${songId}`);
+    navigate(`/song/${songId}`);
   };
 
   const handlePresentNow = (songId: number) => {
     setSong(songId);
-    navigate('/admin/playing-now');
+    navigate('/playing-now');
   };
 
   const handleAddToQueue = async (songId: number) => {
