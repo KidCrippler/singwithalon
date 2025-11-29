@@ -691,6 +691,7 @@ body {
   text-align: center;
   padding: 1rem 2rem;
   column-count: 1 !important;
+  overflow: hidden; /* Clip the transition animation */
 }
 
 .lyrics-container.verse-single .line {
@@ -698,35 +699,95 @@ body {
   text-align: center;
 }
 
-/* Slide animations for verse changes */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Verse transition animations - scroll/push effect */
+/* Container for transitions - both verses are absolutely positioned */
+.verse-transition-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.verse-transition-wrapper .verse-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.lyrics-container.slide-up {
-  animation: slideUp 0.3s ease-out;
+/* Scroll UP animation (going to NEXT verse) */
+/* Outgoing: 0 → -100% (scrolls up out of view) */
+/* Incoming: +100% → 0 (scrolls up into view) */
+.verse-transition-wrapper.transition-up .verse-content.outgoing {
+  animation: slideOutUp 1s ease-in-out forwards;
 }
 
-.lyrics-container.slide-down {
-  animation: slideDown 0.3s ease-out;
+.verse-transition-wrapper.transition-up .verse-content.incoming {
+  animation: slideInFromBelow 1s ease-in-out forwards;
+}
+
+@keyframes slideOutUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-100%); }
+}
+
+@keyframes slideInFromBelow {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Scroll DOWN animation (going to PREVIOUS verse) */
+/* Outgoing: 0 → +100% (scrolls down out of view) */
+/* Incoming: -100% → 0 (scrolls down into view) */
+.verse-transition-wrapper.transition-down .verse-content.outgoing {
+  animation: slideOutDown 1s ease-in-out forwards;
+}
+
+.verse-transition-wrapper.transition-down .verse-content.incoming {
+  animation: slideInFromAbove 1s ease-in-out forwards;
+}
+
+@keyframes slideOutDown {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+@keyframes slideInFromAbove {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+/* Partial scroll for padded last verse - scrolls by just the new lines amount */
+.verse-partial-scroll {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Going TO the last verse: start at top, scroll up by scroll-percent */
+.verse-partial-scroll.partial-up {
+  animation: partialScrollUp 1s ease-in-out forwards;
+}
+
+@keyframes partialScrollUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(-1 * var(--scroll-percent))); }
+}
+
+/* Going FROM the last verse (backward): start scrolled, scroll back to top */
+.verse-partial-scroll.partial-down {
+  transform: translateY(calc(-1 * var(--scroll-percent)));
+  animation: partialScrollDown 1s ease-in-out forwards;
+}
+
+@keyframes partialScrollDown {
+  from { transform: translateY(calc(-1 * var(--scroll-percent))); }
+  to { transform: translateY(0); }
 }
 
 /* Queue View */

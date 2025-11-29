@@ -81,14 +81,23 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
 }
 
 // Hook for verse-mode font sizing - single column, maximize for readability
-function useVerseFontSize(containerRef: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
-  const calculateFontSize = useCallback(() => {
+// skipWhenTransitioning: when true, skip font calculation (to prevent measuring during animation)
+function useVerseFontSize(
+  containerRef: React.RefObject<HTMLDivElement | null>, 
+  deps: unknown[],
+  skipCalculation: boolean = false
+) {
+  const calculateFontSize = useCallback((): boolean => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) return false;
     
     const availableHeight = container.clientHeight;
     const availableWidth = container.clientWidth;
-    if (availableHeight === 0 || availableWidth === 0) return;
+    if (availableHeight === 0 || availableWidth === 0) return false;
+    
+    // Check if there's actual content to measure
+    const lines = container.querySelectorAll('.line');
+    if (lines.length === 0) return false; // No content yet, need retry
     
     // Single column for verse mode
     container.style.columnCount = '1';
@@ -107,7 +116,6 @@ function useVerseFontSize(containerRef: React.RefObject<HTMLDivElement | null>, 
       const fitsVertically = container.scrollHeight <= availableHeight + 5;
       
       // Check horizontal fit (no line cutting)
-      const lines = container.querySelectorAll('.line');
       let fitsHorizontally = true;
       for (const line of lines) {
         if (line.scrollWidth > line.clientWidth + 2) {
@@ -125,13 +133,30 @@ function useVerseFontSize(containerRef: React.RefObject<HTMLDivElement | null>, 
     }
     
     container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
+    return true; // Success
   }, [containerRef]);
   
   useEffect(() => {
-    const timeoutId = setTimeout(calculateFontSize, 50);
+    // Skip calculation during transitions to prevent measuring both verses
+    if (skipCalculation) return;
+    
+    let retryCount = 0;
+    const maxRetries = 10;
+    
+    const attemptCalculation = () => {
+      const success = calculateFontSize();
+      if (!success && retryCount < maxRetries) {
+        retryCount++;
+        // Retry with increasing delay (50, 100, 150, 200...)
+        setTimeout(attemptCalculation, 50 * retryCount);
+      }
+    };
+    
+    // Initial attempt after short delay for DOM to settle
+    const timeoutId = setTimeout(attemptCalculation, 50);
     
     const handleResize = () => {
-      requestAnimationFrame(calculateFontSize);
+      requestAnimationFrame(() => calculateFontSize());
     };
     
     window.addEventListener('resize', handleResize);
@@ -139,7 +164,7 @@ function useVerseFontSize(containerRef: React.RefObject<HTMLDivElement | null>, 
       clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [calculateFontSize, ...deps]);
+  }, [calculateFontSize, skipCalculation, ...deps]);
 }
 
 // Line with its original index for proper verse highlighting
@@ -240,15 +265,12 @@ export function PlayingNowView() {
   const { isAdmin } = useAuth();
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [prevVerseIndex, setPrevVerseIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
+  const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerFullContainerRef = useRef<HTMLDivElement>(null);
   const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
-
-  // Track previous verse for animation direction
-  useEffect(() => {
-    setPrevVerseIndex(state.currentVerseIndex);
-  }, [state.currentVerseIndex]);
 
   // Fetch lyrics when song changes
   useEffect(() => {
@@ -310,11 +332,98 @@ export function PlayingNowView() {
     viewerShowsChords
   ]);
 
-  // Verse font sizing for viewer single-verse mode
-  useVerseFontSize(viewerVerseContainerRef, [currentVerse, viewerShowsSingleVerse]);
+  // Get current verse lines for display
+  const currentVerseLines = useMemo(() => {
+    if (!lyrics || verses.length === 0) return [];
+    return getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse);
+  }, [lyrics, verses, currentVerseIndex, linesPerVerse]);
 
-  // Animation direction for viewer verse mode
-  const animationDirection = state.currentVerseIndex > prevVerseIndex ? 'slide-up' : 'slide-down';
+  // Verse font sizing for viewer single-verse mode
+  // Skip calculation during transition to prevent measuring both outgoing and incoming verses
+  // Include currentVerseLines.length to trigger recalc when content first loads
+  useVerseFontSize(viewerVerseContainerRef, [currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length], isTransitioning);
+
+  // State for partial scroll (when transitioning to/from padded last verse)
+  const [isPartialScroll, setIsPartialScroll] = useState(false);
+  const [mergedScrollLines, setMergedScrollLines] = useState<ParsedLine[]>([]);
+  const [scrollPercentage, setScrollPercentage] = useState(0);
+
+  // Handle verse transition animation
+  const prevVerseIndexRef = useRef(state.currentVerseIndex);
+  useEffect(() => {
+    if (prevVerseIndexRef.current !== state.currentVerseIndex && lyrics && verses.length > 0) {
+      const fromIndex = prevVerseIndexRef.current;
+      const toIndex = state.currentVerseIndex;
+      const goingForward = toIndex > fromIndex;
+      
+      // Capture the outgoing content before it changes
+      const outgoing = getVerseLinesForDisplay(lyrics.lines, verses, fromIndex, linesPerVerse);
+      const incoming = getVerseLinesForDisplay(lyrics.lines, verses, toIndex, linesPerVerse);
+      
+      // Check if this involves the last verse with padding
+      const lastVerseIndex = verses.length - 1;
+      const lastVerse = verses[lastVerseIndex];
+      const lastVerseIsPadded = lastVerse && lastVerse.visibleLineCount < linesPerVerse;
+      const involvesLastVerse = fromIndex === lastVerseIndex || toIndex === lastVerseIndex;
+      
+      if (involvesLastVerse && lastVerseIsPadded) {
+        // Partial scroll: create merged content
+        const actualLastVerseLines = lastVerse.visibleLineCount;
+        const paddingLines = linesPerVerse - actualLastVerseLines;
+        
+        if (goingForward && toIndex === lastVerseIndex) {
+          // Going TO the last verse
+          // Outgoing: full verse, Incoming: padded (paddingLines from prev + actualLastVerseLines)
+          // Merged: unique_outgoing + common + unique_incoming
+          const uniqueOutgoing = outgoing.slice(0, actualLastVerseLines); // First N lines leave
+          const common = outgoing.slice(actualLastVerseLines); // Last (padding) lines stay
+          const uniqueIncoming = incoming.slice(paddingLines); // New lines enter
+          
+          const merged = [...uniqueOutgoing, ...common, ...uniqueIncoming];
+          setMergedScrollLines(merged);
+          // Scroll from showing first 8 to showing last 8
+          // That's scrolling by actualLastVerseLines out of merged.length
+          setScrollPercentage((actualLastVerseLines / merged.length) * 100);
+          setIsPartialScroll(true);
+        } else if (!goingForward && fromIndex === lastVerseIndex) {
+          // Going FROM the last verse (backward)
+          // Outgoing: padded, Incoming: full verse
+          const uniqueIncoming = incoming.slice(0, actualLastVerseLines); // New lines enter from top
+          const common = incoming.slice(actualLastVerseLines); // These stay
+          const uniqueOutgoing = outgoing.slice(paddingLines); // These leave at bottom
+          
+          const merged = [...uniqueIncoming, ...common, ...uniqueOutgoing];
+          setMergedScrollLines(merged);
+          // Scroll from showing last 8 to showing first 8
+          setScrollPercentage((actualLastVerseLines / merged.length) * 100);
+          setIsPartialScroll(true);
+        } else {
+          // Normal full scroll
+          setOutgoingLines(outgoing);
+          setIsPartialScroll(false);
+        }
+      } else {
+        // Normal full scroll
+        setOutgoingLines(outgoing);
+        setIsPartialScroll(false);
+      }
+      
+      setTransitionDirection(goingForward ? 'up' : 'down');
+      setIsTransitioning(true);
+      
+      // End transition after animation completes
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setOutgoingLines([]);
+        setMergedScrollLines([]);
+        setIsPartialScroll(false);
+      }, 1000);
+      
+      prevVerseIndexRef.current = state.currentVerseIndex;
+      return () => clearTimeout(timer);
+    }
+    prevVerseIndexRef.current = state.currentVerseIndex;
+  }, [state.currentVerseIndex, lyrics, verses, linesPerVerse]);
 
   // Handle click on line to navigate to verse (admin only)
   const handleLineClick = useCallback((lineIndex: number) => {
@@ -500,17 +609,60 @@ export function PlayingNowView() {
           {viewerShowsSingleVerse && (
             <div 
               ref={viewerVerseContainerRef}
-              className={`lyrics-container lyrics verse-single ${animationDirection}`}
-              key={currentVerseIndex} // Force re-render for animation
+              className="lyrics-container lyrics verse-single"
             >
-              {getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse).map((line, lineIndex) => (
-                <LineDisplay 
-                  key={lineIndex}
-                  line={line} 
-                  showChords={false}
-                  lineIndex={lineIndex}
-                />
-              ))}
+              {isTransitioning ? (
+                isPartialScroll ? (
+                  // Partial scroll for padded last verse: single merged content that scrolls partially
+                  <div 
+                    className={`verse-partial-scroll partial-${transitionDirection}`}
+                    style={{ '--scroll-percent': `${scrollPercentage}%` } as React.CSSProperties}
+                  >
+                    {mergedScrollLines.map((line, lineIndex) => (
+                      <LineDisplay 
+                        key={`merged-${lineIndex}`}
+                        line={line} 
+                        showChords={false}
+                        lineIndex={lineIndex}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  // Full scroll: both verses absolutely positioned, CSS handles animation
+                  <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
+                    <div className="verse-content outgoing">
+                      {outgoingLines.map((line, lineIndex) => (
+                        <LineDisplay 
+                          key={`out-${lineIndex}`}
+                          line={line} 
+                          showChords={false}
+                          lineIndex={lineIndex}
+                        />
+                      ))}
+                    </div>
+                    <div className="verse-content incoming">
+                      {currentVerseLines.map((line, lineIndex) => (
+                        <LineDisplay 
+                          key={`in-${lineIndex}`}
+                          line={line} 
+                          showChords={false}
+                          lineIndex={lineIndex}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )
+              ) : (
+                // Normal display: just current verse
+                currentVerseLines.map((line, lineIndex) => (
+                  <LineDisplay 
+                    key={lineIndex}
+                    line={line} 
+                    showChords={false}
+                    lineIndex={lineIndex}
+                  />
+                ))
+              )}
             </div>
           )}
         </>
