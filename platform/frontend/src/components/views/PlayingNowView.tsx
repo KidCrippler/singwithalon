@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useAuth } from '../../context/AuthContext';
 import { songsApi } from '../../services/api';
-import { calculateVerses, getVerseLines, findVerseForLine } from '../../utils/verseCalculator';
+import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine } from '../../utils/verseCalculator';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -142,12 +142,20 @@ function useVerseFontSize(containerRef: React.RefObject<HTMLDivElement | null>, 
   }, [calculateFontSize, ...deps]);
 }
 
-// Group lines into sections for full-song display
-function groupIntoSections(lines: ParsedLine[], showChords: boolean): ParsedLine[][] {
-  const sections: ParsedLine[][] = [];
-  let currentSection: ParsedLine[] = [];
+// Line with its original index for proper verse highlighting
+interface IndexedLine {
+  line: ParsedLine;
+  originalIndex: number;
+}
 
-  for (const line of lines) {
+// Group lines into sections for full-song display, tracking original indices
+function groupIntoSections(lines: ParsedLine[], showChords: boolean): IndexedLine[][] {
+  const sections: IndexedLine[][] = [];
+  let currentSection: IndexedLine[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
     // In lyrics mode, skip {} directives and chord-only lines
     if (!showChords) {
       if (line.type === 'directive' || line.type === 'chords') continue;
@@ -170,7 +178,7 @@ function groupIntoSections(lines: ParsedLine[], showChords: boolean): ParsedLine
       }
     }
 
-    currentSection.push(line);
+    currentSection.push({ line, originalIndex: i });
   }
 
   if (currentSection.length > 0) {
@@ -192,7 +200,8 @@ interface LineDisplayProps {
 function LineDisplay({ line, showChords, lineIndex, onClick, isHighlighted }: LineDisplayProps) {
   const getText = () => {
     if (!showChords) {
-      return line.text.trim();
+      // In lyrics mode: trim and collapse consecutive spaces to single space
+      return line.text.trim().replace(/ {2,}/g, ' ');
     }
     return line.type === 'chords' ? (line.raw || line.text) : line.text;
   };
@@ -255,11 +264,19 @@ export function PlayingNowView() {
   }, [state.currentSongId]);
 
   // Calculate verses
+  // Use lyrics-mode verse calculation when displayMode is 'lyrics' for consistent behavior
+  // between admin highlight and viewer verse display
   const linesPerVerse = state.projectorLinesPerVerse ?? 8;
   const verses = useMemo(() => {
     if (!lyrics) return [];
+    // Use lyrics-mode calculation for lyrics display mode (handles consecutive empties,
+    // no verse starting with empty, merges undersized last verse)
+    if (state.displayMode === 'lyrics') {
+      return calculateVersesForLyricsMode(lyrics.lines, linesPerVerse);
+    }
+    // Use original calculation for chords mode
     return calculateVerses(lyrics.lines, linesPerVerse);
-  }, [lyrics, linesPerVerse]);
+  }, [lyrics, linesPerVerse, state.displayMode]);
 
   // Get current verse (clamped to valid range)
   const currentVerseIndex = Math.min(state.currentVerseIndex, Math.max(0, verses.length - 1));
@@ -342,14 +359,6 @@ export function PlayingNowView() {
   const isAtFirstVerse = currentVerseIndex === 0;
   const isAtLastVerse = currentVerseIndex >= verses.length - 1;
 
-  // Build line index map for admin view (to track original indices through sections)
-  let adminLineIndex = 0;
-  const getAdminLineIndex = () => {
-    const idx = adminLineIndex;
-    adminLineIndex++;
-    return idx;
-  };
-
   return (
     <div className={`playing-now-view ${isRtl ? 'rtl' : 'ltr'}`}>
       {/* Compact top bar with song info and admin controls */}
@@ -421,28 +430,23 @@ export function PlayingNowView() {
           ref={adminContainerRef}
           className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''}`}
         >
-          {(() => {
-            // Reset line counter for each render
-            adminLineIndex = 0;
-            return adminSections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="lyrics-section">
-                {section.map((line) => {
-                  const lineIdx = getAdminLineIndex();
-                  const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(lineIdx);
-                  return (
-                    <LineDisplay 
-                      key={lineIdx}
-                      line={line} 
-                      showChords={true}
-                      lineIndex={lineIdx}
-                      onClick={showPurpleHighlight ? handleLineClick : undefined}
-                      isHighlighted={isHighlighted}
-                    />
-                  );
-                })}
-              </div>
-            ));
-          })()}
+          {adminSections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="lyrics-section">
+              {section.map((indexedLine) => {
+                const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(indexedLine.originalIndex);
+                return (
+                  <LineDisplay 
+                    key={indexedLine.originalIndex}
+                    line={indexedLine.line} 
+                    showChords={true}
+                    lineIndex={indexedLine.originalIndex}
+                    onClick={showPurpleHighlight ? handleLineClick : undefined}
+                    isHighlighted={isHighlighted}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -457,12 +461,12 @@ export function PlayingNowView() {
             >
               {adminSections.map((section, sectionIndex) => (
                 <div key={sectionIndex} className="lyrics-section">
-                  {section.map((line, lineIndex) => (
+                  {section.map((indexedLine) => (
                     <LineDisplay 
-                      key={lineIndex}
-                      line={line} 
+                      key={indexedLine.originalIndex}
+                      line={indexedLine.line} 
                       showChords={true}
-                      lineIndex={lineIndex}
+                      lineIndex={indexedLine.originalIndex}
                     />
                   ))}
                 </div>
@@ -478,12 +482,12 @@ export function PlayingNowView() {
             >
               {viewerLyricsSections.map((section, sectionIndex) => (
                 <div key={sectionIndex} className="lyrics-section">
-                  {section.map((line, lineIndex) => (
+                  {section.map((indexedLine) => (
                     <LineDisplay 
-                      key={lineIndex}
-                      line={line} 
+                      key={indexedLine.originalIndex}
+                      line={indexedLine.line} 
                       showChords={false}
-                      lineIndex={lineIndex}
+                      lineIndex={indexedLine.originalIndex}
                     />
                   ))}
                 </div>
@@ -492,13 +496,14 @@ export function PlayingNowView() {
           )}
 
           {/* Mode 3: Lyrics, verses on - single verse, centered */}
+          {/* For undersized last verse, getVerseLinesForDisplay pads with lines from previous verse */}
           {viewerShowsSingleVerse && (
             <div 
               ref={viewerVerseContainerRef}
               className={`lyrics-container lyrics verse-single ${animationDirection}`}
               key={currentVerseIndex} // Force re-render for animation
             >
-              {currentVerse && getVerseLines(lyrics.lines, currentVerse, true).map((line, lineIndex) => (
+              {getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse).map((line, lineIndex) => (
                 <LineDisplay 
                   key={lineIndex}
                   line={line} 

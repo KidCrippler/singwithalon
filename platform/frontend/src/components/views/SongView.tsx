@@ -268,7 +268,8 @@ export function SongView() {
             {section.map((line, lineIndex) => {
               const getText = () => {
                 if (displayMode === 'lyrics') {
-                  return line.text.trim();
+                  // In lyrics mode: trim and collapse consecutive spaces to single space
+                  return line.text.trim().replace(/ {2,}/g, ' ');
                 }
                 return line.type === 'chords' ? (line.raw || line.text) : line.text;
               };
