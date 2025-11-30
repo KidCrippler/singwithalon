@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS playing_state (
   current_verse_index INTEGER DEFAULT 0,
   current_key_offset INTEGER DEFAULT 0, -- Semitones (can be negative)
   display_mode TEXT DEFAULT 'lyrics',   -- 'lyrics' | 'chords'
-  verses_enabled INTEGER DEFAULT 0,     -- 0 = off (default), 1 = on
+  verses_enabled INTEGER DEFAULT 1,     -- 0 = off, 1 = on (verse mode)
   projector_width INTEGER,              -- First projector's resolution
   projector_height INTEGER,
   projector_lines_per_verse INTEGER,

@@ -55,7 +55,7 @@ export function setupSocketHandlers(io: Server) {
         verseIndex: state.current_verse_index,
         keyOffset: state.current_key_offset,
         displayMode: state.display_mode,
-        versesEnabled: state.verses_enabled === 1,
+        versesEnabled: !!state.verses_enabled,
       });
     });
 
@@ -109,9 +109,9 @@ export function setupSocketHandlers(io: Server) {
       if (!socketData.user?.isAdmin) return;
 
       const state = playingStateQueries.get();
-      const newValue = state.verses_enabled === 1 ? 0 : 1;
-      playingStateQueries.update({ verses_enabled: newValue });
-      io.to('playing-now').emit('verses:toggled', { versesEnabled: newValue === 1 });
+      const newVersesEnabled = state.verses_enabled ? 0 : 1;
+      playingStateQueries.update({ verses_enabled: newVersesEnabled });
+      io.to('playing-now').emit('verses:toggled', { versesEnabled: !!newVersesEnabled });
     });
 
     // === Queue Events ===
@@ -175,7 +175,7 @@ export function setupSocketHandlers(io: Server) {
         verseIndex: state.current_verse_index,
         keyOffset: state.current_key_offset,
         displayMode: state.display_mode,
-        versesEnabled: state.verses_enabled === 1,
+        versesEnabled: !!state.verses_enabled,
       });
 
       // Notify admins of queue update
