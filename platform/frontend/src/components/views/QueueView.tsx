@@ -62,7 +62,7 @@ export function QueueView() {
   const handleDeleteGroup = async (sessionId: string, requesterName: string) => {
     if (confirm(`האם למחוק את כל השירים של ${requesterName}?`)) {
       try {
-        await queueApi.deleteGroup(sessionId);
+        await queueApi.deleteGroup(sessionId, requesterName);
       } catch (error) {
         console.error('Failed to delete group:', error);
       }

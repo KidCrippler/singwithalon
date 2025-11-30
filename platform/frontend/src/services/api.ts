@@ -108,8 +108,11 @@ export const queueApi = {
     return fetchJson(`/api/queue/${id}/admin`, { method: 'DELETE' });
   },
 
-  async deleteGroup(sessionId: string): Promise<{ success: boolean; deletedCount: number }> {
-    return fetchJson(`/api/queue/group/${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+  async deleteGroup(sessionId: string, requesterName: string): Promise<{ success: boolean; deletedCount: number }> {
+    return fetchJson('/api/queue/group', {
+      method: 'DELETE',
+      body: JSON.stringify({ sessionId, requesterName }),
+    });
   },
 
   async truncate(): Promise<{ success: boolean }> {

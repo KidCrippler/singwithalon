@@ -178,13 +178,17 @@ export async function queueRoutes(fastify: FastifyInstance) {
     return { success: true };
   });
 
-  // Admin delete group (all entries from a session)
-  fastify.delete<{ Params: { sessionId: string } }>('/api/queue/group/:sessionId', { preHandler: requireAdmin }, async (request, reply) => {
-    const targetSessionId = request.params.sessionId;
+  // Admin delete group (all entries from a session+requester combination)
+  fastify.delete<{ Body: { sessionId: string; requesterName: string } }>('/api/queue/group', { preHandler: requireAdmin }, async (request, reply) => {
+    const { sessionId, requesterName } = request.body;
     
-    const count = queueQueries.removeBySessionId(targetSessionId);
+    if (!sessionId || !requesterName) {
+      return reply.status(400).send({ error: 'sessionId and requesterName are required' });
+    }
+    
+    const count = queueQueries.removeByGroup(sessionId, requesterName);
     if (count === 0) {
-      return reply.status(404).send({ error: 'No entries found for this session' });
+      return reply.status(404).send({ error: 'No entries found for this group' });
     }
 
     broadcastQueueUpdate();

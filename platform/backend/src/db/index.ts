@@ -128,9 +128,9 @@ export const queueQueries = {
     return result.changes > 0;
   },
 
-  // Admin-only: Remove all entries for a session (delete group)
-  removeBySessionId(sessionId: string): number {
-    const result = getDb().prepare('DELETE FROM queue WHERE session_id = ?').run(sessionId);
+  // Admin-only: Remove all entries for a session+requester group
+  removeByGroup(sessionId: string, requesterName: string): number {
+    const result = getDb().prepare('DELETE FROM queue WHERE session_id = ? AND requester_name = ?').run(sessionId, requesterName);
     return result.changes;
   },
 
