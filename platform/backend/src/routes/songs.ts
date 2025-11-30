@@ -104,6 +104,7 @@ export async function songsRoutes(fastify: FastifyInstance) {
       singer: song.singer,
       composers: song.composers,
       lyricists: song.lyricists,
+      translators: song.translators,
       categoryIds: song.categoryIds,
       isPrivate: song.isPrivate,
       direction: song.direction,

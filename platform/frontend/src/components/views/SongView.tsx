@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { songsApi, queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
+import { formatCredits } from '../../utils/formatCredits';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -232,6 +233,11 @@ export function SongView() {
         <div className="song-title-compact">
           {lyrics.metadata.title}
           <span className="artist"> - {lyrics.metadata.artist}</span>
+          {(song.composers?.length || song.lyricists?.length || song.translators?.length) && (
+            <span className="credits-compact">
+              {' | '}{formatCredits(song, isRtl)}
+            </span>
+          )}
         </div>
 
         <div className="action-buttons">

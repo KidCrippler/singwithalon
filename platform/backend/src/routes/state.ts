@@ -17,6 +17,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
           id: foundSong.id,
           name: foundSong.name,
           singer: foundSong.singer,
+          composers: foundSong.composers,
+          lyricists: foundSong.lyricists,
+          translators: foundSong.translators,
           direction: foundSong.direction,
         };
       }

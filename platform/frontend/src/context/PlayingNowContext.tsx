@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
-import { stateApi } from '../services/api';
+import { stateApi, songsApi } from '../services/api';
 import type { PlayingState } from '../types';
 
 interface PlayingNowContextValue {
@@ -128,6 +128,17 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('verses:toggled');
     };
   }, [socket]);
+
+  // Fetch song metadata when currentSongId changes
+  useEffect(() => {
+    if (state.currentSongId) {
+      songsApi.get(state.currentSongId)
+        .then(song => {
+          setState(prev => ({ ...prev, song }));
+        })
+        .catch(console.error);
+    }
+  }, [state.currentSongId]);
 
   const setSong = useCallback((songId: number) => {
     socket?.emit('song:set', { songId });

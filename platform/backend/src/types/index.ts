@@ -8,6 +8,7 @@ export interface Song {
   singer: string;
   composers?: string[];
   lyricists?: string[];
+  translators?: string[];
   isPrivate?: boolean;
   playback?: {
     youTubeVideoId?: string;

@@ -3,6 +3,7 @@ import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useAuth } from '../../context/AuthContext';
 import { songsApi } from '../../services/api';
 import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine, DEFAULT_LINES_PER_VERSE } from '../../utils/verseCalculator';
+import { formatCredits } from '../../utils/formatCredits';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -530,6 +531,11 @@ export function PlayingNowView() {
         <div className="song-title-compact">
           {lyrics.metadata.title}
           <span className="artist"> - {lyrics.metadata.artist}</span>
+          {state.song && (state.song.composers?.length || state.song.lyricists?.length || state.song.translators?.length) && (
+            <span className="credits-compact">
+              {' | '}{formatCredits(state.song, isRtl)}
+            </span>
+          )}
         </div>
       </div>
 

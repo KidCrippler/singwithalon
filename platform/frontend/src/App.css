@@ -400,6 +400,12 @@ body {
   margin-right: 0.5rem;
 }
 
+.song-title-compact .credits-compact {
+  font-weight: 400;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
 .back-btn {
   padding: 0.25rem 0.5rem;
   background: white;

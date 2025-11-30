@@ -5,6 +5,7 @@ export interface Song {
   singer: string;
   composers?: string[];
   lyricists?: string[];
+  translators?: string[];
   isPrivate?: boolean;
   categoryIds?: string[];
   direction?: 'ltr' | 'rtl';
