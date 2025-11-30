@@ -140,37 +140,38 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     }
   }, [state.currentSongId]);
 
+  // Admin actions - all via REST API (server broadcasts via socket)
   const setSong = useCallback((songId: number) => {
-    socket?.emit('song:set', { songId });
-  }, [socket]);
+    stateApi.setSong(songId).catch(console.error);
+  }, []);
 
   const clearSong = useCallback(() => {
-    socket?.emit('song:clear');
-  }, [socket]);
+    stateApi.clearSong().catch(console.error);
+  }, []);
 
   const nextVerse = useCallback(() => {
-    socket?.emit('verse:next');
-  }, [socket]);
+    stateApi.nextVerse().catch(console.error);
+  }, []);
 
   const prevVerse = useCallback(() => {
-    socket?.emit('verse:prev');
-  }, [socket]);
+    stateApi.prevVerse().catch(console.error);
+  }, []);
 
   const setVerse = useCallback((verseIndex: number) => {
-    socket?.emit('verse:set', { verseIndex });
-  }, [socket]);
+    stateApi.setVerse(verseIndex).catch(console.error);
+  }, []);
 
   const setKeyOffset = useCallback((keyOffset: number) => {
-    socket?.emit('key:set', { keyOffset });
-  }, [socket]);
+    stateApi.setKey(keyOffset).catch(console.error);
+  }, []);
 
   const setDisplayMode = useCallback((displayMode: 'lyrics' | 'chords') => {
-    socket?.emit('mode:set', { displayMode });
-  }, [socket]);
+    stateApi.setMode(displayMode).catch(console.error);
+  }, []);
 
   const toggleVersesEnabled = useCallback(() => {
-    socket?.emit('verses:toggle');
-  }, [socket]);
+    stateApi.toggleVerses().catch(console.error);
+  }, []);
 
   return (
     <PlayingNowContext.Provider value={{

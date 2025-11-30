@@ -79,6 +79,7 @@ export const songsApi = {
 
 // Queue API
 export const queueApi = {
+  // Viewer operations
   async list(): Promise<GroupedQueue[]> {
     return fetchJson('/api/queue');
   },
@@ -97,12 +98,84 @@ export const queueApi = {
   async getMine(): Promise<QueueEntry[]> {
     return fetchJson('/api/queue/mine');
   },
+
+  // Admin operations
+  async present(id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/queue/${id}/present`, { method: 'POST' });
+  },
+
+  async adminDelete(id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/queue/${id}/admin`, { method: 'DELETE' });
+  },
+
+  async deleteGroup(sessionId: string): Promise<{ success: boolean; deletedCount: number }> {
+    return fetchJson(`/api/queue/group/${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+  },
+
+  async truncate(): Promise<{ success: boolean }> {
+    return fetchJson('/api/queue', { method: 'DELETE' });
+  },
 };
 
 // State API
 export const stateApi = {
   async get(): Promise<PlayingState> {
     return fetchJson('/api/state');
+  },
+
+  // Admin controls
+  async setSong(songId: number): Promise<{ success: boolean }> {
+    return fetchJson('/api/state/song', {
+      method: 'POST',
+      body: JSON.stringify({ songId }),
+    });
+  },
+
+  async clearSong(): Promise<{ success: boolean }> {
+    return fetchJson('/api/state/song', { method: 'DELETE' });
+  },
+
+  async nextVerse(): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson('/api/state/verse/next', { method: 'POST' });
+  },
+
+  async prevVerse(): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson('/api/state/verse/prev', { method: 'POST' });
+  },
+
+  async setVerse(verseIndex: number): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson('/api/state/verse', {
+      method: 'POST',
+      body: JSON.stringify({ verseIndex }),
+    });
+  },
+
+  async setKey(keyOffset: number): Promise<{ success: boolean; keyOffset: number }> {
+    return fetchJson('/api/state/key', {
+      method: 'POST',
+      body: JSON.stringify({ keyOffset }),
+    });
+  },
+
+  async setMode(displayMode: 'lyrics' | 'chords'): Promise<{ success: boolean; displayMode: string }> {
+    return fetchJson('/api/state/mode', {
+      method: 'POST',
+      body: JSON.stringify({ displayMode }),
+    });
+  },
+
+  async toggleVerses(): Promise<{ success: boolean; versesEnabled: boolean }> {
+    return fetchJson('/api/state/verses/toggle', { method: 'POST' });
+  },
+};
+
+// Projector API
+export const projectorApi = {
+  async register(width: number, height: number, linesPerVerse: number): Promise<{ success: boolean; isFirstProjector: boolean }> {
+    return fetchJson('/api/projector/register', {
+      method: 'POST',
+      body: JSON.stringify({ width, height, linesPerVerse }),
+    });
   },
 };
 

@@ -1,6 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { playingStateQueries, queueQueries, sessionQueries } from '../db/index.js';
-import { getSongsIndex } from '../routes/songs.js';
+import { sessionQueries } from '../db/index.js';
 import type { AuthUser } from '../types/index.js';
 
 interface SocketData {
@@ -8,6 +7,15 @@ interface SocketData {
   sessionId: string;
 }
 
+/**
+ * Socket handlers - simplified to only handle:
+ * - Connection/disconnection
+ * - Admin room joining (for receiving broadcasts)
+ * - Heartbeat/ping for session keep-alive
+ * 
+ * All business operations are now REST endpoints.
+ * Sockets are only used for server→client broadcasts.
+ */
 export function setupSocketHandlers(io: Server) {
   io.on('connection', (socket: Socket) => {
     const sessionId = socket.handshake.auth.sessionId || socket.id;
@@ -21,12 +29,12 @@ export function setupSocketHandlers(io: Server) {
     // Create/update session in database
     sessionQueries.upsert(sessionId);
 
-    // Join the playing-now room by default
+    // Join the playing-now room by default (for receiving broadcasts)
     socket.join('playing-now');
 
     console.log(`Client connected: ${socket.id} (session: ${sessionId})`);
 
-    // Handle admin authentication via socket
+    // Handle admin authentication - joins admin room for queue updates
     socket.on('auth:admin', (user: AuthUser) => {
       socketData.user = user;
       socket.join('admin');
@@ -37,207 +45,6 @@ export function setupSocketHandlers(io: Server) {
     socket.on('ping', () => {
       sessionQueries.updateLastSeen(sessionId);
       socket.emit('pong', {});
-    });
-
-    // === Song Control Events (Admin Only) ===
-
-    socket.on('song:set', ({ songId }: { songId: number }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      const state = playingStateQueries.update({
-        current_song_id: songId,
-        current_verse_index: 0,
-        current_key_offset: 0,
-      });
-
-      io.to('playing-now').emit('song:changed', {
-        songId: state.current_song_id,
-        verseIndex: state.current_verse_index,
-        keyOffset: state.current_key_offset,
-        displayMode: state.display_mode,
-        versesEnabled: !!state.verses_enabled,
-      });
-    });
-
-    socket.on('song:clear', () => {
-      if (!socketData.user?.isAdmin) return;
-
-      playingStateQueries.clearSong();
-      io.to('playing-now').emit('song:cleared', {});
-    });
-
-    socket.on('verse:set', ({ verseIndex }: { verseIndex: number }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      playingStateQueries.update({ current_verse_index: verseIndex });
-      io.to('playing-now').emit('verse:changed', { verseIndex });
-    });
-
-    socket.on('verse:next', () => {
-      if (!socketData.user?.isAdmin) return;
-
-      const state = playingStateQueries.get();
-      const newIndex = state.current_verse_index + 1;
-      playingStateQueries.update({ current_verse_index: newIndex });
-      io.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
-    });
-
-    socket.on('verse:prev', () => {
-      if (!socketData.user?.isAdmin) return;
-
-      const state = playingStateQueries.get();
-      const newIndex = Math.max(0, state.current_verse_index - 1);
-      playingStateQueries.update({ current_verse_index: newIndex });
-      io.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
-    });
-
-    socket.on('key:set', ({ keyOffset }: { keyOffset: number }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      playingStateQueries.update({ current_key_offset: keyOffset });
-      io.to('playing-now').emit('key:changed', { keyOffset });
-    });
-
-    socket.on('mode:set', ({ displayMode }: { displayMode: 'lyrics' | 'chords' }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      playingStateQueries.update({ display_mode: displayMode });
-      io.to('playing-now').emit('mode:changed', { displayMode });
-    });
-
-    socket.on('verses:toggle', () => {
-      if (!socketData.user?.isAdmin) return;
-
-      const state = playingStateQueries.get();
-      const newVersesEnabled = state.verses_enabled ? 0 : 1;
-      playingStateQueries.update({ verses_enabled: newVersesEnabled });
-      io.to('playing-now').emit('verses:toggled', { versesEnabled: !!newVersesEnabled });
-    });
-
-    // === Queue Events ===
-
-    socket.on('queue:add', async ({ songId, requesterName }: { songId: number; requesterName: string }) => {
-      const songsIndex = getSongsIndex();
-      const song = songsIndex.find(s => s.id === songId);
-      
-      if (!song || (song.isPrivate && !socketData.user?.isAdmin)) {
-        socket.emit('error', { message: 'Song not found' });
-        return;
-      }
-
-      const count = queueQueries.countBySession(sessionId);
-      if (count >= 25) {
-        socket.emit('error', { message: 'Queue limit reached (max 25)' });
-        return;
-      }
-
-      queueQueries.add(songId, requesterName, sessionId);
-      
-      // Notify admins
-      const groupedQueue = queueQueries.getGrouped();
-      io.to('admin').emit('queue:updated', { queue: groupedQueue });
-    });
-
-    socket.on('queue:remove', ({ queueId }: { queueId: number }) => {
-      const removed = queueQueries.remove(queueId, sessionId);
-      
-      if (removed) {
-        const groupedQueue = queueQueries.getGrouped();
-        io.to('admin').emit('queue:updated', { queue: groupedQueue });
-      }
-    });
-
-    socket.on('queue:present', ({ queueId }: { queueId: number }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      // Get the queue entry first
-      const entries = queueQueries.getAll();
-      const entry = entries.find(e => e.id === queueId);
-      
-      if (!entry) {
-        socket.emit('error', { message: 'Queue entry not found' });
-        return;
-      }
-
-      // Mark as played
-      queueQueries.markPlayed(queueId);
-
-      // Set as current song
-      const state = playingStateQueries.update({
-        current_song_id: entry.song_id,
-        current_verse_index: 0,
-        current_key_offset: 0,
-      });
-
-      // Notify all viewers of song change
-      io.to('playing-now').emit('song:changed', {
-        songId: state.current_song_id,
-        verseIndex: state.current_verse_index,
-        keyOffset: state.current_key_offset,
-        displayMode: state.display_mode,
-        versesEnabled: !!state.verses_enabled,
-      });
-
-      // Notify admins of queue update
-      const groupedQueue = queueQueries.getGrouped();
-      io.to('admin').emit('queue:updated', { queue: groupedQueue });
-    });
-
-    // Admin-only: Delete a single entry from queue
-    socket.on('queue:deleteEntry', ({ queueId }: { queueId: number }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      const removed = queueQueries.removeById(queueId);
-      if (removed) {
-        const groupedQueue = queueQueries.getGrouped();
-        io.to('admin').emit('queue:updated', { queue: groupedQueue });
-      }
-    });
-
-    // Admin-only: Delete all entries for a session (delete group)
-    socket.on('queue:deleteGroup', ({ sessionId: targetSessionId }: { sessionId: string }) => {
-      if (!socketData.user?.isAdmin) return;
-
-      const count = queueQueries.removeBySessionId(targetSessionId);
-      if (count > 0) {
-        const groupedQueue = queueQueries.getGrouped();
-        io.to('admin').emit('queue:updated', { queue: groupedQueue });
-      }
-    });
-
-    // Admin-only: Clear entire queue
-    socket.on('queue:truncate', () => {
-      if (!socketData.user?.isAdmin) return;
-
-      queueQueries.truncate();
-      const groupedQueue = queueQueries.getGrouped();
-      io.to('admin').emit('queue:updated', { queue: groupedQueue });
-    });
-
-    // === Projector Events ===
-
-    socket.on('projector:register', ({ width, height, linesPerVerse }: { width: number; height: number; linesPerVerse: number }) => {
-      socket.join('projector');
-      
-      sessionQueries.upsert(sessionId, {
-        is_projector: true,
-        resolution_width: width,
-        resolution_height: height,
-        lines_per_verse: linesPerVerse,
-      });
-
-      // Check if this is the first projector
-      const state = playingStateQueries.get();
-      if (!state.projector_width) {
-        playingStateQueries.update({
-          projector_width: width,
-          projector_height: height,
-          projector_lines_per_verse: linesPerVerse,
-        });
-        
-        // Notify all clients of projector resolution
-        io.to('playing-now').emit('projector:resolution', { width, height, linesPerVerse });
-      }
     });
 
     // === Disconnect ===

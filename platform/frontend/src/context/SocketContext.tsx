@@ -5,7 +5,7 @@ import type { AuthUser } from '../types';
 interface SocketContextValue {
   socket: Socket | null;
   isConnected: boolean;
-  setAdminAuth: (user: AuthUser) => void;
+  setAdminAuth: (user: AuthUser | null) => void;
 }
 
 const SocketContext = createContext<SocketContextValue | null>(null);
@@ -16,6 +16,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Store admin user so we can re-emit auth:admin on reconnect
+  const adminUserRef = useRef<AuthUser | null>(null);
 
   useEffect(() => {
     // Get or create session ID
@@ -35,6 +37,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socketInstance.on('connect', () => {
       console.log('Socket connected');
       setIsConnected(true);
+      // Re-emit admin auth on reconnect if we have an admin user
+      if (adminUserRef.current) {
+        socketInstance.emit('auth:admin', adminUserRef.current);
+      }
     });
 
     socketInstance.on('disconnect', () => {
@@ -63,8 +69,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const setAdminAuth = useCallback((user: AuthUser) => {
-    if (socket) {
+  const setAdminAuth = useCallback((user: AuthUser | null) => {
+    adminUserRef.current = user;
+    if (socket?.connected && user) {
       socket.emit('auth:admin', user);
     }
   }, [socket]);

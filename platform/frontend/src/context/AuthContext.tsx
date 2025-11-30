@@ -102,10 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await authApi.logout();
     setUser(null);
+    setAdminAuth(null); // Clear admin auth from socket context
     // Clear admin mode on logout
     setAdminMode(false);
     sessionStorage.removeItem(ADMIN_MODE_KEY);
-  }, []);
+  }, [setAdminAuth]);
 
   // isAuthenticated: user has valid admin credentials (cookie-based)
   const isAuthenticated = user?.isAdmin ?? false;

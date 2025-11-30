@@ -1,30 +1,44 @@
 import { FastifyInstance } from 'fastify';
-import { playingStateQueries } from '../db/index.js';
+import { playingStateQueries, sessionQueries } from '../db/index.js';
 import { getSongsIndex } from './songs.js';
+import { requireAdmin } from './auth.js';
+import { getIO } from '../socket/index.js';
+
+// Helper: Get enriched song info
+function getEnrichedSong(songId: number | null) {
+  if (!songId) return null;
+  const songsIndex = getSongsIndex();
+  const song = songsIndex.find(s => s.id === songId);
+  if (!song) return null;
+  return {
+    id: song.id,
+    name: song.name,
+    singer: song.singer,
+    composers: song.composers,
+    lyricists: song.lyricists,
+    translators: song.translators,
+    direction: song.direction,
+  };
+}
+
+// Helper: Broadcast song changed to all viewers
+function broadcastSongChanged() {
+  const io = getIO();
+  if (!io) return;
+  const state = playingStateQueries.get();
+  io.to('playing-now').emit('song:changed', {
+    songId: state.current_song_id,
+    verseIndex: state.current_verse_index,
+    keyOffset: state.current_key_offset,
+    displayMode: state.display_mode,
+    versesEnabled: !!state.verses_enabled,
+  });
+}
 
 export async function stateRoutes(fastify: FastifyInstance) {
   // Get current playing state
   fastify.get('/api/state', async (request, reply) => {
     const state = playingStateQueries.get();
-    
-    // Enrich with song info if a song is playing
-    let song = null;
-    if (state.current_song_id) {
-      const songsIndex = getSongsIndex();
-      const foundSong = songsIndex.find(s => s.id === state.current_song_id);
-      if (foundSong) {
-        song = {
-          id: foundSong.id,
-          name: foundSong.name,
-          singer: foundSong.singer,
-          composers: foundSong.composers,
-          lyricists: foundSong.lyricists,
-          translators: foundSong.translators,
-          direction: foundSong.direction,
-        };
-      }
-    }
-
     return {
       currentSongId: state.current_song_id,
       currentVerseIndex: state.current_verse_index,
@@ -34,8 +48,143 @@ export async function stateRoutes(fastify: FastifyInstance) {
       projectorWidth: state.projector_width,
       projectorHeight: state.projector_height,
       projectorLinesPerVerse: state.projector_lines_per_verse,
-      song,
+      song: getEnrichedSong(state.current_song_id),
     };
+  });
+
+  // === Admin State Controls ===
+
+  // Set current song
+  fastify.post<{ Body: { songId: number } }>('/api/state/song', { preHandler: requireAdmin }, async (request, reply) => {
+    const { songId } = request.body;
+    
+    const songsIndex = getSongsIndex();
+    const song = songsIndex.find(s => s.id === songId);
+    if (!song) {
+      return reply.status(404).send({ error: 'Song not found' });
+    }
+
+    playingStateQueries.update({
+      current_song_id: songId,
+      current_verse_index: 0,
+      current_key_offset: 0,
+    });
+
+    broadcastSongChanged();
+    return { success: true };
+  });
+
+  // Clear current song (show splash)
+  fastify.delete('/api/state/song', { preHandler: requireAdmin }, async (request, reply) => {
+    playingStateQueries.clearSong();
+    
+    const io = getIO();
+    io?.to('playing-now').emit('song:cleared', {});
+    
+    return { success: true };
+  });
+
+  // Next verse
+  fastify.post('/api/state/verse/next', { preHandler: requireAdmin }, async (request, reply) => {
+    const state = playingStateQueries.get();
+    const newIndex = state.current_verse_index + 1;
+    playingStateQueries.update({ current_verse_index: newIndex });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
+    
+    return { success: true, verseIndex: newIndex };
+  });
+
+  // Previous verse
+  fastify.post('/api/state/verse/prev', { preHandler: requireAdmin }, async (request, reply) => {
+    const state = playingStateQueries.get();
+    const newIndex = Math.max(0, state.current_verse_index - 1);
+    playingStateQueries.update({ current_verse_index: newIndex });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
+    
+    return { success: true, verseIndex: newIndex };
+  });
+
+  // Set specific verse
+  fastify.post<{ Body: { verseIndex: number } }>('/api/state/verse', { preHandler: requireAdmin }, async (request, reply) => {
+    const { verseIndex } = request.body;
+    playingStateQueries.update({ current_verse_index: verseIndex });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('verse:changed', { verseIndex });
+    
+    return { success: true, verseIndex };
+  });
+
+  // Set key offset (transpose)
+  fastify.post<{ Body: { keyOffset: number } }>('/api/state/key', { preHandler: requireAdmin }, async (request, reply) => {
+    const { keyOffset } = request.body;
+    playingStateQueries.update({ current_key_offset: keyOffset });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('key:changed', { keyOffset });
+    
+    return { success: true, keyOffset };
+  });
+
+  // Set display mode
+  fastify.post<{ Body: { displayMode: 'lyrics' | 'chords' } }>('/api/state/mode', { preHandler: requireAdmin }, async (request, reply) => {
+    const { displayMode } = request.body;
+    playingStateQueries.update({ display_mode: displayMode });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('mode:changed', { displayMode });
+    
+    return { success: true, displayMode };
+  });
+
+  // Toggle verses enabled
+  fastify.post('/api/state/verses/toggle', { preHandler: requireAdmin }, async (request, reply) => {
+    const state = playingStateQueries.get();
+    const newVersesEnabled = state.verses_enabled ? 0 : 1;
+    playingStateQueries.update({ verses_enabled: newVersesEnabled });
+    
+    const io = getIO();
+    io?.to('playing-now').emit('verses:toggled', { versesEnabled: !!newVersesEnabled });
+    
+    return { success: true, versesEnabled: !!newVersesEnabled };
+  });
+
+  // === Projector Registration ===
+
+  fastify.post<{ Body: { width: number; height: number; linesPerVerse: number } }>('/api/projector/register', async (request, reply) => {
+    const { width, height, linesPerVerse } = request.body;
+    const sessionId = request.sessionId;
+
+    if (!sessionId) {
+      return reply.status(400).send({ error: 'Session ID required' });
+    }
+
+    sessionQueries.upsert(sessionId, {
+      is_projector: true,
+      resolution_width: width,
+      resolution_height: height,
+      lines_per_verse: linesPerVerse,
+    });
+
+    // Check if this is the first projector
+    const state = playingStateQueries.get();
+    if (!state.projector_width) {
+      playingStateQueries.update({
+        projector_width: width,
+        projector_height: height,
+        projector_lines_per_verse: linesPerVerse,
+      });
+      
+      // Notify all clients of projector resolution
+      const io = getIO();
+      io?.to('playing-now').emit('projector:resolution', { width, height, linesPerVerse });
+    }
+
+    return { success: true, isFirstProjector: !state.projector_width };
   });
 }
 

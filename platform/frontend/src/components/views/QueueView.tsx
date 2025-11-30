@@ -42,24 +42,40 @@ export function QueueView() {
     };
   }, [socket]);
 
-  const handlePresent = (queueId: number) => {
-    socket?.emit('queue:present', { queueId });
-    navigate('/playing-now');
-  };
-
-  const handleDeleteEntry = (queueId: number) => {
-    socket?.emit('queue:deleteEntry', { queueId });
-  };
-
-  const handleDeleteGroup = (sessionId: string, requesterName: string) => {
-    if (confirm(`האם למחוק את כל השירים של ${requesterName}?`)) {
-      socket?.emit('queue:deleteGroup', { sessionId });
+  const handlePresent = async (queueId: number) => {
+    try {
+      await queueApi.present(queueId);
+      navigate('/playing-now');
+    } catch (error) {
+      console.error('Failed to present song:', error);
     }
   };
 
-  const handleTruncateQueue = () => {
+  const handleDeleteEntry = async (queueId: number) => {
+    try {
+      await queueApi.adminDelete(queueId);
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+    }
+  };
+
+  const handleDeleteGroup = async (sessionId: string, requesterName: string) => {
+    if (confirm(`האם למחוק את כל השירים של ${requesterName}?`)) {
+      try {
+        await queueApi.deleteGroup(sessionId);
+      } catch (error) {
+        console.error('Failed to delete group:', error);
+      }
+    }
+  };
+
+  const handleTruncateQueue = async () => {
     if (confirm('האם לרוקן את כל התור? פעולה זו תמחק את כל הבקשות.')) {
-      socket?.emit('queue:truncate');
+      try {
+        await queueApi.truncate();
+      } catch (error) {
+        console.error('Failed to truncate queue:', error);
+      }
     }
   };
 

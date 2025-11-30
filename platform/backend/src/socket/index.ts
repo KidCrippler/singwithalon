@@ -5,6 +5,9 @@ import { setupSocketHandlers } from './handlers.js';
 
 type ServerType = HttpServer | Http2SecureServer;
 
+// Store io instance for access from REST routes
+let ioInstance: Server | null = null;
+
 export function initSocketIO(httpServer: ServerType): Server {
   const io = new Server(httpServer, {
     cors: {
@@ -16,8 +19,14 @@ export function initSocketIO(httpServer: ServerType): Server {
   });
 
   setupSocketHandlers(io);
+  ioInstance = io;
 
   console.log('Socket.io initialized');
   return io;
+}
+
+// Get the io instance for use in REST routes
+export function getIO(): Server | null {
+  return ioInstance;
 }
 
