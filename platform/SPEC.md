@@ -88,8 +88,11 @@ A real-time web application for managing sing-along events and band performances
 - **Purpose**: Browse and find songs
 - **Components**:
   - Text search box (filters by song name AND artist simultaneously)
+  - Clear button ("נקה" with red ✕ icon) to reset search filter
+  - Reload button (🔄 icon, admin only) to refresh song list from Git
   - List of songs (name, artist, optional category badges)
   - Private songs: visible to admin only
+- **Sticky Search Bar**: Search header remains fixed at top when scrolling through song list
 - **Actions**:
   - Click song → go to Presentation View (that song)
   - Viewer can click "Add to Queue" (prompts for name, shows confirmation)
@@ -124,7 +127,13 @@ A real-time web application for managing sing-along events and band performances
 - **Styling**:
   - Background: Random image from bundled collection with semi-transparent dark overlay
   - Text: High-contrast (light/yellow text on dark semi-transparent boxes per line)
-  - Song title, artist, composers/lyricists displayed at top header bar
+  - Song title, artist, and credits displayed at top header bar
+- **Credits Display**:
+  - Composer, lyricist, and translator fetched from songs.json database
+  - When composer and lyricist are the same: shows "מילים ולחן:" (Hebrew) or "Lyrics and Music:" (English)
+  - Otherwise shows separate entries: "לחן:" / "מילים:" or "Music:" / "Lyrics:"
+  - Translator shown as "תרגום:" or "Translation:" when present
+  - Language auto-detected based on song direction (RTL = Hebrew labels, LTR = English labels)
 - **Verse Mode** (default for projectors):
   - Only current verse visible
   - Admin controls which verse is highlighted
@@ -170,6 +179,7 @@ A real-time web application for managing sing-along events and band performances
 
 ### 4.4 Queue View (Admin Only)
 - **Purpose**: Manage song requests from viewers
+- **Real-time Updates**: Queue updates automatically via WebSocket when viewers add/remove songs
 - **Display**:
   - Grouped by requester (name + session ID combination)
   - Groups sorted by first request timestamp (earliest first)
@@ -181,7 +191,8 @@ A real-time web application for managing sing-along events and band performances
   - Delete button (✕) to remove individual song from queue
   - Visual state: pending (normal) / played (grayed out, at bottom of group)
 - **Group Management**:
-  - Delete group button (✕) on group header to remove all songs from a requester
+  - Delete group button (✕) on group header to remove all songs from that requester+session
+  - **Note**: Group = unique combination of requester name AND session ID. Same person with different names creates separate groups.
 - **Queue Management**:
   - "Truncate Queue" button at top to clear entire queue (with confirmation)
 - **Behavior on "Present"**:
@@ -413,6 +424,7 @@ CREATE TABLE playing_state (
   current_verse_index INTEGER DEFAULT 0,
   current_key_offset INTEGER DEFAULT 0, -- Semitones (can be negative)
   display_mode TEXT DEFAULT 'lyrics',   -- 'lyrics' | 'chords'
+  verses_enabled INTEGER DEFAULT 1,     -- 1 = show verses, 0 = show full song
   projector_width INTEGER,              -- First projector's resolution
   projector_height INTEGER,
   projector_lines_per_verse INTEGER,
@@ -466,45 +478,44 @@ DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
 
 ## 6. Real-time Architecture (Socket.io)
 
-### 6.1 Rooms/Namespaces
+### 6.1 Architecture Pattern: REST + Broadcast
+
+The application uses a **REST + Broadcast** pattern:
+- **Client → Server requests**: Use REST API (provides immediate response, HTTP status codes, error handling)
+- **Server → Client broadcasts**: Use Socket.io (pushes updates to all relevant clients)
+
+This pattern ensures:
+- Admin actions get immediate feedback (success/failure via HTTP response)
+- All clients receive real-time updates (via socket broadcasts)
+- No duplicate logic between REST and socket handlers
+
+### 6.2 Rooms/Namespaces
 - `playing-now` — All viewers watching the live song
 - `admin` — Admin clients (for receiving queue updates)
 - `projector` — Projector clients (for resolution sync)
 
-### 6.2 Events
+### 6.3 Events
 
-#### Server → Client
+#### Server → Client (Broadcasts)
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `song:changed` | `{ songId, verseIndex, keyOffset, displayMode }` | New song is now playing |
+| `song:changed` | `{ songId, verseIndex, keyOffset, displayMode, versesEnabled }` | New song is now playing |
 | `song:cleared` | `{}` | No song playing (show splash) |
 | `verse:changed` | `{ verseIndex }` | Admin advanced/rewound verse |
 | `key:changed` | `{ keyOffset }` | Admin changed transposition |
 | `mode:changed` | `{ displayMode }` | Admin toggled lyrics-only/chords |
-| `queue:updated` | `{ queue }` | Queue state changed (for admin) |
+| `verses:toggled` | `{ versesEnabled }` | Admin toggled verses mode on/off |
+| `queue:updated` | `{ queue }` | Queue state changed (for admin room) |
 | `projector:resolution` | `{ width, height, linesPerVerse }` | First projector set resolution |
 | `pong` | `{}` | Response to client ping (keep-alive) |
 
-#### Client → Server
+#### Client → Server (Connection/Auth only)
 | Event | Payload | Description |
 |-------|---------|-------------|
 | `ping` | `{}` | Keep-alive heartbeat (send every 60s) |
-| `song:set` | `{ songId }` | Admin changes current song |
-| `song:clear` | `{}` | Admin clears current song (show splash) |
-| `verse:set` | `{ verseIndex }` | Admin sets specific verse |
-| `verse:next` | `{}` | Admin advances to next verse |
-| `verse:prev` | `{}` | Admin goes to previous verse |
-| `key:set` | `{ keyOffset }` | Admin sets transposition |
-| `mode:set` | `{ displayMode }` | Admin sets display mode |
-| `queue:add` | `{ songId, requesterName }` | Viewer adds song to queue |
-| `queue:remove` | `{ queueId }` | Viewer removes their own request |
-| `queue:present` | `{ queueId }` | Admin presents song from queue |
-| `queue:deleteEntry` | `{ queueId }` | Admin deletes single queue entry |
-| `queue:deleteGroup` | `{ sessionId }` | Admin deletes all entries from a requester |
-| `queue:truncate` | `{}` | Admin clears entire queue |
-| `projector:register` | `{ width, height, linesPerVerse }` | Projector reports its resolution |
+| `auth:admin` | `{ sessionId }` | Admin joins admin room after authentication |
 
-**Note:** The `ping` event updates `sessions.last_seen` for session retention (see Section 5.4).
+**Note:** All mutations (song changes, queue operations, etc.) are performed via REST API. The REST endpoints then broadcast socket events to notify all clients. See Section 11.1 for REST API endpoints.
 
 ---
 
@@ -693,22 +704,53 @@ Client receives pre-parsed data and only handles rendering.
 
 ### 11.1 REST API (Fastify)
 
+#### Authentication
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/auth/login` | — | Admin login (username, password) → sets cookie |
 | `POST` | `/api/auth/logout` | Admin | Admin logout → clears cookie |
 | `GET` | `/api/auth/me` | — | Check current auth status |
+
+#### Songs
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | `GET` | `/api/songs` | — | List all songs (excludes private for non-admin) |
-| `GET` | `/api/songs/:id` | — | Get single song metadata |
+| `GET` | `/api/songs/:id` | — | Get single song metadata (includes composers, lyricists, translators) |
 | `GET` | `/api/songs/:id/lyrics` | — | Fetch, parse, cache, return structured lyrics |
 | `POST` | `/api/songs/reload` | Admin | Re-fetch songs.json from Git, update cache |
+
+#### Queue
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | `GET` | `/api/queue` | Admin | Get current queue (grouped, sorted) |
-| `POST` | `/api/queue` | — | Add to queue (body: songId, requesterName) |
-| `DELETE` | `/api/queue/:id` | — | Remove from queue (only own session's entries) |
-| `GET` | `/api/state` | — | Get current playing state |
+| `GET` | `/api/queue/mine` | — | Get own queue entries |
+| `POST` | `/api/queue` | — | Add to queue (broadcasts `queue:updated` to admins) |
+| `DELETE` | `/api/queue/:id` | — | Remove own entry (broadcasts `queue:updated`) |
+| `POST` | `/api/queue/:id/present` | Admin | Present song from queue (broadcasts `song:changed` + `queue:updated`) |
+| `DELETE` | `/api/queue/:id/admin` | Admin | Delete any queue entry (broadcasts `queue:updated`) |
+| `DELETE` | `/api/queue/group` | Admin | Delete group by sessionId + requesterName (broadcasts `queue:updated`) |
+| `DELETE` | `/api/queue` | Admin | Truncate entire queue (broadcasts `queue:updated`) |
+
+#### Playing State (Admin Controls)
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/state` | — | Get current playing state (songId, verse, key, mode, versesEnabled) |
+| `POST` | `/api/state/song` | Admin | Set current song (broadcasts `song:changed`) |
+| `DELETE` | `/api/state/song` | Admin | Clear current song (broadcasts `song:cleared`) |
+| `POST` | `/api/state/verse` | Admin | Set specific verse (broadcasts `verse:changed`) |
+| `POST` | `/api/state/verse/next` | Admin | Advance to next verse (broadcasts `verse:changed`) |
+| `POST` | `/api/state/verse/prev` | Admin | Go to previous verse (broadcasts `verse:changed`) |
+| `POST` | `/api/state/key` | Admin | Set key offset (broadcasts `key:changed`) |
+| `POST` | `/api/state/mode` | Admin | Set display mode (broadcasts `mode:changed`) |
+| `POST` | `/api/state/verses/toggle` | Admin | Toggle verses enabled (broadcasts `verses:toggled`) |
+
+#### Projector
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/projector/register` | — | Register projector resolution (broadcasts `projector:resolution` if first) |
 
 ### 11.2 WebSocket Events
-See Section 6.2 for complete event documentation.
+See Section 6.3 for complete event documentation.
 
 ---
 
@@ -884,6 +926,8 @@ platform/
 - [ ] Build "Add to Queue" flow (name prompt, confirmation)
 - [x] Create QueueView for admin (grouped display)
 - [x] Implement "Present from Queue" action
+- [x] Real-time queue updates (broadcasts to admin when viewers add/remove songs)
+- [x] Admin group deletion (by sessionId + requesterName)
 - [ ] Add fairness logic (group moves to bottom after presentation)
 - [ ] Build viewer's "my requests" view with cancel option
 
@@ -891,6 +935,9 @@ platform/
 - [x] Add loading states and spinners
 - [ ] Implement error boundaries and error messages
 - [x] RTL styling refinements across all views
+- [x] Sticky search bar with clear button
+- [x] Song credits display (composer, lyricist, translator from database)
+- [x] REST + Broadcast architecture for admin controls
 - [ ] Mobile responsiveness improvements
 - [x] Connection status indicators
 - [ ] Final UI/UX polish (theme, logo integration)
