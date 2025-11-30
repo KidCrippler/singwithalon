@@ -8,9 +8,9 @@ The verse system enables displaying songs in manageable chunks for sing-along se
 
 ### Verse Calculation (Frontend Only)
 
-Verse calculation happens entirely in the frontend. The backend only provides `linesPerVerse` (default 8, can be overridden by projector).
+Verse calculation happens entirely in the frontend. The backend only provides `linesPerVerse` (default `DEFAULT_LINES_PER_VERSE` from `verseCalculator.ts`, can be overridden by projector).
 
-1. **Lines Per Verse**: Default 8 lines, configurable via projector
+1. **Lines Per Verse**: Default `DEFAULT_LINES_PER_VERSE` (see `verseCalculator.ts`), configurable via projector
 2. **Line Counting**: Only lyrics-visible lines count towards the line limit:
    - ✅ Counted: `lyric`, `cue`, `empty` lines
    - ❌ Not counted: `chord`, `directive` lines
@@ -105,7 +105,7 @@ projector_lines_per_verse INTEGER  -- From first connected projector
 - `viewerVerseOverride`: Local viewer override (`null` = use admin preference)
 - `viewerModeOverride`: Local viewer override for display mode
 - `currentVerseIndex`: Current verse being displayed
-- `linesPerVerse`: From projector or default 8
+- `linesPerVerse`: From projector or `DEFAULT_LINES_PER_VERSE`
 - Computed: `effectiveVersesEnabled = viewerVerseOverride ?? versesEnabled`
 - Computed: `effectiveDisplayMode = viewerModeOverride ?? displayMode`
 

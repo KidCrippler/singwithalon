@@ -561,7 +561,7 @@ When generating transposed chords, prefer:
    - Last verse may be shorter
    
 2. **If no projector connected**:
-   - Default: **8 lines per verse**
+   - Default: `DEFAULT_LINES_PER_VERSE` (see `frontend/src/utils/verseCalculator.ts`)
 
 ### 8.2 Line Counting Rules for Verse Boundaries
 - Count **lyric lines only** (lines that are not chord-only lines)

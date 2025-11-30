@@ -1,6 +1,11 @@
 import type { ParsedLine, LineType } from '../types';
 
 /**
+ * Default number of lyrics-visible lines per verse when no projector override is set
+ */
+export const DEFAULT_LINES_PER_VERSE = 10;
+
+/**
  * Verse range with line indices
  */
 export interface VerseRange {
@@ -71,10 +76,10 @@ export function filterForLyricsMode(lines: ParsedLine[], trimLeadingEmpty: boole
  * - Every `linesPerVerse` visible lines constitutes a new verse
  * 
  * @param lines - Parsed song lines
- * @param linesPerVerse - Number of lyrics-visible lines per verse (default 8)
+ * @param linesPerVerse - Number of lyrics-visible lines per verse (default DEFAULT_LINES_PER_VERSE)
  * @returns Array of verse ranges
  */
-export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = 8): VerseRange[] {
+export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = DEFAULT_LINES_PER_VERSE): VerseRange[] {
   if (lines.length === 0) {
     return [];
   }
@@ -139,10 +144,10 @@ export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = 8):
  * - If the last verse has fewer than linesPerVerse lines, merge it with the previous verse
  * 
  * @param lines - Parsed song lines
- * @param linesPerVerse - Number of lyrics-visible lines per verse (default 8)
+ * @param linesPerVerse - Number of lyrics-visible lines per verse (default DEFAULT_LINES_PER_VERSE)
  * @returns Array of verse ranges
  */
-export function calculateVersesForLyricsMode(lines: ParsedLine[], linesPerVerse: number = 8): VerseRange[] {
+export function calculateVersesForLyricsMode(lines: ParsedLine[], linesPerVerse: number = DEFAULT_LINES_PER_VERSE): VerseRange[] {
   if (lines.length === 0) {
     return [];
   }
@@ -282,7 +287,7 @@ export function getVerseLinesForDisplay(
   lines: ParsedLine[],
   verses: VerseRange[],
   verseIndex: number,
-  linesPerVerse: number = 8
+  linesPerVerse: number = DEFAULT_LINES_PER_VERSE
 ): ParsedLine[] {
   if (verses.length === 0 || verseIndex < 0 || verseIndex >= verses.length) {
     return [];

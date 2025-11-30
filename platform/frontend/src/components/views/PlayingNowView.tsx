@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useAuth } from '../../context/AuthContext';
 import { songsApi } from '../../services/api';
-import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine } from '../../utils/verseCalculator';
+import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine, DEFAULT_LINES_PER_VERSE } from '../../utils/verseCalculator';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -288,7 +288,7 @@ export function PlayingNowView() {
   // Calculate verses
   // Use lyrics-mode verse calculation when displayMode is 'lyrics' for consistent behavior
   // between admin highlight and viewer verse display
-  const linesPerVerse = state.projectorLinesPerVerse ?? 8;
+  const linesPerVerse = state.projectorLinesPerVerse ?? DEFAULT_LINES_PER_VERSE;
   const verses = useMemo(() => {
     if (!lyrics) return [];
     // Use lyrics-mode calculation for lyrics display mode (handles consecutive empties,
