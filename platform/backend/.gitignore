@@ -6,6 +6,9 @@ database/*.db
 database/*.db-shm
 database/*.db-wal
 
+# Temporary migration files
+example/
+
 # Dependencies
 node_modules/
 
