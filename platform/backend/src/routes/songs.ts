@@ -307,13 +307,18 @@ const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
 // Matches bracketed bass-only notation like [/A], [/F#], [/Bb]
 const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
 
+// Arrow/continuation markers - can point left or right, with 2 or 3 hyphens
+// Valid: --->, -->, <---, <--
+const ARROW_REGEX = /^(-{2,3}>|<-{2,3})$/;
+
 /**
  * Check if a token is a valid chord token.
  * Exported for testing purposes.
  */
 export function isValidChordToken(token: string): boolean {
-  // Handle continuation marker
-  if (token === '--->') return true;
+  // Handle continuation markers (arrows pointing either direction, 2 or 3 hyphens)
+  // Valid: --->, -->, <---, <--
+  if (ARROW_REGEX.test(token)) return true;
   // Handle single hyphen (used as separator between chords)
   if (token === '-') return true;
   // Handle empty brackets (placeholder/rest marker)
@@ -343,11 +348,26 @@ function isChordLine(line: string): boolean {
 }
 
 /**
+ * Flip an arrow's direction: ---> becomes <---, --> becomes <--, etc.
+ */
+function flipArrow(arrow: string): string {
+  if (arrow.startsWith('<')) {
+    // Left-pointing to right-pointing: <--- → --->, <-- → -->
+    return arrow.slice(1) + '>';
+  } else if (arrow.endsWith('>')) {
+    // Right-pointing to left-pointing: ---> → <---, --> → <--
+    return '<' + arrow.slice(0, -1);
+  }
+  return arrow;
+}
+
+/**
  * Reverse a chord line for RTL display.
  * Algorithm:
  * 1. Reverse the entire string character by character
  * 2. For each token, reverse it back to restore chord names
  * 3. For tokens with unbalanced brackets, move bracket to opposite side and swap type
+ * 4. For arrow tokens, flip their direction (---> becomes <---, etc.)
  * 
  * Example: "   C  G Am  D  Em    Em"
  * Step 1 (reverse all): "mE    mE  D  mA G  C   "
@@ -357,6 +377,11 @@ function isChordLine(line: string): boolean {
  * Step 1 (reverse): "2 x )bB   bE   bA   mC("
  * Step 2 (reverse tokens): "2 x Bb)   Eb   Ab   (Cm"
  * Step 3 (fix brackets): "2 x (Bb   Eb   Ab   Cm)"
+ * 
+ * Example with arrows: "Am --->  G"
+ * Step 1 (reverse): "G  >--- mA"
+ * Step 2 (reverse tokens): "G  ---> Am"
+ * Step 3 (flip arrows): "G  <--- Am"
  * 
  * Exported for testing purposes.
  */
@@ -368,6 +393,11 @@ export function reverseChordLineForRtl(line: string): string {
   return reversed.replace(/\S+/g, (token) => {
     // Reverse the token to restore chord names
     let result = token.split('').reverse().join('');
+    
+    // Check if this is an arrow token - flip its direction
+    if (ARROW_REGEX.test(result)) {
+      return flipArrow(result);
+    }
     
     // Check if brackets are balanced (at both ends) - if so, leave alone
     const startsWithOpen = result.startsWith('(') || result.startsWith('[');

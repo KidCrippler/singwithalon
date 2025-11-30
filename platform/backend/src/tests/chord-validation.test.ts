@@ -90,7 +90,10 @@ const testCases: TestCase[] = [
   { input: '[]', expected: true, description: 'Empty brackets as rest/placeholder' },
   
   // === Special Markers ===
-  { input: '--->', expected: true, description: 'Continuation marker' },
+  { input: '--->', expected: true, description: 'Right arrow (3 hyphens)' },
+  { input: '-->', expected: true, description: 'Right arrow (2 hyphens)' },
+  { input: '<---', expected: true, description: 'Left arrow (3 hyphens)' },
+  { input: '<--', expected: true, description: 'Left arrow (2 hyphens)' },
   { input: '-', expected: true, description: 'Single hyphen separator' },
   { input: 'x', expected: true, description: 'Repeat marker' },
   { input: '2', expected: true, description: 'Repeat count' },
@@ -160,6 +163,37 @@ const reversalTestCases: ReversalTestCase[] = [
     input: '/E  /E  /A  [/A]',
     expected: '[/A]  /A  /E  /E',
     description: 'Base inside brackets',
+  },
+  // Arrow continuation markers - should flip direction in RTL
+  {
+    input: 'Am --->  G',
+    expected: 'G  <--- Am',
+    description: 'Right arrow flips to left arrow',
+  },
+  {
+    input: '--->  Am   Dm   G    C',
+    expected: 'C    G   Dm   Am  <---',
+    description: 'Right arrow at start flips to left at end',
+  },
+  {
+    input: 'Am -->  G',
+    expected: 'G  <-- Am',
+    description: 'Short right arrow flips to left arrow',
+  },
+  {
+    input: 'Am <---  G',
+    expected: 'G  ---> Am',
+    description: 'Left arrow flips to right arrow',
+  },
+  {
+    input: 'Am <--  G',
+    expected: 'G  --> Am',
+    description: 'Short left arrow flips to right arrow',
+  },
+  {
+    input: '                      Am  --->',
+    expected: '<---  Am                      ',
+    description: 'Arrow at end with leading spaces',
   },
 ];
 

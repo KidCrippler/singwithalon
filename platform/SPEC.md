@@ -116,7 +116,7 @@ A real-time web application for managing sing-along events and band performances
   - Blue chords (positioned above lyrics per source file spacing)
   - Green band directives `{...}` (italic)
   - Red crowd cues `[...]`
-  - Chord continuations `--->` shown in blue
+  - Chord continuation arrows (`--->`, `-->`, `<---`, `<--`) shown in blue
 - **Layout**: Single-screen, auto-shrink font to fit all content
 - **Transposition controls**: Visible, allows key change
 
@@ -131,7 +131,7 @@ A real-time web application for managing sing-along events and band performances
 - **Full-Song Mode** (viewer toggle):
   - All lyrics visible, scrollable
 - **Transposition controls**: Visible in chords mode only
-- **Hidden elements**: Band directives `{}`, continuation markers `--->`
+- **Hidden elements**: Band directives `{}`, continuation arrows (`--->`, `-->`, `<---`, `<--`)
 - **Visible elements**: Crowd cues `[]` in red
 
 #### Common Features
@@ -352,8 +352,10 @@ D         C#7     F#m  A7
 |--------|---------|----------------------|----------------------|
 | `{...}` | Band directive | Green (not italic) | Hidden |
 | `[...]` | Crowd cue (non-chord text) | Red | Red |
-| `--->` | Chord continuation | Blue (treat as chord) | Hidden |
+| `--->`, `-->`, `<---`, `<--` | Chord continuation arrows | Blue (treat as chord) | Hidden |
 | `(...)` | Inline notation | Keep as-is | Keep as-is |
+
+**Note on arrows:** Continuation arrows can point either direction (left `<` or right `>`) and use either 2 or 3 hyphens. Use left-pointing arrows (`<---`, `<--`) for Hebrew/RTL songs and right-pointing arrows (`--->`, `-->`) for English/LTR songs. During RTL reversal, arrow directions are automatically flipped.
 
 **Note on `[...]` detection:** Bracketed content is a **cue** only if the inner text is NOT a valid chord token. If the content is a chord (e.g., `[Am]`, `[/A]`), it's treated as a bracketed chord on a chord line. If it's non-chord text (e.g., `[Hey!]`, `[Clap]`), it's a crowd cue displayed in red.
 
@@ -367,10 +369,12 @@ D         C#7     F#m  A7
   2. Reverse the entire chord line string character by character
   3. For each token, reverse it back to restore chord names
   4. For tokens with unbalanced brackets, move bracket to opposite side and swap type
+  5. For arrow tokens, flip their direction (`--->` becomes `<---`, etc.)
   - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
   - Example with parens: `"(Cm   Ab   Eb   Bb) x 2"` → `"2 x (Bb   Eb   Ab   Cm)"`
   - Example with mixed brackets: `"(Dm   Am   [E]   Am) x 3"` → `"3 x (Am   [E]   Am   Dm)"`
   - Example with bass-only: `"/E /E /A [/A]"` → `"[/A] /A /E /E"`
+  - Example with arrows: `"Am --->  G"` → `"G  <--- Am"`
 - **CSS for RTL chord lines:** Reversed chord lines are displayed with `direction: ltr` (to preserve spacing) and `text-align: right` (to align with RTL lyrics)
 
 **5. Spacing Preservation:**
@@ -1027,7 +1031,7 @@ VITE_SOCKET_URL=http://localhost:3001
 | Chords | Blue |
 | Band directives `{}` | Green (italic) |
 | Crowd cues `[]` | Red |
-| Continuation `--->` | Blue |
+| Continuation arrows (`--->`, `-->`, `<---`, `<--`) | Blue |
 | Background (chords mode) | White |
 | Background (projection) | Image + dark overlay |
 
