@@ -125,9 +125,16 @@ export function SearchView() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
+          <button 
+            className="search-clear-btn"
+            onClick={() => setSearchTerm('')}
+            title="נקה חיפוש"
+          >
+            נקה <span className="clear-icon">✕</span>
+          </button>
           {isAdmin && (
-            <button onClick={handleReloadSongs} className="reload-btn">
-              🔄 רענן
+            <button onClick={handleReloadSongs} className="reload-btn" title="רענן רשימת שירים">
+              🔄
             </button>
           )}
         </div>
