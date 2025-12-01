@@ -11,6 +11,13 @@ interface PlayingNowContextValue {
   setViewerVerseOverride: (override: boolean | null) => void;
   // Computed effective verse mode
   effectiveVersesEnabled: boolean;
+  // Viewer's local override for key offset (null = use admin preference)
+  viewerKeyOverride: number | null;
+  setViewerKeyOverride: (override: number | null) => void;
+  // Computed effective key offset
+  effectiveKeyOffset: number;
+  // Is viewer out of sync with admin's key?
+  isKeyOutOfSync: boolean;
   // Actions
   setSong: (songId: number) => void;
   clearSong: () => void;
@@ -18,6 +25,7 @@ interface PlayingNowContextValue {
   prevVerse: () => void;
   setVerse: (index: number) => void;
   setKeyOffset: (offset: number) => void;
+  syncKeyToAll: () => void;
   setDisplayMode: (mode: 'lyrics' | 'chords') => void;
   toggleVersesEnabled: () => void;
 }
@@ -43,10 +51,19 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   const [isLoading, setIsLoading] = useState(true);
   // Viewer's local override for verse mode (null = use admin preference, false = force full view)
   const [viewerVerseOverride, setViewerVerseOverride] = useState<boolean | null>(null);
+  // Viewer's local override for key offset (null = use admin preference)
+  const [viewerKeyOverride, setViewerKeyOverride] = useState<number | null>(null);
   const { socket } = useSocket();
 
   // Computed effective verse mode: viewer override takes precedence if set
   const effectiveVersesEnabled = viewerVerseOverride ?? state.versesEnabled;
+  
+  // Computed effective key offset: viewer override takes precedence if set
+  const effectiveKeyOffset = viewerKeyOverride ?? state.currentKeyOffset;
+  
+  // Is viewer out of sync with admin's key?
+  // (viewerKeyOverride is always set for viewers after song starts)
+  const isKeyOutOfSync = effectiveKeyOffset !== state.currentKeyOffset;
 
   // Fetch initial state
   useEffect(() => {
@@ -69,8 +86,10 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
         displayMode: payload.displayMode,
         versesEnabled: payload.versesEnabled,
       }));
-      // Reset viewer override when song changes
+      // Reset viewer overrides when song changes
       setViewerVerseOverride(null);
+      // Initialize viewer's key to admin's key (but as their own independent offset)
+      setViewerKeyOverride(payload.keyOffset);
     });
 
     socket.on('song:cleared', () => {
@@ -90,11 +109,15 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       }));
     });
 
-    socket.on('key:changed', (payload: { keyOffset: number }) => {
+    // Admin pushed key to all viewers - sync viewer's key to admin's
+    socket.on('key:sync', (payload: { keyOffset: number }) => {
+      // Update both admin's key (for reference) and viewer's override
       setState(prev => ({
         ...prev,
         currentKeyOffset: payload.keyOffset,
       }));
+      // Set viewer's key to admin's key (they can adjust from here)
+      setViewerKeyOverride(payload.keyOffset);
     });
 
     socket.on('mode:changed', (payload: { displayMode: 'lyrics' | 'chords' }) => {
@@ -132,7 +155,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('song:changed');
       socket.off('song:cleared');
       socket.off('verse:changed');
-      socket.off('key:changed');
+      socket.off('key:sync');
       socket.off('mode:changed');
       socket.off('projector:resolution');
       socket.off('verses:toggled');
@@ -172,9 +195,18 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     stateApi.setVerse(verseIndex).catch(console.error);
   }, []);
 
+  // Admin key change - local only, no server call
   const setKeyOffset = useCallback((keyOffset: number) => {
-    stateApi.setKey(keyOffset).catch(console.error);
+    setState(prev => ({
+      ...prev,
+      currentKeyOffset: keyOffset,
+    }));
   }, []);
+
+  // Sync admin's current key to all viewers
+  const syncKeyToAll = useCallback(() => {
+    stateApi.syncKey(state.currentKeyOffset).catch(console.error);
+  }, [state.currentKeyOffset]);
 
   const setDisplayMode = useCallback((displayMode: 'lyrics' | 'chords') => {
     stateApi.setMode(displayMode).catch(console.error);
@@ -191,12 +223,17 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       viewerVerseOverride,
       setViewerVerseOverride,
       effectiveVersesEnabled,
+      viewerKeyOverride,
+      setViewerKeyOverride,
+      effectiveKeyOffset,
+      isKeyOutOfSync,
       setSong,
       clearSong,
       nextVerse,
       prevVerse,
       setVerse,
       setKeyOffset,
+      syncKeyToAll,
       setDisplayMode,
       toggleVersesEnabled,
     }}>

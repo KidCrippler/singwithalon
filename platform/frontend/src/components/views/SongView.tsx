@@ -4,6 +4,9 @@ import { songsApi, queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { formatCredits } from '../../utils/formatCredits';
+import { transposeChordLine } from '../../services/transpose';
+import { formatChordLineForDisplay } from '../../services/chordDisplay';
+import { TransposeControls } from '../TransposeControls';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -132,6 +135,7 @@ export function SongView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('chords');
+  const [keyOffset, setKeyOffset] = useState(0);
   const [requesterName, setRequesterName] = useState('');
   const [showQueueForm, setShowQueueForm] = useState(false);
   
@@ -229,6 +233,16 @@ export function SongView() {
           </button>
         </div>
 
+        {/* Transpose controls - only in chords mode */}
+        {displayMode === 'chords' && (
+          <TransposeControls
+            currentOffset={keyOffset}
+            adminOffset={0}
+            isAdmin={false}
+            onOffsetChange={setKeyOffset}
+          />
+        )}
+
         {/* Song title inline */}
         <div className="song-title-compact">
           {lyrics.metadata.title}
@@ -280,6 +294,11 @@ export function SongView() {
                 return line.type === 'chords' ? (line.raw || line.text) : line.text;
               };
 
+              const getChordText = () => {
+                const chordText = line.raw || line.text;
+                return formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
+              };
+
               return (
                 <div key={lineIndex} className={`line line-${line.type}`}>
                   {line.type === 'directive' ? (
@@ -287,7 +306,7 @@ export function SongView() {
                   ) : line.type === 'cue' ? (
                     <span className="cue">{line.text}</span>
                   ) : line.type === 'chords' ? (
-                    <span className="chords">{line.raw || line.text}</span>
+                    <span className="chords">{getChordText()}</span>
                   ) : (
                     <span className="lyric">{getText()}</span>
                   )}

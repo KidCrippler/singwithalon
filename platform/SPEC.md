@@ -81,7 +81,7 @@ A real-time web application for managing sing-along events and band performances
   - Toggle personal preferences:
     - Lyrics-only vs Lyrics+chords
     - Verse mode vs Full-song mode
-    - Override transposition (with sync-to-admin button)
+    - Override transposition (in chords mode only, absolute offset -6 to +6)
   - View and cancel their own queue requests
 
 ---
@@ -160,10 +160,10 @@ A real-time web application for managing sing-along events and band performances
 
 #### Common Features
 - **Transposition**:
-  - Admin sets global key
-  - Viewers can override locally
-  - "Sync to admin" button resets viewer's override
-  - Visual indicator when viewer is out of sync with admin
+  - Admin sets global key offset (-6 to +6 semitones)
+  - Viewers can override locally with their own absolute offset
+  - Admin can push key to all viewers via sync button (📡)
+  - Subtle visual indicator (●) when viewer is out of sync with admin
 - **RTL Support**:
   - Auto-detected via Hebrew Unicode characters (`\u0590-\u05FF`)
   - Chords remain LTR but positioned according to source file spacing
@@ -181,13 +181,13 @@ A real-time web application for managing sing-along events and band performances
 - **Viewer Controls** (visible to all):
   - Toggle: Lyrics-only ↔ Lyrics+chords
   - Toggle: Verse mode ↔ Full-song mode (non-projectors only)
-  - Transposition override (if in chords mode) with sync button
+  - Transposition controls (only in chords mode): `[ ⬇ ] N [ ⬆ ]` with out-of-sync indicator
 - **Admin Controls** (small overlay, top-left corner, non-intrusive):
-  - Previous verse button
-  - Next verse button
-  - Toggle display mode (lyrics-only ↔ lyrics+chords)
-  - Toggle chord visibility
-  - Key/transpose controls (visible in chords mode)
+  - Previous verse button (◀)
+  - Next verse button (▶)
+  - Toggle verses enabled (📖)
+  - Toggle display mode (🎸/🎤)
+  - Transpose controls: `[ ⬇ ] N [ ⬆ ] [ 📡 ]` (always visible since admin always sees chords)
 - **Keyboard Shortcuts** (critical for Bluetooth pedal support):
   - Arrow keys (Up/Down or Left/Right) mapped to verse navigation
   - **Must work even when admin is on other tabs (Queue, Search)**
@@ -354,12 +354,13 @@ D         C#7     F#m  A7
 
 **2. Chord Line Detection (content-based with regex):**
 - A line is a chord line IF AND ONLY IF **all whitespace-separated tokens** match the chord pattern
-- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
-- Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
+- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
+- Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
 - Bass-only pattern: `\/[A-G][#b]?` (just a note, e.g., `/F`, `/Bb`, `/A`, `/F#`)
 - Bracketed bass-only pattern: `\[\/[A-G][#b]?\]` (e.g., `[/A]`, `[/F#]`)
 - Empty brackets: `[]` (valid placeholder token in chord lines)
-- Special notation: `o` = diminished (e.g., `Fo7` = `Fdim7`), `+` = augmented
+- Special notation: `o` or `°` = diminished (e.g., `Fo7` = `F°7` = `Fdim7`), `+` = augmented
+  - Note: Both `o` and `°` are valid in source files; display always uses `°` for elegance
 - **Extended notation support:**
   - Major chord suffixes: `maj`, `Maj`, `M` (e.g., `CMaj7`, `DM9`, `Fmaj7`)
   - Minor chord suffixes: `m`, `min`, `Min` (e.g., `Am`, `Cmin7`, `DMin7`)
@@ -518,7 +519,7 @@ This pattern ensures:
 | `song:changed` | `{ songId, verseIndex, keyOffset, displayMode, versesEnabled }` | New song is now playing |
 | `song:cleared` | `{}` | No song playing (show splash) |
 | `verse:changed` | `{ verseIndex }` | Admin advanced/rewound verse |
-| `key:changed` | `{ keyOffset }` | Admin changed transposition |
+| `key:sync` | `{ keyOffset }` | Admin pushed key to all viewers (syncs viewer offset to admin's) |
 | `mode:changed` | `{ displayMode }` | Admin toggled lyrics-only/chords |
 | `verses:toggled` | `{ versesEnabled }` | Admin toggled verses mode on/off |
 | `queue:updated` | `{ queue }` | Queue state changed (for admin room) |
@@ -538,14 +539,29 @@ This pattern ensures:
 
 ## 7. Transposition Logic
 
-### 7.1 Chromatic Scale (12 semitones)
+### 7.1 Architecture
+- **Transposition is performed entirely in the frontend** (client-side)
+- Server sends original chord strings; clients transform based on their local `keyOffset`
+- **All key offset changes are local** - no server calls when admin or viewer adjusts their key
+- Server is only involved when admin clicks sync button (broadcasts current key to all viewers)
+- This keeps transposition simple and avoids unnecessary network traffic
+
+### 7.2 Chromatic Scale (12 semitones)
 ```
 C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
      0    1    2    3   4    5    6    7    8   9   10   11
 ```
 
-### 7.2 Enharmonic Preferences
-When generating transposed chords, prefer:
+### 7.3 Enharmonic Handling
+
+#### Priority: Original > Preferred > Less Preferred
+
+1. **Original notation is preserved** when offset = 0
+   - If source file has `G#`, display `G#` (not `Ab`)
+   - Respect the song author's choice of notation
+
+2. **Preferred notation** used when transposition creates a new accidental
+   - When a transposed note lands on a "black key", use the preferred spelling
 
 | Prefer | Over |
 |--------|------|
@@ -555,10 +571,13 @@ When generating transposed chords, prefer:
 | Ab | G# |
 | Bb | A# |
 
-**However**: If the original file uses a "non-preferred" notation, preserve the pattern contextually.
-- Example: Original `G  G#` transposed +1 semitone → `Ab  A` (the sharp becomes natural, maintaining relative movement)
+#### Examples
+- `G#` with offset 0 → `G#` (original preserved)
+- `G` with offset +1 → `Ab` (preferred, not G#)
+- `Db` with offset 0 → `Db` (original preserved, even though C# is "preferred")
+- `Db` with offset +1 → `D` (natural note, no preference needed)
 
-### 7.3 Transposition Rules
+### 7.4 Transposition Rules
 1. Parse each chord to extract: root note, accidental (#/b), modifiers (m, 7, maj7, etc.), bass note (/X)
 2. Convert root to semitone index
 3. Add offset (can be negative for transposing down)
@@ -566,10 +585,10 @@ When generating transposed chords, prefer:
 5. Preserve all modifiers exactly
 6. If chord has bass note (`/X`), transpose that too
 
-### 7.4 Supported Chord Components
+### 7.5 Supported Chord Components
 - **Root notes**: A, B, C, D, E, F, G
 - **Accidentals**: # (sharp), b (flat)
-- **Quality modifiers**: m, min, maj, dim, aug, o (diminished), + (augmented)
+- **Quality modifiers**: m, min, maj, dim, aug, o (diminished), ° (diminished, alternate notation), + (augmented)
 - **Extensions**: 2, 4, 5, 6, 7, 9, 11, 13
 - **Suspensions**: sus, sus2, sus4
 - **Additions**: add9, add11, etc.
@@ -577,7 +596,57 @@ When generating transposed chords, prefer:
 - **Bass notes**: /C, /E, /G#, etc.
 
 **Examples of valid chords**:
-`Am`, `G7`, `Cmaj7`, `Bm7b5`, `F#dim`, `Dsus4`, `Eadd9`, `A/C#`, `Fo7`
+`Am`, `G7`, `Cmaj7`, `Bm7b5`, `F#dim`, `Dsus4`, `Eadd9`, `A/C#`, `Fo7`, `B°7`
+
+### 7.6 Diminished Notation
+- Both `o` and `°` are recognized as diminished notation during parsing
+- When rendering, always display `°` (degree symbol) instead of `o` for elegance
+- Display formatting is handled by `chordDisplay.ts` (separate from transposition logic)
+- Example: Input `Fo7` displays as `F°7`
+
+### 7.7 Spacing After Transposition
+- **Current approach**: Maintain chord start positions after transposition
+- Each chord starts at the same character index as in the original line
+- Spacing between chords is adjusted: reduced when chords get longer, increased when shorter
+- Example: `D    G` → `Eb   Ab` (chords start at same positions, spacing adjusted)
+- **Future enhancement**: Token-based rendering to anchor chords to syllable positions in lyrics
+
+### 7.8 Transposition UI
+
+#### Admin Controls
+- Located in the admin controls bar (Playing Now view)
+- Components: `[ ⬇ ] 0 [ ⬆ ] [ 📡 ]`
+  - `⬇` / `⬆`: Decrease/increase offset
+  - Number: Current offset (-6 to +6), default 0
+  - `📡`: "Push to all viewers" sync button
+- **Always visible** (admin always sees chords mode)
+
+#### Viewer Controls
+- Same `[ ⬇ ] N [ ⬆ ]` controls (without sync button)
+- **Only visible when in chords mode** (`displayMode === 'chords'`)
+- Shows absolute offset value (e.g., `+3`, `-2`, `0`)
+
+#### Offset Range
+- Valid values: -6 to +6 semitones
+- Displayed as signed integer: `-6`, `-5`, ... `0`, `+1`, ... `+6`
+
+### 7.9 Per-Viewer Override
+
+#### Behavior
+- Viewers can set their own transposition independently of admin
+- Override is **absolute** (not relative to admin)
+- Stored in React state (not persisted to server)
+
+#### Sync Mechanism
+- Admin clicks `📡` sync button to push current key to all viewers
+- Admin's current local key is sent to server via REST: `POST /api/state/key/sync { keyOffset }`
+- Server broadcasts `key:sync` event with `{ keyOffset }` to all clients
+- Viewers adopt admin's key as their new local offset (can adjust independently afterward)
+
+#### Out-of-Sync Indicator
+- When viewer's effective offset differs from admin's offset, show subtle indicator
+- Example: Small dot or asterisk next to the offset number: `+3 ●`
+- Indicates "you're not following admin's key"
 
 ---
 
@@ -642,13 +711,17 @@ The projector client should:
 
 ### 9.5 Admin Controls Overlay (Playing Now View)
 - Position: Top-left corner
-- Size: Very small, non-intrusive (4 small buttons)
-- Buttons:
-  - ◀ Previous verse
-  - ▶ Next verse  
-  - 🎤 Toggle lyrics/chords mode
-  - 🎹 Toggle chord visibility
-- Transpose controls: Separate, visible when in chords mode
+- Size: Compact, non-intrusive
+- Controls (in order):
+  - ◀ Previous verse (disabled when verses off or at first verse)
+  - ▶ Next verse (disabled when verses off or at last verse)
+  - 📖 Toggle verses enabled
+  - 🎸/🎤 Toggle lyrics/chords mode for viewers
+  - Verse indicator: `N/M` (only when verses enabled)
+  - ⬇ Transpose down
+  - `N` Current offset (-6 to +6)
+  - ⬆ Transpose up
+  - 📡 Push key to all viewers (sync)
 
 ### 9.6 Keyboard Shortcuts
 | Key | Action |
@@ -757,7 +830,7 @@ Client receives pre-parsed data and only handles rendering.
 | `POST` | `/api/state/verse` | Admin | Set specific verse (broadcasts `verse:changed`) |
 | `POST` | `/api/state/verse/next` | Admin | Advance to next verse (broadcasts `verse:changed`) |
 | `POST` | `/api/state/verse/prev` | Admin | Go to previous verse (broadcasts `verse:changed`) |
-| `POST` | `/api/state/key` | Admin | Set key offset (broadcasts `key:changed`) |
+| `POST` | `/api/state/key/sync` | Admin | Push admin's key to all viewers (broadcasts `key:sync`) |
 | `POST` | `/api/state/mode` | Admin | Set display mode (broadcasts `mode:changed`) |
 | `POST` | `/api/state/verses/toggle` | Admin | Toggle verses enabled (broadcasts `verses:toggled`) |
 
@@ -799,7 +872,6 @@ platform/
 │   │   ├── services/
 │   │   │   ├── songParser.ts     # Parse lyrics/chord markup files
 │   │   │   ├── chordDetector.ts  # Regex-based chord line detection
-│   │   │   ├── transposer.ts     # Chord transposition logic
 │   │   │   ├── verseCalculator.ts # Chunk songs into verses
 │   │   │   └── rtlDetector.ts    # Hebrew/RTL detection
 │   │   ├── socket/
@@ -854,7 +926,8 @@ platform/
 │   │   │   └── PlayingNowContext.tsx # Current song state
 │   │   ├── services/
 │   │   │   ├── api.ts                # REST API client
-│   │   │   └── transpose.ts          # Client-side transposition (for viewer overrides)
+│   │   │   ├── transpose.ts          # Client-side chord transposition
+│   │   │   └── chordDisplay.ts       # Chord display formatting (o→° conversion)
 │   │   ├── utils/
 │   │   │   ├── rtl.ts                # RTL detection utilities
 │   │   │   └── formatting.ts         # Text formatting helpers
@@ -905,12 +978,36 @@ platform/
 - [x] Build SearchView with filtering
 - [x] Implement dynamic font sizing (auto-shrink to fit screen)
 
-### Phase 3: Transposition
-- [ ] Implement chord regex parser
-- [ ] Build transposition function with enharmonic handling
-- [ ] Create TransposeControls UI component
-- [ ] Add per-viewer override capability
-- [ ] Implement "sync to admin" functionality
+### Phase 3: Transposition ✅ (except token-based alignment)
+- [x] **Backend: Chord parsing enhancements**
+  - [x] Add `°` (degree symbol) as alternative diminished notation in chord regex
+  - [ ] Extend `ParsedLine` type for chord lines to include parsed tokens with positions (for future token-based rendering)
+- [x] **Frontend: Transposition service** (`services/transpose.ts`)
+  - [x] Implement `parseChord(chord: string)` → `{ root, accidental, modifiers, bass }`
+  - [x] Implement `transposeChord(chord: string, semitones: number)` → transposed chord string
+  - [x] Implement `transposeChordLine(line: string, semitones: number)` → transposed line
+  - [x] Handle `o` → `°` display conversion for diminished chords
+  - [x] Enharmonic handling: original preserved at offset=0, preferred used for new accidentals
+  - [x] Comprehensive unit tests (`services/transpose.test.ts`)
+- [x] **Frontend: TransposeControls component**
+  - [x] Build `[ ⬇ ] N [ ⬆ ]` UI with offset display (-6 to +6)
+  - [x] Admin version: includes `📡` sync button
+  - [x] Viewer version: no sync button, only visible in chords mode
+  - [x] Out-of-sync indicator (●) when viewer differs from admin
+- [x] **Frontend: State management** (PlayingNowContext)
+  - [x] Add `viewerKeyOverride` state (viewer's local key offset)
+  - [x] Admin key changes are local-only (no server call)
+  - [x] Listen for `key:sync` event to sync viewer to admin's key
+- [x] **Backend: Sync endpoint**
+  - [x] Add `POST /api/state/key/sync` endpoint (receives admin's key, broadcasts to viewers)
+  - [x] Broadcasts `key:sync` event to all clients
+- [x] **Integration**
+  - [x] Apply transposition to chord lines in PlayingNowView
+  - [x] Apply transposition to chord lines in SongView
+- [ ] **Future: Token-based chord alignment** (deferred)
+  - [ ] Parse chord positions relative to character index
+  - [ ] Render chords anchored to syllable positions in lyric line below
+  - [ ] Enable proportional fonts for lyrics while maintaining alignment
 
 ### Phase 4: Playing Now (Real-time) ✅
 - [x] Set up Socket.io rooms (playing-now, admin)
@@ -1037,7 +1134,10 @@ VITE_SOCKET_URL=http://localhost:3001
 - [ ] Viewer cannot see private songs in search
 - [ ] Song lyrics display correctly with proper chord alignment
 - [ ] Hebrew songs display RTL correctly
-- [ ] Transposition works for all chord types
+- [ ] Transposition works for all chord types (Am, G7, Cmaj7, F#dim, B°7, A/C#, etc.)
+- [ ] Diminished chords display with ° symbol (not lowercase o)
+- [ ] Admin sync button pushes key to all viewers
+- [ ] Viewer out-of-sync indicator appears when different from admin
 - [ ] Playing Now syncs across multiple browser tabs/devices
 - [ ] Verse navigation works with keyboard shortcuts
 - [ ] Queue grouping and fairness logic works correctly
@@ -1047,12 +1147,15 @@ VITE_SOCKET_URL=http://localhost:3001
 
 ### Edge Cases to Test
 - Very long songs (font auto-shrinking)
-- Songs with unusual chord notations
+- Songs with unusual chord notations (°, o, +, sus, add, etc.)
 - Songs with only Hebrew or only English
 - Empty queue states
 - Multiple viewers with same name
 - Rapid verse navigation
 - Network disconnection and reconnection
+- Transposition at boundary values (-6, +6)
+- Chords with bass notes (A/C# transposed)
+- Viewer override vs admin sync interaction
 
 ---
 

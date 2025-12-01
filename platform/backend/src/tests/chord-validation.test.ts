@@ -32,6 +32,9 @@ const testCases: TestCase[] = [
   { input: 'Dsus2', expected: true, description: 'Suspended 2nd chord' },
   { input: 'Eadd9', expected: true, description: 'Add9 chord' },
   { input: 'Fo7', expected: true, description: 'Diminished 7th (o notation)' },
+  { input: 'F°7', expected: true, description: 'Diminished 7th (° notation)' },
+  { input: 'B°7', expected: true, description: 'Diminished 7th with ° (standard position)' },
+  { input: '°B7', expected: false, description: 'Invalid: ° before note letter is not valid notation' },
   { input: 'C+', expected: true, description: 'Augmented chord (+ notation)' },
   
   // === Accidentals ===

@@ -153,8 +153,9 @@ export const stateApi = {
     });
   },
 
-  async setKey(keyOffset: number): Promise<{ success: boolean; keyOffset: number }> {
-    return fetchJson('/api/state/key', {
+  // syncKey: Admin sends their current local key to all viewers
+  async syncKey(keyOffset: number): Promise<{ success: boolean; keyOffset: number }> {
+    return fetchJson('/api/state/key/sync', {
       method: 'POST',
       body: JSON.stringify({ keyOffset }),
     });

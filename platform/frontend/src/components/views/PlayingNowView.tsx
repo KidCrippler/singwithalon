@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { songsApi } from '../../services/api';
 import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine, DEFAULT_LINES_PER_VERSE } from '../../utils/verseCalculator';
 import { formatCredits } from '../../utils/formatCredits';
+import { transposeChordLine } from '../../services/transpose';
+import { formatChordLineForDisplay } from '../../services/chordDisplay';
+import { TransposeControls } from '../TransposeControls';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -219,17 +222,24 @@ interface LineDisplayProps {
   line: ParsedLine;
   showChords: boolean;
   lineIndex: number;
+  keyOffset?: number;
   onClick?: (lineIndex: number) => void;
   isHighlighted?: boolean;
 }
 
-function LineDisplay({ line, showChords, lineIndex, onClick, isHighlighted }: LineDisplayProps) {
+function LineDisplay({ line, showChords, lineIndex, keyOffset = 0, onClick, isHighlighted }: LineDisplayProps) {
   const getText = () => {
     if (!showChords) {
       // In lyrics mode: trim and collapse consecutive spaces to single space
       return line.text.trim().replace(/ {2,}/g, ' ');
     }
     return line.type === 'chords' ? (line.raw || line.text) : line.text;
+  };
+
+  // Transpose chord lines
+  const getChordText = () => {
+    const chordText = line.raw || line.text;
+    return formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
   };
 
   return (
@@ -243,7 +253,7 @@ function LineDisplay({ line, showChords, lineIndex, onClick, isHighlighted }: Li
       ) : line.type === 'cue' ? (
         <span className="cue">{line.text}</span>
       ) : line.type === 'chords' ? (
-        <span className="chords">{line.raw || line.text}</span>
+        <span className="chords">{getChordText()}</span>
       ) : (
         <span className="lyric">{getText()}</span>
       )}
@@ -257,9 +267,15 @@ export function PlayingNowView() {
     effectiveVersesEnabled,
     viewerVerseOverride,
     setViewerVerseOverride,
+    effectiveKeyOffset,
+    viewerKeyOverride: _viewerKeyOverride,
+    setViewerKeyOverride,
+    isKeyOutOfSync,
     nextVerse, 
     prevVerse, 
     setVerse,
+    setKeyOffset,
+    syncKeyToAll,
     setDisplayMode,
     toggleVersesEnabled,
   } = usePlayingNow();
@@ -511,19 +527,40 @@ export function PlayingNowView() {
                 {currentVerseIndex + 1}/{verses.length}
               </span>
             )}
+            {/* Transpose controls - always visible for admin */}
+            <TransposeControls
+              currentOffset={state.currentKeyOffset}
+              adminOffset={state.currentKeyOffset}
+              isAdmin={true}
+              onOffsetChange={setKeyOffset}
+              onSync={syncKeyToAll}
+            />
           </div>
         )}
 
-        {/* Viewer controls - only show when admin has verses enabled and user is not admin */}
-        {!isAdmin && state.versesEnabled && state.displayMode === 'lyrics' && (
+        {/* Viewer controls - verse toggle and transpose */}
+        {!isAdmin && (
           <div className="viewer-controls">
-            <button
-              onClick={() => setViewerVerseOverride(viewerVerseOverride === false ? null : false)}
-              title={viewerVerseOverride === false ? "הפעל מצב פסוקים" : "הצג שיר מלא"}
-              className={viewerVerseOverride === false ? '' : 'active'}
-            >
-              {viewerVerseOverride === false ? '📄' : '📖'}
-            </button>
+            {/* Verse toggle - only when admin has verses enabled and in lyrics mode */}
+            {state.versesEnabled && state.displayMode === 'lyrics' && (
+              <button
+                onClick={() => setViewerVerseOverride(viewerVerseOverride === false ? null : false)}
+                title={viewerVerseOverride === false ? "הפעל מצב פסוקים" : "הצג שיר מלא"}
+                className={viewerVerseOverride === false ? '' : 'active'}
+              >
+                {viewerVerseOverride === false ? '📄' : '📖'}
+              </button>
+            )}
+            {/* Transpose controls - only in chords mode */}
+            {state.displayMode === 'chords' && (
+              <TransposeControls
+                currentOffset={effectiveKeyOffset}
+                adminOffset={state.currentKeyOffset}
+                isAdmin={false}
+                isOutOfSync={isKeyOutOfSync}
+                onOffsetChange={(offset) => setViewerKeyOverride(offset)}
+              />
+            )}
           </div>
         )}
 
@@ -555,6 +592,7 @@ export function PlayingNowView() {
                     line={indexedLine.line} 
                     showChords={true}
                     lineIndex={indexedLine.originalIndex}
+                    keyOffset={state.currentKeyOffset}
                     onClick={showPurpleHighlight ? handleLineClick : undefined}
                     isHighlighted={isHighlighted}
                   />
@@ -582,6 +620,7 @@ export function PlayingNowView() {
                       line={indexedLine.line} 
                       showChords={true}
                       lineIndex={indexedLine.originalIndex}
+                      keyOffset={effectiveKeyOffset}
                     />
                   ))}
                 </div>

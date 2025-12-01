@@ -1121,6 +1121,64 @@ body {
   cursor: not-allowed;
 }
 
+/* === TRANSPOSE CONTROLS === */
+.transpose-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.transpose-controls button {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.transpose-controls button:hover:not(.disabled) {
+  background: var(--secondary-color);
+}
+
+.transpose-controls button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.transpose-controls .transpose-value {
+  min-width: 28px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.transpose-controls .out-of-sync-indicator {
+  color: var(--warning-color);
+  font-size: 0.6rem;
+  margin-right: 2px;
+  vertical-align: super;
+}
+
+.transpose-controls .sync-button {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.transpose-controls .sync-button:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .app-header {

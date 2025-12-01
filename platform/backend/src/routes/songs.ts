@@ -295,12 +295,12 @@ function extractDirectiveText(line: string): string {
 }
 
 // Chord detection regex - matches common chord patterns
-// Supports: Am, G7, Cmaj7, BbMaj7, CM7, Bm7b5, F#dim, Dsus4, Eadd9, A/C#, Fo7, Am!, [Em], etc.
-// Quality can be: m (minor), M/Maj/maj (major), min, dim, aug, sus2/4, add, o (dim), + (aug)
-const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
+// Supports: Am, G7, Cmaj7, BbMaj7, CM7, Bm7b5, F#dim, Dsus4, Eadd9, A/C#, Fo7, B°7, Am!, [Em], etc.
+// Quality can be: m (minor), M/Maj/maj (major), min, dim, aug, sus2/4, add, o/° (dim), + (aug)
+const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
 
 // Matches chords wrapped in square brackets like [Em] or [Am7] or [BbMaj7]
-const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
+const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
 
 // Matches bass-only notation like /F, /Bb, /A, /F# (just a slash followed by a note)
 const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;

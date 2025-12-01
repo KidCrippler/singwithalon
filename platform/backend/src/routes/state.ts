@@ -148,13 +148,13 @@ export async function stateRoutes(fastify: FastifyInstance) {
     return { success: true, verseIndex };
   });
 
-  // Set key offset (transpose)
-  fastify.post<{ Body: { keyOffset: number } }>('/api/state/key', { preHandler: requireAdmin }, async (request, reply) => {
+  // Sync key to all viewers (admin sends their current local key)
+  fastify.post<{ Body: { keyOffset: number } }>('/api/state/key/sync', { preHandler: requireAdmin }, async (request, reply) => {
     const { keyOffset } = request.body;
-    playingStateQueries.update({ current_key_offset: keyOffset });
     
     const io = getIO();
-    io?.to('playing-now').emit('key:changed', { keyOffset });
+    // Broadcast key:sync to all viewers with the admin's current key
+    io?.to('playing-now').emit('key:sync', { keyOffset });
     
     return { success: true, keyOffset };
   });
