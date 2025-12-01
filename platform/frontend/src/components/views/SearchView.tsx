@@ -132,7 +132,6 @@ export function SearchView() {
   return (
     <div className="search-view">
       <div className="search-header">
-        <h1>🎤 שרים עם אלון</h1>
         <div className="search-controls">
           <input
             type="text"
@@ -172,8 +171,9 @@ export function SearchView() {
                   <button 
                     onClick={() => handlePresentNow(song.id)}
                     className="present-btn"
+                    title="הצג עכשיו"
                   >
-                    ▶ הצג עכשיו
+                    ▶
                   </button>
                 ) : (
                   addingToQueue === song.id ? (
