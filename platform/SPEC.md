@@ -62,6 +62,10 @@ A real-time web application for managing sing-along events and band performances
   - Control "Playing Now" (change song, advance verses, set key/transpose)
   - Manage queue (view, present from queue)
   - Toggle between lyrics-only and lyrics+chords modes
+  - Clear current song (return to splash screen)
+- **Admin Menu** (☰ hamburger icon in header):
+  - "נקה שיר" - Clear current song and return to splash screen
+  - "התנתק" - Log out
 - **Projector Mode**: Admin can toggle "This is a projector" during/after login
   - Checkbox during login OR button in UI after login
   - First projector to connect sets the resolution for verse calculation
@@ -101,7 +105,7 @@ A real-time web application for managing sing-along events and band performances
   | Light Grey | Already played | Song was presented (from queue or directly) |
   | White | No status | Song never played, not in queue |
   - Priority: Green > Yellow > Grey (if multiple conditions apply, higher priority wins)
-  - All status colors (except Green) reset when admin truncates the queue
+  - All status colors reset when admin truncates the queue (including Green, since truncate also clears the current song)
   - Status updates in real-time via WebSocket (`songs:status-changed` event)
   - Both admins and viewers see these colors
 - **Actions**:
@@ -206,6 +210,7 @@ A real-time web application for managing sing-along events and band performances
   - **Note**: Group = unique combination of requester name AND session ID. Same person with different names creates separate groups.
 - **Queue Management**:
   - "Truncate Queue" button at top to clear entire queue (with confirmation)
+  - Truncating the queue also clears the current song (returns to splash screen)
 - **Behavior on "Present"**:
   - Song goes to "Playing Now" immediately
   - Queue entry marked as "played" (grayed, moves to bottom of its group)
@@ -741,7 +746,7 @@ Client receives pre-parsed data and only handles rendering.
 | `POST` | `/api/queue/:id/present` | Admin | Present song from queue (broadcasts `song:changed` + `queue:updated`) |
 | `DELETE` | `/api/queue/:id/admin` | Admin | Delete any queue entry (broadcasts `queue:updated`) |
 | `DELETE` | `/api/queue/group` | Admin | Delete group by sessionId + requesterName (broadcasts `queue:updated`) |
-| `DELETE` | `/api/queue` | Admin | Truncate entire queue (broadcasts `queue:updated`) |
+| `DELETE` | `/api/queue` | Admin | Truncate entire queue + clear current song (broadcasts `queue:updated` + `song:cleared`) |
 
 #### Playing State (Admin Controls)
 | Method | Path | Auth | Description |

@@ -134,15 +134,60 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  position: relative;
 }
 
-.logout-btn {
+.admin-menu-btn {
   padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
+  font-size: 1.25rem;
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   cursor: pointer;
+  line-height: 1;
+}
+
+.admin-menu-btn:hover {
+  background: var(--hover-bg);
+}
+
+.admin-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 140px;
+  z-index: 100;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.admin-menu-dropdown .menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: right;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.admin-menu-dropdown .menu-item:hover:not(:disabled) {
+  background: var(--hover-bg);
+}
+
+.admin-menu-dropdown .menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-menu-dropdown .menu-item:not(:last-child) {
+  border-bottom: 1px solid var(--border-color);
 }
 
 .login-link {

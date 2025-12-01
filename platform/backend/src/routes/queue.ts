@@ -224,9 +224,19 @@ export async function queueRoutes(fastify: FastifyInstance) {
     return { success: true, deletedCount: count };
   });
 
-  // Admin truncate queue (clear all)
+  // Admin truncate queue (clear all) - also clears the current song
   fastify.delete('/api/queue', { preHandler: requireAdmin }, async (request, reply) => {
     queueQueries.truncate();
+    
+    // Also clear the current song (return to splash screen)
+    playingStateQueries.clearSong();
+    
+    // Broadcast song cleared to all viewers
+    const io = getIO();
+    if (io) {
+      io.to('playing-now').emit('song:cleared', {});
+    }
+    
     broadcastQueueUpdate();
     return { success: true };
   });
