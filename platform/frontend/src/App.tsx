@@ -10,6 +10,7 @@ import { SongView } from './components/views/SongView';
 import { PlayingNowView } from './components/views/PlayingNowView';
 import { QueueView } from './components/views/QueueView';
 import { LoginView } from './components/views/LoginView';
+import { AlignmentDemo } from './components/views/AlignmentDemo';
 
 import './App.css';
 
@@ -31,6 +32,7 @@ function AppContent() {
           <Route path="/admin" element={<SearchView />} />
           <Route path="/queue" element={<QueueView />} />
           <Route path="/login" element={<LoginView />} />
+          <Route path="/demo" element={<AlignmentDemo />} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
