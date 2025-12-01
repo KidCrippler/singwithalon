@@ -1,0 +1,5 @@
+# SQLite database files (runtime state - recreated on startup)
+*.db
+*.db-shm
+*.db-wal
+

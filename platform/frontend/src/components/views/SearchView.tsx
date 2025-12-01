@@ -192,8 +192,9 @@ export function SearchView() {
                     <button 
                       onClick={() => setAddingToQueue(song.id)}
                       className="queue-btn"
+                      title="הוסף לתור"
                     >
-                      + לתור
+                      +
                     </button>
                   )
                 )}
