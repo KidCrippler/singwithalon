@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { songsApi, queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +14,22 @@ export function SearchView() {
   const [requesterName, setRequesterName] = useState('');
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { setSong } = usePlayingNow();
+  const { setSong, state } = usePlayingNow();
+
+  // Get song status class for coloring
+  const getSongStatusClass = useCallback((songId: number): string => {
+    // Priority: Green (playing) > Yellow (pending) > Grey (played)
+    if (state.currentSongId === songId) {
+      return 'song-status-playing';
+    }
+    if (state.pendingSongIds.includes(songId)) {
+      return 'song-status-pending';
+    }
+    if (state.playedSongIds.includes(songId)) {
+      return 'song-status-played';
+    }
+    return '';
+  }, [state.currentSongId, state.pendingSongIds, state.playedSongIds]);
 
   useEffect(() => {
     songsApi.list()
@@ -145,7 +160,7 @@ export function SearchView() {
           <p className="no-results">לא נמצאו תוצאות</p>
         ) : (
           filteredSongs.map(song => (
-            <div key={song.id} className="song-item">
+            <div key={song.id} className={`song-item ${getSongStatusClass(song.id)}`}>
               <div className="song-info" onClick={() => handleViewSong(song.id)}>
                 <span className="song-name">{song.name}</span>
                 <span className="song-artist">{song.singer}</span>

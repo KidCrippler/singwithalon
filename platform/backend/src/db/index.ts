@@ -139,6 +139,36 @@ export const queueQueries = {
     const result = getDb().prepare('DELETE FROM queue').run();
     return result.changes;
   },
+
+  // Get distinct song IDs by status (for search view coloring)
+  getPendingSongIds(): number[] {
+    const results = getDb().prepare(
+      "SELECT DISTINCT song_id FROM queue WHERE status = 'pending'"
+    ).all() as { song_id: number }[];
+    return results.map(r => r.song_id);
+  },
+
+  getPlayedSongIds(): number[] {
+    const results = getDb().prepare(
+      "SELECT DISTINCT song_id FROM queue WHERE status = 'played'"
+    ).all() as { song_id: number }[];
+    return results.map(r => r.song_id);
+  },
+
+  // Mark a song as played (for "Present Now" - not from queue)
+  markSongPlayed(songId: number): void {
+    // Check if there's already a played entry for this song
+    const existing = getDb().prepare(
+      "SELECT id FROM queue WHERE song_id = ? AND status = 'played' LIMIT 1"
+    ).get(songId);
+    
+    if (!existing) {
+      // Add a system entry to track that this song was played
+      getDb().prepare(
+        "INSERT INTO queue (song_id, requester_name, session_id, status, played_at) VALUES (?, ?, ?, 'played', CURRENT_TIMESTAMP)"
+      ).run(songId, '__SYSTEM__', '__SYSTEM__');
+    }
+  },
 };
 
 // Playing state queries

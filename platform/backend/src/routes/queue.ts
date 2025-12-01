@@ -11,21 +11,42 @@ interface AddToQueueBody {
   requesterName: string;
 }
 
-// Helper: Get enriched grouped queue with song info
+// Helper: Get enriched grouped queue with song info (excludes __SYSTEM__ entries)
 function getEnrichedGroupedQueue() {
   const songsIndex = getSongsIndex();
-  const groupedQueue = queueQueries.getGrouped();
-  return groupedQueue.map(group => ({
-    ...group,
-    entries: group.entries.map(entry => {
-      const song = songsIndex.find(s => s.id === entry.song_id);
-      return {
-        ...entry,
-        songName: song?.name ?? 'Unknown Song',
-        songArtist: song?.singer ?? 'Unknown Artist',
-      };
-    }),
-  }));
+    const groupedQueue = queueQueries.getGrouped();
+  // Filter out __SYSTEM__ entries (used for tracking "Present Now" plays)
+  return groupedQueue
+    .filter(group => group.sessionId !== '__SYSTEM__')
+    .map(group => ({
+      ...group,
+      entries: group.entries.map(entry => {
+        const song = songsIndex.find(s => s.id === entry.song_id);
+        return {
+          ...entry,
+          songName: song?.name ?? 'Unknown Song',
+          songArtist: song?.singer ?? 'Unknown Artist',
+        };
+      }),
+    }));
+}
+
+// Helper: Get song status for search view coloring
+function getSongStatus() {
+  const state = playingStateQueries.get();
+  return {
+    currentSongId: state.current_song_id,
+    pendingSongIds: queueQueries.getPendingSongIds(),
+    playedSongIds: queueQueries.getPlayedSongIds(),
+  };
+}
+
+// Helper: Broadcast song status to all clients (for search view coloring)
+function broadcastSongStatus() {
+  const io = getIO();
+  if (io) {
+    io.to('playing-now').emit('songs:status-changed', getSongStatus());
+  }
 }
 
 // Helper: Broadcast queue update to admins via socket
@@ -34,6 +55,8 @@ function broadcastQueueUpdate() {
   if (io) {
     io.to('admin').emit('queue:updated', { queue: getEnrichedGroupedQueue() });
   }
+  // Also broadcast song status for search view coloring
+  broadcastSongStatus();
 }
 
 export async function queueRoutes(fastify: FastifyInstance) {
@@ -137,7 +160,13 @@ export async function queueRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Queue entry not found' });
     }
 
-    // Mark as played
+    // Mark the previous song as played (if there was one)
+    const currentState = playingStateQueries.get();
+    if (currentState.current_song_id) {
+      queueQueries.markSongPlayed(currentState.current_song_id);
+    }
+
+    // Mark this queue entry as played
     queueQueries.markPlayed(queueId);
 
     // Set as current song
@@ -159,7 +188,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // Broadcast queue update to admins
+    // Broadcast queue update to admins (also broadcasts song status)
     broadcastQueueUpdate();
 
     return { success: true };
@@ -205,14 +234,14 @@ export async function queueRoutes(fastify: FastifyInstance) {
 
 // Helper: Enrich queue entries with song info
 function enrichEntriesWithSongInfo(entries: ReturnType<typeof queueQueries.getBySession>) {
-  const songsIndex = getSongsIndex();
+    const songsIndex = getSongsIndex();
   return entries.map(entry => {
-    const song = songsIndex.find(s => s.id === entry.song_id);
-    return {
-      ...entry,
-      songName: song?.name ?? 'Unknown Song',
-      songArtist: song?.singer ?? 'Unknown Artist',
-    };
+      const song = songsIndex.find(s => s.id === entry.song_id);
+      return {
+        ...entry,
+        songName: song?.name ?? 'Unknown Song',
+        songArtist: song?.singer ?? 'Unknown Artist',
+      };
   });
 }
 

@@ -313,6 +313,23 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   direction: rtl;
+  transition: background-color 0.3s ease;
+}
+
+/* Song status colors for search view */
+.song-item.song-status-playing {
+  background-color: #d4edda; /* Light green - currently playing */
+  border-color: #a3d9a5;
+}
+
+.song-item.song-status-pending {
+  background-color: #fff9c4; /* Light yellow - in queue, pending */
+  border-color: #f0e68c;
+}
+
+.song-item.song-status-played {
+  background-color: #e9ecef; /* Light grey - already played */
+  border-color: #ced4da;
 }
 
 .song-info {

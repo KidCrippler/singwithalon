@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { playingStateQueries, sessionQueries } from '../db/index.js';
+import { playingStateQueries, sessionQueries, queueQueries } from '../db/index.js';
 import { getSongsIndex } from './songs.js';
 import { requireAdmin } from './auth.js';
 import { getIO } from '../socket/index.js';
@@ -21,6 +21,23 @@ function getEnrichedSong(songId: number | null) {
   };
 }
 
+// Helper: Get song status for search view coloring
+function getSongStatus() {
+  const state = playingStateQueries.get();
+  return {
+    currentSongId: state.current_song_id,
+    pendingSongIds: queueQueries.getPendingSongIds(),
+    playedSongIds: queueQueries.getPlayedSongIds(),
+  };
+}
+
+// Helper: Broadcast song status to all clients (for search view coloring)
+function broadcastSongStatus() {
+  const io = getIO();
+  if (!io) return;
+  io.to('playing-now').emit('songs:status-changed', getSongStatus());
+}
+
 // Helper: Broadcast song changed to all viewers
 function broadcastSongChanged() {
   const io = getIO();
@@ -33,12 +50,15 @@ function broadcastSongChanged() {
     displayMode: state.display_mode,
     versesEnabled: !!state.verses_enabled,
   });
+  // Also broadcast song status for search view coloring
+  broadcastSongStatus();
 }
 
 export async function stateRoutes(fastify: FastifyInstance) {
   // Get current playing state
   fastify.get('/api/state', async (request, reply) => {
     const state = playingStateQueries.get();
+    const songStatus = getSongStatus();
     return {
       currentSongId: state.current_song_id,
       currentVerseIndex: state.current_verse_index,
@@ -49,6 +69,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
       projectorHeight: state.projector_height,
       projectorLinesPerVerse: state.projector_lines_per_verse,
       song: getEnrichedSong(state.current_song_id),
+      // Song status for search view coloring
+      pendingSongIds: songStatus.pendingSongIds,
+      playedSongIds: songStatus.playedSongIds,
     };
   });
 
@@ -62,6 +85,12 @@ export async function stateRoutes(fastify: FastifyInstance) {
     const song = songsIndex.find(s => s.id === songId);
     if (!song) {
       return reply.status(404).send({ error: 'Song not found' });
+    }
+
+    // Mark the previous song as played (if there was one)
+    const currentState = playingStateQueries.get();
+    if (currentState.current_song_id) {
+      queueQueries.markSongPlayed(currentState.current_song_id);
     }
 
     playingStateQueries.update({

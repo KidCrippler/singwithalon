@@ -93,6 +93,17 @@ A real-time web application for managing sing-along events and band performances
   - List of songs (name, artist, optional category badges)
   - Private songs: visible to admin only
 - **Sticky Search Bar**: Search header remains fixed at top when scrolling through song list
+- **Song Status Colors**: Each song card has a background color indicating its status:
+  | Color | Meaning | Condition |
+  |-------|---------|-----------|
+  | Light Green | Currently playing | Song is set as current via Present Now or Queue |
+  | Light Yellow | In queue (pending) | Any viewer has added this song to the queue |
+  | Light Grey | Already played | Song was presented (from queue or directly) |
+  | White | No status | Song never played, not in queue |
+  - Priority: Green > Yellow > Grey (if multiple conditions apply, higher priority wins)
+  - All status colors (except Green) reset when admin truncates the queue
+  - Status updates in real-time via WebSocket (`songs:status-changed` event)
+  - Both admins and viewers see these colors
 - **Actions**:
   - Click song → go to Presentation View (that song)
   - Viewer can click "Add to Queue" (prompts for name, shows confirmation)
@@ -506,6 +517,7 @@ This pattern ensures:
 | `mode:changed` | `{ displayMode }` | Admin toggled lyrics-only/chords |
 | `verses:toggled` | `{ versesEnabled }` | Admin toggled verses mode on/off |
 | `queue:updated` | `{ queue }` | Queue state changed (for admin room) |
+| `songs:status-changed` | `{ currentSongId, pendingSongIds, playedSongIds }` | Song status changed (for search view coloring) |
 | `projector:resolution` | `{ width, height, linesPerVerse }` | First projector set resolution |
 | `pong` | `{}` | Response to client ping (keep-alive) |
 
@@ -734,7 +746,7 @@ Client receives pre-parsed data and only handles rendering.
 #### Playing State (Admin Controls)
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/state` | — | Get current playing state (songId, verse, key, mode, versesEnabled) |
+| `GET` | `/api/state` | — | Get current playing state (songId, verse, key, mode, versesEnabled, pendingSongIds, playedSongIds) |
 | `POST` | `/api/state/song` | Admin | Set current song (broadcasts `song:changed`) |
 | `DELETE` | `/api/state/song` | Admin | Clear current song (broadcasts `song:cleared`) |
 | `POST` | `/api/state/verse` | Admin | Set specific verse (broadcasts `verse:changed`) |
@@ -938,6 +950,7 @@ platform/
 - [x] Sticky search bar with clear button
 - [x] Song credits display (composer, lyricist, translator from database)
 - [x] REST + Broadcast architecture for admin controls
+- [x] Song status colors in search view (playing/pending/played)
 - [ ] Mobile responsiveness improvements
 - [x] Connection status indicators
 - [ ] Final UI/UX polish (theme, logo integration)
@@ -1081,4 +1094,12 @@ VITE_SOCKET_URL=http://localhost:3001
 | Continuation arrows (`--->`, `-->`, `<---`, `<--`) | Blue |
 | Background (chords mode) | White |
 | Background (projection) | Image + dark overlay |
+
+### Song Status Colors (Search View)
+| Status | Background Color | Hex Code |
+|--------|------------------|----------|
+| Currently playing | Light green | `#d4edda` |
+| In queue (pending) | Light yellow | `#fff9c4` |
+| Already played | Light grey | `#e9ecef` |
+| No status | White | `#ffffff` |
 

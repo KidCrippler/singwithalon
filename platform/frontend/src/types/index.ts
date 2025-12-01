@@ -66,6 +66,16 @@ export interface PlayingState {
   projectorHeight: number | null;
   projectorLinesPerVerse: number | null;
   song: Song | null;
+  // Song status for search view coloring
+  pendingSongIds: number[];
+  playedSongIds: number[];
+}
+
+// Song status payload (from socket event)
+export interface SongStatusPayload {
+  currentSongId: number | null;
+  pendingSongIds: number[];
+  playedSongIds: number[];
 }
 
 // Auth types

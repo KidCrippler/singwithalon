@@ -45,7 +45,7 @@ export function QueueView() {
   const handlePresent = async (queueId: number) => {
     try {
       await queueApi.present(queueId);
-      navigate('/playing-now');
+    navigate('/playing-now');
     } catch (error) {
       console.error('Failed to present song:', error);
     }

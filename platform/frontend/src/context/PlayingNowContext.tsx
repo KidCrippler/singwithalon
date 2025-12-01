@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
 import { stateApi, songsApi } from '../services/api';
-import type { PlayingState } from '../types';
+import type { PlayingState, SongStatusPayload } from '../types';
 
 interface PlayingNowContextValue {
   state: PlayingState;
@@ -32,6 +32,8 @@ const defaultState: PlayingState = {
   projectorHeight: null,
   projectorLinesPerVerse: null,
   song: null,
+  pendingSongIds: [],
+  playedSongIds: [],
 };
 
 const PlayingNowContext = createContext<PlayingNowContextValue | null>(null);
@@ -118,6 +120,14 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       }));
     });
 
+    socket.on('songs:status-changed', (payload: SongStatusPayload) => {
+      setState(prev => ({
+        ...prev,
+        pendingSongIds: payload.pendingSongIds,
+        playedSongIds: payload.playedSongIds,
+      }));
+    });
+
     return () => {
       socket.off('song:changed');
       socket.off('song:cleared');
@@ -126,6 +136,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('mode:changed');
       socket.off('projector:resolution');
       socket.off('verses:toggled');
+      socket.off('songs:status-changed');
     };
   }, [socket]);
 
