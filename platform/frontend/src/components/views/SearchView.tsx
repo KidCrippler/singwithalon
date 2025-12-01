@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { songsApi, queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
+import { useSearch } from '../../context/SearchContext';
 import type { Song } from '../../types';
 
 export function SearchView() {
   const [songs, setSongs] = useState<Song[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { searchTerm, setSearchTerm } = useSearch();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingToQueue, setAddingToQueue] = useState<number | null>(null);

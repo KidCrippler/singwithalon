@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { PlayingNowProvider } from './context/PlayingNowContext';
+import { SearchProvider } from './context/SearchContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Header } from './components/layout/Header';
 import { SearchView } from './components/views/SearchView';
@@ -45,7 +46,9 @@ function App() {
       <SocketProvider>
         <AuthProvider>
           <PlayingNowProvider>
-            <AppContent />
+            <SearchProvider>
+              <AppContent />
+            </SearchProvider>
           </PlayingNowProvider>
         </AuthProvider>
       </SocketProvider>
