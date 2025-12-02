@@ -6,11 +6,19 @@ import type { PlayingState, SongStatusPayload } from '../types';
 interface PlayingNowContextValue {
   state: PlayingState;
   isLoading: boolean;
-  // Viewer's local override for verse mode (null = use admin preference)
-  viewerVerseOverride: boolean | null;
-  setViewerVerseOverride: (override: boolean | null) => void;
-  // Computed effective verse mode
+  
+  // Viewer mode lock system
+  viewerModeLocked: boolean;
+  viewerDisplayMode: 'lyrics' | 'chords';  // Viewer's setting (used when locked)
+  viewerVersesEnabled: boolean;            // Viewer's setting (used when locked)
+  toggleViewerLock: () => void;            // Toggle lock (initializes from admin on lock-on)
+  setViewerDisplayMode: (mode: 'lyrics' | 'chords') => void;
+  setViewerVersesEnabled: (enabled: boolean) => void;
+  
+  // Computed effective values (locked ? viewer : admin)
+  effectiveDisplayMode: 'lyrics' | 'chords';
   effectiveVersesEnabled: boolean;
+  
   // Viewer's local override for key offset (null = use admin preference)
   viewerKeyOverride: number | null;
   setViewerKeyOverride: (override: number | null) => void;
@@ -18,6 +26,7 @@ interface PlayingNowContextValue {
   effectiveKeyOffset: number;
   // Is viewer out of sync with admin's key?
   isKeyOutOfSync: boolean;
+  
   // Actions
   setSong: (songId: number) => void;
   clearSong: () => void;
@@ -49,21 +58,38 @@ const PlayingNowContext = createContext<PlayingNowContextValue | null>(null);
 export function PlayingNowProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PlayingState>(defaultState);
   const [isLoading, setIsLoading] = useState(true);
-  // Viewer's local override for verse mode (null = use admin preference, false = force full view)
-  const [viewerVerseOverride, setViewerVerseOverride] = useState<boolean | null>(null);
+  
+  // Viewer mode lock system
+  const [viewerModeLocked, setViewerModeLocked] = useState(false);
+  const [viewerDisplayMode, setViewerDisplayMode] = useState<'lyrics' | 'chords'>('lyrics');
+  const [viewerVersesEnabled, setViewerVersesEnabled] = useState(false);
+  
   // Viewer's local override for key offset (null = use admin preference)
   const [viewerKeyOverride, setViewerKeyOverride] = useState<number | null>(null);
   const { socket } = useSocket();
 
-  // Computed effective verse mode: viewer override takes precedence if set
-  const effectiveVersesEnabled = viewerVerseOverride ?? state.versesEnabled;
+  // Computed effective values: when locked, use viewer's settings; otherwise use admin's
+  const effectiveDisplayMode = viewerModeLocked ? viewerDisplayMode : state.displayMode;
+  const effectiveVersesEnabled = viewerModeLocked ? viewerVersesEnabled : state.versesEnabled;
   
   // Computed effective key offset: viewer override takes precedence if set
   const effectiveKeyOffset = viewerKeyOverride ?? state.currentKeyOffset;
   
   // Is viewer out of sync with admin's key?
-  // (viewerKeyOverride is always set for viewers after song starts)
   const isKeyOutOfSync = effectiveKeyOffset !== state.currentKeyOffset;
+
+  // Toggle lock - when turning ON, initialize viewer settings from admin's current state
+  const toggleViewerLock = useCallback(() => {
+    setViewerModeLocked(prev => {
+      if (!prev) {
+        // Turning lock ON - initialize viewer settings from admin's current state
+        setViewerDisplayMode(state.displayMode);
+        setViewerVersesEnabled(state.versesEnabled);
+      }
+      // Turning lock OFF - no action needed, we just use admin's state
+      return !prev;
+    });
+  }, [state.displayMode, state.versesEnabled]);
 
   // Fetch initial state
   useEffect(() => {
@@ -86,8 +112,9 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
         displayMode: payload.displayMode,
         versesEnabled: payload.versesEnabled,
       }));
-      // Reset viewer overrides when song changes
-      setViewerVerseOverride(null);
+      // Viewer settings persist when locked (no reset needed)
+      // When not locked, we just use admin's state anyway
+      
       // Initialize viewer's key to admin's key (but as their own independent offset)
       setViewerKeyOverride(payload.keyOffset);
     });
@@ -111,12 +138,10 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
 
     // Admin pushed key to all viewers - sync viewer's key to admin's
     socket.on('key:sync', (payload: { keyOffset: number }) => {
-      // Update both admin's key (for reference) and viewer's override
       setState(prev => ({
         ...prev,
         currentKeyOffset: payload.keyOffset,
       }));
-      // Set viewer's key to admin's key (they can adjust from here)
       setViewerKeyOverride(payload.keyOffset);
     });
 
@@ -220,8 +245,13 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     <PlayingNowContext.Provider value={{
       state,
       isLoading,
-      viewerVerseOverride,
-      setViewerVerseOverride,
+      viewerModeLocked,
+      viewerDisplayMode,
+      viewerVersesEnabled,
+      toggleViewerLock,
+      setViewerDisplayMode,
+      setViewerVersesEnabled,
+      effectiveDisplayMode,
       effectiveVersesEnabled,
       viewerKeyOverride,
       setViewerKeyOverride,
@@ -249,4 +279,3 @@ export function usePlayingNow() {
   }
   return context;
 }
-

@@ -314,10 +314,14 @@ export function PlayingNowView() {
   const { 
     state, 
     effectiveVersesEnabled,
-    viewerVerseOverride,
-    setViewerVerseOverride,
+    effectiveDisplayMode,
+    viewerModeLocked,
+    viewerDisplayMode,
+    viewerVersesEnabled,
+    toggleViewerLock,
+    setViewerDisplayMode,
+    setViewerVersesEnabled,
     effectiveKeyOffset,
-    viewerKeyOverride: _viewerKeyOverride,
     setViewerKeyOverride,
     isKeyOutOfSync,
     nextVerse, 
@@ -407,7 +411,7 @@ export function PlayingNowView() {
   }, [lyrics]);
 
   // Determine viewer mode
-  const viewerShowsChords = state.displayMode === 'chords';
+  const viewerShowsChords = effectiveDisplayMode === 'chords';
   const viewerShowsSingleVerse = !viewerShowsChords && effectiveVersesEnabled;
 
   // Should admin show purple highlight?
@@ -615,21 +619,47 @@ export function PlayingNowView() {
           </div>
         )}
 
-        {/* Viewer controls - verse toggle and transpose */}
+        {/* Viewer controls - 3 buttons matching admin interface */}
         {!isAdmin && (
           <div className="viewer-controls">
-            {/* Verse toggle - only when admin has verses enabled and in lyrics mode */}
-            {state.versesEnabled && state.displayMode === 'lyrics' && (
-              <button
-                onClick={() => setViewerVerseOverride(viewerVerseOverride === false ? null : false)}
-                title={viewerVerseOverride === false ? "הפעל מצב פסוקים" : "הצג שיר מלא"}
-                className={viewerVerseOverride === false ? '' : 'active'}
-              >
-                {viewerVerseOverride === false ? '📄' : '📖'}
-              </button>
-            )}
+            {/* Button 1: Display mode toggle - chords/lyrics */}
+            {/* When locked: shows and controls viewer's setting */}
+            {/* When unlocked: shows admin's setting (read-only) */}
+            <button 
+              onClick={() => {
+                if (viewerModeLocked) {
+                  setViewerDisplayMode(viewerDisplayMode === 'lyrics' ? 'chords' : 'lyrics');
+                }
+              }}
+              title={effectiveDisplayMode === 'lyrics' ? "הצג אקורדים" : "הצג מילים"}
+              disabled={!viewerModeLocked}
+            >
+              {effectiveDisplayMode === 'lyrics' ? '🎸' : '🎤'}
+            </button>
+            {/* Button 2: Verse toggle - on/off */}
+            {/* Disabled when: not locked OR in chords mode */}
+            <button
+              onClick={() => {
+                if (viewerModeLocked && effectiveDisplayMode === 'lyrics') {
+                  setViewerVersesEnabled(!viewerVersesEnabled);
+                }
+              }}
+              title={effectiveVersesEnabled ? "הצג שיר מלא" : "הפעל מצב פסוקים"}
+              className={effectiveVersesEnabled ? 'active' : ''}
+              disabled={!viewerModeLocked || effectiveDisplayMode === 'chords'}
+            >
+              📖
+            </button>
+            {/* Button 3: Lock button - toggle lock on/off */}
+            <button
+              onClick={toggleViewerLock}
+              title={viewerModeLocked ? "בטל נעילה (עקוב אחרי המנחה)" : "נעל הגדרות (שמור העדפות)"}
+              className={`lock-btn ${viewerModeLocked ? 'locked' : ''}`}
+            >
+              {viewerModeLocked ? '🔒' : '🔓'}
+            </button>
             {/* Fullscreen button - only in lyrics mode */}
-            {state.displayMode === 'lyrics' && (
+            {effectiveDisplayMode === 'lyrics' && (
               <button
                 onClick={enterFullscreen}
                 title="מסך מלא"
@@ -638,7 +668,7 @@ export function PlayingNowView() {
               />
             )}
             {/* Transpose controls - only in chords mode */}
-            {state.displayMode === 'chords' && (
+            {effectiveDisplayMode === 'chords' && (
               <TransposeControls
                 currentOffset={effectiveKeyOffset}
                 adminOffset={state.currentKeyOffset}
