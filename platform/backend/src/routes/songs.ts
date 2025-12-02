@@ -220,11 +220,13 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     } else if (isChordLine(trimmed)) {
       // For RTL songs, reverse chord lines so they display correctly
       // Strip directional chars before reversing to avoid corruption
-      const cleanedLine = stripDirectionalChars(line);
+      // Trim trailing whitespace (meaningless, can cause font sizing issues)
+      const cleanedLine = stripDirectionalChars(line).trimEnd();
       const chordLine = isRtl ? reverseChordLineForRtl(cleanedLine) : cleanedLine;
       parsedLines.push({ type: 'chords', text: chordLine, raw: chordLine });
     } else {
-      parsedLines.push({ type: 'lyric', text: line });
+      // Trim trailing whitespace (meaningless, can cause font sizing issues)
+      parsedLines.push({ type: 'lyric', text: line.trimEnd() });
     }
   }
 
