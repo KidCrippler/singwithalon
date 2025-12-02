@@ -201,8 +201,9 @@ A real-time web application for managing sing-along events and band performances
   - Toggle display mode (🎸/🎤)
   - Transpose controls: `[ ⬇ ] N [ ⬆ ] [ 📡 ]` (always visible since admin always sees chords)
 - **Keyboard Shortcuts** (critical for Bluetooth pedal support):
-  - Arrow keys (Up/Down or Left/Right) mapped to verse navigation
-  - **Must work even when admin is on other tabs (Queue, Search)**
+  - Arrow Up / Page Up → Previous verse
+  - Arrow Down / Page Down → Next verse
+  - **Works globally when admin is logged in, regardless of focused element**
 
 ### 4.4 Queue View (Admin Only)
 - **Purpose**: Manage song requests from viewers
@@ -744,9 +745,9 @@ The projector client should:
 ### 9.6 Keyboard Shortcuts
 | Key | Action |
 |-----|--------|
-| Arrow Down / Arrow Right | Next verse |
-| Arrow Up / Arrow Left | Previous verse |
-| (These must work globally when admin is logged in, regardless of current tab) |
+| Arrow Down / Page Down | Next verse |
+| Arrow Up / Page Up | Previous verse |
+| (These work globally when admin is logged in, regardless of focused element) |
 
 ---
 
@@ -1033,7 +1034,7 @@ platform/
 - [x] Build PlayingNowView with live updates
 - [x] Create admin controls overlay (verse nav, mode toggles)
 - [x] Build idle/splash screen for no-song state
-- [ ] Implement keyboard shortcuts (global, cross-tab) - deferred
+- [x] Implement keyboard shortcuts for verse navigation (Arrow Up/Down, Page Up/Down)
 
 ### Phase 5: Verse System ✅
 - [x] Implement verse calculation algorithm (frontend-only, see `utils/verseCalculator.ts`)
@@ -1164,7 +1165,7 @@ VITE_SOCKET_URL=http://localhost:3001
 - [ ] Admin sync button pushes key to all viewers
 - [ ] Viewer out-of-sync indicator appears when different from admin
 - [ ] Playing Now syncs across multiple browser tabs/devices
-- [ ] Verse navigation works with keyboard shortcuts
+- [x] Verse navigation works with keyboard shortcuts (↑/↓, PgUp/PgDn)
 - [ ] Queue grouping and fairness logic works correctly
 - [ ] Projector mode calculates verses based on screen size
 - [ ] Background images display properly in lyrics-only mode

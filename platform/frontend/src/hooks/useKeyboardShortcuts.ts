@@ -17,12 +17,12 @@ export function useKeyboardShortcuts() {
 
       switch (e.key) {
         case 'ArrowDown':
-        case 'ArrowRight':
+        case 'PageDown':
           e.preventDefault();
           nextVerse();
           break;
         case 'ArrowUp':
-        case 'ArrowLeft':
+        case 'PageUp':
           e.preventDefault();
           prevVerse();
           break;
