@@ -20,12 +20,22 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
     const availableWidth = container.clientWidth;
     if (availableHeight === 0 || availableWidth === 0) return;
     
+    // Get container padding for accurate width calculation
+    const containerStyle = getComputedStyle(container);
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+    const columnGap = parseFloat(containerStyle.columnGap) || 16;
+    
     // Try each column count from 5 down to 1, find best font size for each
     let bestColumns = 1;
     let bestFontSize = 6;
     
     for (let cols = 5; cols >= 1; cols--) {
       container.style.columnCount = String(cols);
+      
+      // Calculate column width for this configuration
+      const totalGaps = (cols - 1) * columnGap;
+      const columnWidth = (availableWidth - paddingLeft - paddingRight - totalGaps) / cols;
       
       // Binary search for optimal font size with this column count
       let min = 6;
@@ -35,16 +45,17 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
       while (min <= max) {
         const mid = Math.floor((min + max) / 2);
         container.style.setProperty('--dynamic-font-size', `${mid}px`);
-        void container.offsetHeight;
+        void container.offsetHeight; // Force reflow
         
         // Check vertical fit
         const fitsVertically = container.scrollHeight <= availableHeight + 5;
         
-        // Check horizontal fit (no line cutting)
-        const lines = container.querySelectorAll('.line');
+        // Check horizontal fit - measure actual text span widths
+        const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
         let fitsHorizontally = true;
-        for (const line of lines) {
-          if (line.scrollWidth > line.clientWidth + 2) {
+        for (const span of textSpans) {
+          const spanWidth = span.getBoundingClientRect().width;
+          if (spanWidth > columnWidth) {
             fitsHorizontally = false;
             break;
           }
@@ -100,12 +111,18 @@ function useVerseFontSize(
     const availableWidth = container.clientWidth;
     if (availableHeight === 0 || availableWidth === 0) return false;
     
-    // Check if there's actual content to measure
-    const lines = container.querySelectorAll('.line');
-    if (lines.length === 0) return false; // No content yet, need retry
+    // Check if there's actual content to measure - look for text spans
+    const textSpans = container.querySelectorAll('.lyric, .cue');
+    if (textSpans.length === 0) return false; // No content yet, need retry
     
     // Single column for verse mode
     container.style.columnCount = '1';
+    
+    // Calculate available width for text (account for padding)
+    const containerStyle = getComputedStyle(container);
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+    const maxTextWidth = availableWidth - paddingLeft - paddingRight;
     
     // Binary search for optimal font size
     let min = 12;
@@ -115,15 +132,17 @@ function useVerseFontSize(
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
       container.style.setProperty('--dynamic-font-size', `${mid}px`);
-      void container.offsetHeight;
+      void container.offsetHeight; // Force reflow
       
       // Check vertical fit
       const fitsVertically = container.scrollHeight <= availableHeight + 5;
       
-      // Check horizontal fit (no line cutting)
+      // Check horizontal fit - measure actual text span widths
       let fitsHorizontally = true;
-      for (const line of lines) {
-        if (line.scrollWidth > line.clientWidth + 2) {
+      for (const span of textSpans) {
+        // Use getBoundingClientRect for accurate text width measurement
+        const spanWidth = span.getBoundingClientRect().width;
+        if (spanWidth > maxTextWidth) {
           fitsHorizontally = false;
           break;
         }

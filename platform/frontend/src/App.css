@@ -581,6 +581,11 @@ body {
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Lyrics mode lines - no wrapping, let font sizing handle long lines */
+.lyrics-container.lyrics .line {
+  white-space: nowrap;
+}
+
 /* ============================================
    VIEWER LYRICS MODE - PASTORAL STYLE
    Soft, serene background with clean readable text
@@ -896,7 +901,7 @@ body {
 }
 
 .lyrics-container.verse-single .line {
-  white-space: pre-wrap; /* Allow wrapping in verse mode */
+  white-space: nowrap; /* No wrapping - font sizing will shrink to fit */
   text-align: center;
 }
 
