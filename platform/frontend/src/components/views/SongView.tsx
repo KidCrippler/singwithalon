@@ -25,11 +25,12 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
     const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
     const columnGap = parseFloat(containerStyle.columnGap) || 16;
     
-    // Try each column count from 5 down to 1, find best font size for each
+    // Try each column count from 8 down to 1, find best font size for each
+    // More columns = narrower columns but potentially larger font if content fits
     let bestColumns = 1;
     let bestFontSize = 6;
     
-    for (let cols = 5; cols >= 1; cols--) {
+    for (let cols = 8; cols >= 1; cols--) {
       container.style.columnCount = String(cols);
       
       // Calculate actual column width accounting for gaps

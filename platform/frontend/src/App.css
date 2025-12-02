@@ -574,6 +574,14 @@ body {
 .lyrics-container.chords {
   font-family: 'Cousine', 'Courier New', Courier, monospace;
   font-weight: 700;
+  /* Tighter spacing to maximize font size */
+  padding: 0.25rem;
+  line-height: 1.2;
+}
+
+/* Tighter line spacing for chords mode */
+.lyrics-container.chords .line {
+  min-height: 1em;
 }
 
 /* LYRICS MODE: Use nice readable proportional font */
