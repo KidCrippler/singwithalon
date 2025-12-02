@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
@@ -10,12 +11,20 @@ import { SongView } from './components/views/SongView';
 import { PlayingNowView } from './components/views/PlayingNowView';
 import { QueueView } from './components/views/QueueView';
 import { LoginView } from './components/views/LoginView';
+import { preloadBackgrounds } from './utils/backgrounds';
 
 import './App.css';
 
 function AppContent() {
   // Enable global keyboard shortcuts for admin
   useKeyboardShortcuts();
+
+  // Preload all background images into browser cache on startup
+  useEffect(() => {
+    preloadBackgrounds().catch(err => {
+      console.warn('Some backgrounds failed to preload:', err);
+    });
+  }, []);
 
   return (
     <div className="app">

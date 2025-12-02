@@ -7,6 +7,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
+import { getRandomBackground } from '../../utils/backgrounds';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -285,6 +286,7 @@ export function PlayingNowView() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
+  const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerFullContainerRef = useRef<HTMLDivElement>(null);
   const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
@@ -297,6 +299,8 @@ export function PlayingNowView() {
         .then(setLyrics)
         .catch(console.error)
         .finally(() => setIsLoading(false));
+      // Pick a new random background for the new song (avoid repeating the current one)
+      setCurrentBackground(prev => getRandomBackground(prev));
     } else {
       setLyrics(null);
     }
@@ -633,6 +637,7 @@ export function PlayingNowView() {
             <div 
               ref={viewerFullContainerRef}
               className="lyrics-container lyrics"
+              style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
             >
               {viewerLyricsSections.map((section, sectionIndex) => (
                 <div key={sectionIndex} className="lyrics-section">
@@ -655,6 +660,7 @@ export function PlayingNowView() {
             <div 
               ref={viewerVerseContainerRef}
               className="lyrics-container lyrics verse-single"
+              style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
             >
               {isTransitioning ? (
                 isPartialScroll ? (

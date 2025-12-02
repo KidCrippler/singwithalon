@@ -581,6 +581,104 @@ body {
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* ============================================
+   VIEWER LYRICS MODE - PASTORAL STYLE
+   Soft, serene background with clean readable text
+   Designed to complement pastoral/nature imagery
+   ============================================ */
+
+.playing-now-view .lyrics-container.lyrics {
+  /* Background image - set dynamically via CSS variable */
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.png'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  
+  /* Fallback - soft sage green */
+  background-color: #e8f0e3;
+}
+
+/* Soft cream overlay - lets the landscape show through while ensuring readability */
+.playing-now-view .lyrics-container.lyrics::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 245, 0.55) 0%,
+    rgba(248, 246, 238, 0.45) 50%,
+    rgba(255, 253, 245, 0.55) 100%
+  );
+  z-index: 0;
+}
+
+/* Ensure content is above the overlay */
+.playing-now-view .lyrics-container.lyrics > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Lyrics text - deep forest green, clean and elegant */
+.playing-now-view .lyrics-container.lyrics .line-lyric .lyric {
+  color: #1a3a2a;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.8),
+    0 0 20px rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.01em;
+}
+
+/* Cues - warm terracotta, earthy accent */
+.playing-now-view .lyrics-container.lyrics .line-cue .cue {
+  color: #8b4513;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.8),
+    0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+/* Empty lines should still maintain spacing */
+.playing-now-view .lyrics-container.lyrics .line-empty {
+  min-height: 0.6em;
+}
+
+/* Column rules - subtle earthy separator */
+.playing-now-view .lyrics-container.lyrics {
+  column-rule: 1px solid rgba(139, 90, 43, 0.2);
+}
+
+/* ============================================
+   VERSE-SINGLE MODE - Centered, immersive
+   ============================================ */
+
+/* Softer vignette for verse mode - subtle focus effect */
+.playing-now-view .lyrics-container.lyrics.verse-single::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 253, 245, 0.40) 0%,
+    rgba(248, 246, 238, 0.55) 60%,
+    rgba(245, 243, 235, 0.65) 100%
+  );
+}
+
+/* Larger, more prominent text for single verse */
+.playing-now-view .lyrics-container.lyrics.verse-single .line-lyric .lyric {
+  font-size: 1.15em;
+  text-shadow: 
+    0 1px 3px rgba(255, 255, 255, 0.9),
+    0 0 25px rgba(255, 255, 255, 0.5);
+}
+
+/* Verse transitions - ensure content stays above overlay */
+.playing-now-view .lyrics-container.lyrics.verse-single .verse-transition-wrapper,
+.playing-now-view .lyrics-container.lyrics.verse-single .verse-partial-scroll {
+  position: relative;
+  z-index: 1;
+}
+
 /* Column counts - MAX 5 COLUMNS, scale down on smaller screens */
 .lyrics-container { column-count: 1; }
 @media (min-width: 500px) { .lyrics-container { column-count: 2; } }
