@@ -19,6 +19,12 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
     const availableWidth = container.clientWidth;
     if (availableHeight === 0 || availableWidth === 0) return;
     
+    // Get container padding and gap for accurate width calculation
+    const containerStyle = getComputedStyle(container);
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+    const columnGap = parseFloat(containerStyle.columnGap) || 16;
+    
     // Try each column count from 5 down to 1, find best font size for each
     let bestColumns = 1;
     let bestFontSize = 6;
@@ -26,9 +32,13 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
     for (let cols = 5; cols >= 1; cols--) {
       container.style.columnCount = String(cols);
       
+      // Calculate actual column width accounting for gaps
+      const totalGaps = (cols - 1) * columnGap;
+      const columnWidth = (availableWidth - paddingLeft - paddingRight - totalGaps) / cols;
+      
       // Binary search for optimal font size with this column count
       let min = 6;
-      let max = 40;
+      let max = 60;
       let optimalForCols = 6;
       
       while (min <= max) {
@@ -39,11 +49,12 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
         // Check vertical fit
         const fitsVertically = container.scrollHeight <= availableHeight + 5;
         
-        // Check horizontal fit (no line cutting)
-        const lines = container.querySelectorAll('.line');
+        // Check horizontal fit - measure actual text span widths against column width
+        const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
         let fitsHorizontally = true;
-        for (const line of lines) {
-          if (line.scrollWidth > line.clientWidth + 2) {
+        for (const span of textSpans) {
+          const spanWidth = span.getBoundingClientRect().width;
+          if (spanWidth > columnWidth) {
             fitsHorizontally = false;
             break;
           }

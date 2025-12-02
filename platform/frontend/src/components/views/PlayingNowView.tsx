@@ -39,7 +39,7 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
       
       // Binary search for optimal font size with this column count
       let min = 6;
-      let max = 40;
+      let max = 60;
       let optimalForCols = 6;
       
       while (min <= max) {
