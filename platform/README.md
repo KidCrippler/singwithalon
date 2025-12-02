@@ -73,12 +73,6 @@ npm run dev
 
 The frontend runs at `http://localhost:5173` and the backend at `http://localhost:3001`.
 
-### Default Admin Credentials
-
-- Username: `admin`
-- Password: `changeme`
-
-⚠️ **Change these in production!**
 
 ## Project Structure
 

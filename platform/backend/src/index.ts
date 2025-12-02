@@ -10,6 +10,13 @@ import { stateRoutes } from './routes/state.js';
 import { initSocketIO } from './socket/index.js';
 
 async function main() {
+  // Validate required environment variables
+  if (!config.auth.cookieSecret) {
+    console.error('❌ COOKIE_SECRET environment variable is required!');
+    console.error('   Generate one with: openssl rand -hex 32');
+    process.exit(1);
+  }
+
   // Initialize database
   initDatabase();
 

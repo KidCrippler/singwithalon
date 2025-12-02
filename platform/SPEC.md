@@ -1133,16 +1133,15 @@ DATABASE_PATH=./database/singalong.db
 # TURSO_DATABASE_URL=libsql://your-db-name.turso.io
 # TURSO_AUTH_TOKEN=your-auth-token
 
-# Authentication
-JWT_SECRET=your-secret-key-here
-COOKIE_SECRET=your-cookie-secret
+# Authentication - REQUIRED, no default fallback
+# Generate with: openssl rand -hex 32
+COOKIE_SECRET=your-cookie-secret-here
 
 # Songs - fetched from Git URL on startup, refreshed via admin action
 SONGS_JSON_URL=https://raw.githubusercontent.com/.../songs.json
 
-# Admin credentials (for initial setup)
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD_HASH=...
+# Admin users - seeded on startup (format: user1:pass1,user2:pass2)
+ADMIN_USERS=admin:yourpassword,user2:theirpassword
 ```
 
 ### Frontend (.env)

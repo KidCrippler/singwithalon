@@ -12,6 +12,9 @@ This guide covers how to build, run, and manage the SingWithAlon platform.
 - [Stopping Services](#stopping-services)
 - [SQLite Database Queries](#sqlite-database-queries)
 - [cURL API Examples](#curl-api-examples)
+- [Environment Variables](#environment-variables)
+- [Deployment](#deployment)
+- [Common Workflows](#common-workflows)
 
 ---
 
@@ -241,7 +244,7 @@ Base URL: `http://localhost:3001`
 ```bash
 curl -X POST http://localhost:3001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "changeme"}' \
+  -d '{"username": "admin", "password": "********"}' \
   -c cookies.txt
 ```
 This saves the session cookie to `cookies.txt` for subsequent requests.
@@ -330,14 +333,27 @@ curl -w "\nHTTP Status: %{http_code}\n" http://localhost:3001/api/state
 
 ### Backend (`platform/backend/.env`)
 
+Copy `.env.example` to `.env` and configure:
+
 ```env
+# Server
 PORT=3001
 HOST=0.0.0.0
+
+# Database
 DATABASE_PATH=./database/singalong.db
+
+# Authentication (use a strong random secret in production)
 COOKIE_SECRET=your-secret-here
-SONGS_JSON_URL=https://raw.githubusercontent.com/...
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=changeme
+
+# Songs source
+SONGS_JSON_URL=https://raw.githubusercontent.com/YourOrg/songs/master/songs.json
+
+# Admin users - seeded on startup (format: user1:pass1,user2:pass2)
+ADMIN_USERS=admin:yourpassword,moti:motipass,iris:irispass
+
+# Fallback admin password (only used if ADMIN_USERS is empty and no admins exist)
+# DEFAULT_ADMIN_PASSWORD=yourpassword
 ```
 
 ### Frontend (`platform/frontend/.env`)
@@ -346,6 +362,112 @@ ADMIN_PASSWORD=changeme
 VITE_API_URL=http://localhost:3001
 VITE_SOCKET_URL=http://localhost:3001
 ```
+
+---
+
+## Deployment
+
+### Prerequisites
+
+- Node.js 18+ on the server
+- A hosting platform (Render, Railway, Heroku, VPS, etc.)
+- Your songs repository URL
+
+### Environment Variables for Production
+
+Set these in your hosting platform's environment/secrets configuration:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PORT` | No | Server port (usually set by platform) |
+| `HOST` | No | Defaults to `0.0.0.0` |
+| `COOKIE_SECRET` | **Yes** | Random string for signing cookies. **App will not start without this!** |
+| `SONGS_JSON_URL` | **Yes** | URL to your songs.json file |
+| `ADMIN_USERS` | **Yes** | Admin credentials, format: `user1:pass1,user2:pass2` |
+| `DATABASE_PATH` | No | SQLite path (defaults to `./database/singalong.db`) |
+
+> ⚠️ **Important**: The app will fail to start if `COOKIE_SECRET` is not set. There is no default fallback for security reasons.
+
+### Deployment Steps
+
+#### 1. Generate a Secure Cookie Secret
+
+```bash
+openssl rand -hex 32
+```
+
+#### 2. Set Environment Variables
+
+In your hosting platform (e.g., Render dashboard), add:
+
+```
+COOKIE_SECRET=<your-generated-secret>
+SONGS_JSON_URL=https://raw.githubusercontent.com/YourOrg/songs/master/songs.json
+ADMIN_USERS=admin:SecurePass123,moti:AnotherSecurePass
+```
+
+#### 3. Build Commands
+
+**Backend:**
+```bash
+cd platform/backend && npm install && npm run build
+```
+
+**Frontend:**
+```bash
+cd platform/frontend && npm install && npm run build
+```
+
+#### 4. Start Commands
+
+**Backend:**
+```bash
+cd platform/backend && npm start
+```
+
+**Frontend:** Serve the `platform/frontend/dist/` folder with your static file server or CDN.
+
+### Adding Admin Users
+
+Admin users are automatically created on server startup from the `ADMIN_USERS` environment variable.
+
+**To add a new admin:**
+1. Update the `ADMIN_USERS` env var to include the new user
+2. Restart the server
+
+**Format:** `user1:password1,user2:password2,user3:password3`
+
+**Example:**
+```
+ADMIN_USERS=alon:MySecurePass,moti:AnotherPass,iris:ThirdPass
+```
+
+Users that already exist in the database are skipped (passwords are not updated).
+
+### Manual Admin Management
+
+If you need to add an admin directly on the server:
+
+```bash
+cd platform/backend
+./scripts/add-admin.sh <username> <password>
+```
+
+Or via sqlite3:
+```bash
+# First, generate a bcrypt hash (requires Node.js)
+HASH=$(node -e "require('bcrypt').hash('yourpassword', 10).then(h => console.log(h))")
+
+# Then insert
+sqlite3 database/singalong.db "INSERT INTO admins (username, password_hash) VALUES ('newuser', '$HASH');"
+```
+
+### Database Persistence
+
+SQLite stores data in `database/singalong.db`. Ensure your hosting platform has persistent storage, or the database will reset on each deploy.
+
+**Platforms with persistent storage:** Railway, Render (with disk), VPS
+**Platforms requiring external DB:** Heroku (use PostgreSQL instead, requires code changes)
 
 ---
 

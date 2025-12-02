@@ -11,12 +11,26 @@ interface LoginBody {
 }
 
 export async function authRoutes(fastify: FastifyInstance) {
-  // Initialize admin user if none exists
+  // Seed admin users on startup from ADMIN_USERS env var
   fastify.addHook('onReady', async () => {
-    if (!adminQueries.exists()) {
-      const passwordHash = await bcrypt.hash(config.admin.password, 10);
-      adminQueries.create(config.admin.username, passwordHash);
-      console.log(`Created default admin user: ${config.admin.username}`);
+    // Seed admins from ADMIN_USERS env var (format: "user1:pass1,user2:pass2")
+    if (config.adminUsers) {
+      const users = config.adminUsers.split(',').map(u => u.trim()).filter(Boolean);
+      for (const userEntry of users) {
+        const [username, password] = userEntry.split(':');
+        if (username && password && !adminQueries.getByUsername(username)) {
+          const passwordHash = await bcrypt.hash(password, 10);
+          adminQueries.create(username, passwordHash);
+          console.log(`Created admin user: ${username}`);
+        }
+      }
+    }
+    
+    // Fallback: create default admin if no admins exist and DEFAULT_ADMIN_PASSWORD is set
+    if (!adminQueries.exists() && config.defaultAdminPassword) {
+      const passwordHash = await bcrypt.hash(config.defaultAdminPassword, 10);
+      adminQueries.create('admin', passwordHash);
+      console.log('Created default admin user: admin');
     }
   });
 

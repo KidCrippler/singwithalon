@@ -16,7 +16,7 @@ export const config = {
     path: process.env.DATABASE_PATH || join(__dirname, '../../database/singalong.db'),
   },
   auth: {
-    cookieSecret: process.env.COOKIE_SECRET || 'change-this-secret',
+    cookieSecret: process.env.COOKIE_SECRET || '',
     cookieName: 'singalong_session',
   },
   songs: {
@@ -25,9 +25,9 @@ export const config = {
     // Optional: local file path (takes precedence over URL if set)
     localPath: process.env.SONGS_LOCAL_PATH || '',
   },
-  admin: {
-    username: process.env.ADMIN_USERNAME || 'admin',
-    password: process.env.ADMIN_PASSWORD || 'changeme',
-  },
+  // Admin users seeded on startup (format: "user1:pass1,user2:pass2")
+  adminUsers: process.env.ADMIN_USERS || '',
+  // Fallback admin password (used only if ADMIN_USERS is empty and no admins exist)
+  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || '',
 };
 
