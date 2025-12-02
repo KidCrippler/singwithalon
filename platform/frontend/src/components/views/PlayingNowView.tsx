@@ -83,7 +83,11 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
   }, [containerRef]);
   
   useEffect(() => {
-    const timeoutId = setTimeout(calculateOptimalLayout, 50);
+    // Initial calculation after delay for DOM to settle
+    const timeoutId = setTimeout(calculateOptimalLayout, 150);
+    
+    // Second calculation after longer delay to catch mode switches
+    const secondTimeoutId = setTimeout(calculateOptimalLayout, 400);
     
     const handleResize = () => {
       requestAnimationFrame(calculateOptimalLayout);
@@ -92,6 +96,7 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
     window.addEventListener('resize', handleResize);
     return () => {
       clearTimeout(timeoutId);
+      clearTimeout(secondTimeoutId);
       window.removeEventListener('resize', handleResize);
     };
   }, [calculateOptimalLayout, ...deps]);
@@ -161,24 +166,47 @@ function useVerseFontSize(
     return true; // Success
   }, [containerRef]);
   
+  // Track previous skip state to detect transition end
+  const prevSkipRef = useRef(skipCalculation);
+  
   useEffect(() => {
     // Skip calculation during transitions to prevent measuring both verses
-    if (skipCalculation) return;
+    if (skipCalculation) {
+      prevSkipRef.current = true;
+      return;
+    }
     
     let retryCount = 0;
     const maxRetries = 10;
+    let timeoutIds: ReturnType<typeof setTimeout>[] = [];
     
     const attemptCalculation = () => {
       const success = calculateFontSize();
       if (!success && retryCount < maxRetries) {
         retryCount++;
-        // Retry with increasing delay (50, 100, 150, 200...)
-        setTimeout(attemptCalculation, 50 * retryCount);
+        const id = setTimeout(attemptCalculation, 30 + 30 * retryCount);
+        timeoutIds.push(id);
       }
     };
     
-    // Initial attempt after short delay for DOM to settle
-    const timeoutId = setTimeout(attemptCalculation, 50);
+    // Detect if this is a transition ending (fast) vs new content loading (needs more time)
+    const wasTransitioning = prevSkipRef.current;
+    prevSkipRef.current = false;
+    
+    if (wasTransitioning) {
+      // Transition just ended - content is ready, calculate immediately
+      requestAnimationFrame(() => {
+        calculateFontSize();
+      });
+    } else {
+      // New content loading (song change, mode change) - needs time for DOM to settle
+      const initialId = setTimeout(attemptCalculation, 100);
+      timeoutIds.push(initialId);
+      
+      // Fallback for edge cases
+      const secondId = setTimeout(calculateFontSize, 350);
+      timeoutIds.push(secondId);
+    }
     
     const handleResize = () => {
       requestAnimationFrame(() => calculateFontSize());
@@ -186,7 +214,7 @@ function useVerseFontSize(
     
     window.addEventListener('resize', handleResize);
     return () => {
-      clearTimeout(timeoutId);
+      timeoutIds.forEach(id => clearTimeout(id));
       window.removeEventListener('resize', handleResize);
     };
   }, [calculateFontSize, skipCalculation, ...deps]);
@@ -390,9 +418,12 @@ export function PlayingNowView() {
   useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex]);
 
   // Dynamic font sizing for viewer full view (chords or full lyrics)
+  // Include viewerShowsSingleVerse to trigger recalc when switching from verse to full-lyrics mode
   useDynamicFontSize(viewerFullContainerRef, [
     viewerShowsChords ? adminSections : viewerLyricsSections, 
-    viewerShowsChords
+    viewerShowsChords,
+    viewerShowsSingleVerse,
+    state.currentSongId
   ]);
 
   // Get current verse lines for display
@@ -403,8 +434,8 @@ export function PlayingNowView() {
 
   // Verse font sizing for viewer single-verse mode
   // Skip calculation during transition to prevent measuring both outgoing and incoming verses
-  // Include currentVerseLines.length to trigger recalc when content first loads
-  useVerseFontSize(viewerVerseContainerRef, [currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length], isTransitioning);
+  // Include currentSongId and currentVerseLines.length to trigger recalc when song or content changes
+  useVerseFontSize(viewerVerseContainerRef, [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length], isTransitioning);
 
   // State for partial scroll (when transitioning to/from padded last verse)
   const [isPartialScroll, setIsPartialScroll] = useState(false);
