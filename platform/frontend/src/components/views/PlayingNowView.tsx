@@ -306,9 +306,31 @@ export function PlayingNowView() {
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
   const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerFullContainerRef = useRef<HTMLDivElement>(null);
   const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle fullscreen mode
+  const enterFullscreen = useCallback(() => {
+    const container = fullscreenContainerRef.current;
+    if (container && container.requestFullscreen) {
+      container.requestFullscreen().catch(console.error);
+    }
+  }, []);
+
+  // Listen for fullscreen changes (including Escape key exit)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Fetch lyrics when song changes
   useEffect(() => {
@@ -574,6 +596,15 @@ export function PlayingNowView() {
                 {viewerVerseOverride === false ? '📄' : '📖'}
               </button>
             )}
+            {/* Fullscreen button - only in lyrics mode */}
+            {state.displayMode === 'lyrics' && (
+              <button
+                onClick={enterFullscreen}
+                title="מסך מלא"
+                className="fullscreen-btn"
+                aria-label="מסך מלא"
+              />
+            )}
             {/* Transpose controls - only in chords mode */}
             {state.displayMode === 'chords' && (
               <TransposeControls
@@ -651,87 +682,105 @@ export function PlayingNowView() {
             </div>
           )}
 
-          {/* Mode 2: Lyrics, verses off - full lyrics view */}
-          {!viewerShowsChords && !viewerShowsSingleVerse && (
+          {/* Fullscreen container for lyrics modes */}
+          {!viewerShowsChords && (
             <div 
-              ref={viewerFullContainerRef}
-              className="lyrics-container lyrics"
+              ref={fullscreenContainerRef}
+              className={`fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
               style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
             >
-              {viewerLyricsSections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="lyrics-section">
-                  {section.map((indexedLine) => (
-                    <LineDisplay 
-                      key={indexedLine.originalIndex}
-                      line={indexedLine.line} 
-                      showChords={false}
-                      lineIndex={indexedLine.originalIndex}
-                    />
+              {/* Song metadata header - only visible in fullscreen */}
+              {isFullscreen && lyrics && (
+                <div className={`fullscreen-song-header ${isRtl ? 'rtl' : 'ltr'}`}>
+                  <h1 className="fullscreen-title">{lyrics.metadata.title}</h1>
+                  <div className="fullscreen-artist">{lyrics.metadata.artist}</div>
+                  {state.song && (state.song.composers?.length || state.song.lyricists?.length || state.song.translators?.length) && (
+                    <div className="fullscreen-credits">{formatCredits(state.song, isRtl)}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Mode 2: Lyrics, verses off - full lyrics view */}
+              {!viewerShowsSingleVerse && (
+                <div 
+                  ref={viewerFullContainerRef}
+                  className="lyrics-container lyrics"
+                >
+                  {viewerLyricsSections.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="lyrics-section">
+                      {section.map((indexedLine) => (
+                        <LineDisplay 
+                          key={indexedLine.originalIndex}
+                          line={indexedLine.line} 
+                          showChords={false}
+                          lineIndex={indexedLine.originalIndex}
+                        />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* Mode 3: Lyrics, verses on - single verse, centered */}
-          {/* For undersized last verse, getVerseLinesForDisplay pads with lines from previous verse */}
-          {viewerShowsSingleVerse && (
-            <div 
-              ref={viewerVerseContainerRef}
-              className="lyrics-container lyrics verse-single"
-              style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
-            >
-              {isTransitioning ? (
-                isPartialScroll ? (
-                  // Partial scroll for padded last verse: single merged content that scrolls partially
-                  <div 
-                    className={`verse-partial-scroll partial-${transitionDirection}`}
-                    style={{ '--scroll-percent': `${scrollPercentage}%` } as React.CSSProperties}
-                  >
-                    {mergedScrollLines.map((line, lineIndex) => (
+              {/* Mode 3: Lyrics, verses on - single verse, centered */}
+              {/* For undersized last verse, getVerseLinesForDisplay pads with lines from previous verse */}
+              {viewerShowsSingleVerse && (
+                <div 
+                  ref={viewerVerseContainerRef}
+                  className="lyrics-container lyrics verse-single"
+                >
+                  {isTransitioning ? (
+                    isPartialScroll ? (
+                      // Partial scroll for padded last verse: single merged content that scrolls partially
+                      <div 
+                        className={`verse-partial-scroll partial-${transitionDirection}`}
+                        style={{ '--scroll-percent': `${scrollPercentage}%` } as React.CSSProperties}
+                      >
+                        {mergedScrollLines.map((line, lineIndex) => (
+                          <LineDisplay 
+                            key={`merged-${lineIndex}`}
+                            line={line} 
+                            showChords={false}
+                            lineIndex={lineIndex}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      // Full scroll: both verses absolutely positioned, CSS handles animation
+                      <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
+                        <div className="verse-content outgoing">
+                          {outgoingLines.map((line, lineIndex) => (
+                            <LineDisplay 
+                              key={`out-${lineIndex}`}
+                              line={line} 
+                              showChords={false}
+                              lineIndex={lineIndex}
+                            />
+                          ))}
+                        </div>
+                        <div className="verse-content incoming">
+                          {currentVerseLines.map((line, lineIndex) => (
+                            <LineDisplay 
+                              key={`in-${lineIndex}`}
+                              line={line} 
+                              showChords={false}
+                              lineIndex={lineIndex}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    // Normal display: just current verse
+                    currentVerseLines.map((line, lineIndex) => (
                       <LineDisplay 
-                        key={`merged-${lineIndex}`}
+                        key={lineIndex}
                         line={line} 
                         showChords={false}
                         lineIndex={lineIndex}
                       />
-                    ))}
-                  </div>
-                ) : (
-                  // Full scroll: both verses absolutely positioned, CSS handles animation
-                  <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
-                    <div className="verse-content outgoing">
-                      {outgoingLines.map((line, lineIndex) => (
-                        <LineDisplay 
-                          key={`out-${lineIndex}`}
-                          line={line} 
-                          showChords={false}
-                          lineIndex={lineIndex}
-                        />
-                      ))}
-                    </div>
-                    <div className="verse-content incoming">
-                      {currentVerseLines.map((line, lineIndex) => (
-                        <LineDisplay 
-                          key={`in-${lineIndex}`}
-                          line={line} 
-                          showChords={false}
-                          lineIndex={lineIndex}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              ) : (
-                // Normal display: just current verse
-                currentVerseLines.map((line, lineIndex) => (
-                  <LineDisplay 
-                    key={lineIndex}
-                    line={line} 
-                    showChords={false}
-                    lineIndex={lineIndex}
-                  />
-                ))
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )}

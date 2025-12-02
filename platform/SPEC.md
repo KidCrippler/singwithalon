@@ -181,7 +181,19 @@ A real-time web application for managing sing-along events and band performances
 - **Viewer Controls** (visible to all):
   - Toggle: Lyrics-only ↔ Lyrics+chords
   - Toggle: Verse mode ↔ Full-song mode (non-projectors only)
+  - Fullscreen button (⤢) - only in lyrics mode, see Fullscreen Mode below
   - Transposition controls (only in chords mode): `[ ⬇ ] N [ ⬆ ]` with out-of-sync indicator
+- **Fullscreen Mode** (lyrics mode only):
+  - Clicking fullscreen button (⤢) enters browser fullscreen mode
+  - Hides app header and song top bar
+  - Shows dedicated song metadata header with:
+    - Song title (large, prominent)
+    - Artist name
+    - Credits (composer, lyricist, translator if applicable)
+  - Metadata header uses semi-transparent background, visually distinct from lyrics
+  - Header remains visible across all verses
+  - Press Escape to exit fullscreen (browser native behavior)
+  - On exit, original headers are restored
 - **Admin Controls** (small overlay, top-left corner, non-intrusive):
   - Previous verse button (◀)
   - Next verse button (▶)
@@ -689,18 +701,24 @@ The projector client should:
 
 ### 9.2 Typography
 - **Lyrics + Chords mode**: Monospace font (critical for chord alignment)
-- **Lyrics Only mode (projection)**: Large, readable sans-serif (e.g., Heebo for Hebrew support)
-- **Auto-sizing**: In band mode (lyrics+chords), shrink font to fit entire song on single screen
+- **Lyrics Only mode (projection)**: Large, readable sans-serif (Rubik for Hebrew, with Heebo fallback)
+- **Auto-sizing**: 
+  - In band mode (lyrics+chords), shrink font to fit entire song on single screen
+  - In lyrics mode, dynamic font sizing measures actual text span widths (not wrapper elements)
+  - Long lines trigger font reduction until all text fits without clipping
+  - Uses binary search to find optimal font size efficiently
 
 ### 9.3 Background Images (Lyrics-Only Projection Mode)
 - Bundled in `/public/backgrounds/` directory
-- Images provided by admin (flowers, nature scenes - non-distracting)
-- **Random selection** per song display
+- Images provided by admin (pastoral/nature scenes - non-distracting)
+- **Dynamic discovery**: All `.png`, `.jpg`, `.jpeg` files in the directory are automatically detected at build time using Vite's `import.meta.glob` - no code changes needed when adding new images
+- **Random selection** per song: Each new song gets a random background (avoiding repeats)
+- **Browser caching**: All backgrounds are preloaded on app startup to ensure fast switching
 - Rendering:
   - Image covers full viewport
-  - Semi-transparent dark overlay on top of image
-  - Each text line has its own semi-transparent dark background box for extra contrast
-  - Text color: Light/yellow for maximum readability
+  - Semi-transparent cream/light overlay for pastoral images (complementary to nature scenes)
+  - Text: Deep forest green for lyrics, warm terracotta for cues
+  - Clean, elegant typography using Rubik font for Hebrew readability
 
 ### 9.4 Responsive Design Priority
 1. **Projector** (primary): Full-screen, resolution-aware, large text
@@ -1028,12 +1046,19 @@ platform/
 - [x] Click-to-navigate on verse lines (admin only)
 - [x] See `VERSES.md` for detailed specification
 
-### Phase 6: Projection Mode (partial)
+### Phase 6: Projection Mode ✅
 - [x] Implement lyrics-only display mode
-- [ ] Add background image system (random selection)
-- [ ] Create semi-transparent overlays for text contrast
+- [x] Add background image system:
+  - [x] Dynamic discovery of images via Vite's `import.meta.glob`
+  - [x] Random selection per song (avoids repeats)
+  - [x] Browser preloading/caching on app startup
+- [x] Create semi-transparent overlays for text contrast (pastoral style)
 - [x] Build responsive layout for projector (multi-column, max 5 columns)
-- [x] Handle font auto-sizing (dynamic sizing algorithm)
+- [x] Handle font auto-sizing (dynamic sizing algorithm measuring actual text spans)
+- [x] Fullscreen mode for viewers:
+  - [x] Fullscreen button (⤢) in lyrics mode
+  - [x] Song metadata header (title, artist, credits) in fullscreen
+  - [x] Uses browser Fullscreen API with Escape to exit
 
 ### Phase 7: Queue System (partial)
 - [x] Implement queue database operations

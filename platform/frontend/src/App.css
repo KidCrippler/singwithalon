@@ -862,6 +862,129 @@ body {
 
 .viewer-controls button.active {
   background: var(--primary-color);
+}
+
+/* ============================================
+   FULLSCREEN MODE FOR LYRICS VIEWER
+   ============================================ */
+
+/* Fullscreen container wraps lyrics and metadata header */
+.fullscreen-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* When in fullscreen mode */
+.fullscreen-container.is-fullscreen {
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.png'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Song metadata header - only visible in fullscreen */
+.fullscreen-song-header {
+  flex-shrink: 0;
+  padding: 1.25rem 2rem;
+  text-align: center;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 245, 0.92) 0%,
+    rgba(255, 253, 245, 0.75) 60%,
+    rgba(255, 253, 245, 0.55) 100%
+  );
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.fullscreen-song-header.rtl {
+  direction: rtl;
+}
+
+.fullscreen-song-header.ltr {
+  direction: ltr;
+}
+
+.fullscreen-title {
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 700;
+  color: #1a3a2a;
+  margin: 0 0 0.2rem;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.01em;
+}
+
+.fullscreen-artist {
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.1rem, 2.5vw, 1.75rem);
+  font-weight: 500;
+  color: #3d5c4a;
+  margin-bottom: 0.4rem;
+}
+
+.fullscreen-credits {
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+  font-weight: 400;
+  color: #5a4a3a;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+/* In fullscreen, lyrics container should fill remaining space */
+.fullscreen-container.is-fullscreen .lyrics-container.lyrics {
+  /* Background already on parent, make container transparent */
+  background-image: none;
+  background-color: transparent;
+}
+
+/* Adjust overlay for fullscreen - applied to the parent container */
+.fullscreen-container.is-fullscreen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 245, 0.35) 0%,
+    rgba(248, 246, 238, 0.45) 50%,
+    rgba(255, 253, 245, 0.35) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ensure content is above overlay */
+.fullscreen-container.is-fullscreen > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fullscreen button styling */
+.viewer-controls .fullscreen-btn {
+  background: #2d8a6e;
+  color: white;
+  border: 1px solid #247a5f;
+  transition: background-color 0.2s ease;
+  padding: 0;
+}
+
+.viewer-controls .fullscreen-btn::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 18px;
+  /* Fullscreen expand icon - four corners pointing outward */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cpolyline points='9 21 3 21 3 15'/%3E%3Cpolyline points='21 15 21 21 15 21'/%3E%3Cpolyline points='3 9 3 3 9 3'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.viewer-controls .fullscreen-btn:hover {
+  background: #236b55;
   color: white;
   border-color: var(--primary-color);
 }
