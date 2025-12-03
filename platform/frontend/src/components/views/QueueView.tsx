@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { useSearch } from '../../context/SearchContext';
 import { queueApi } from '../../services/api';
 import type { GroupedQueue } from '../../types';
 
@@ -10,6 +11,7 @@ export function QueueView() {
   const [isLoading, setIsLoading] = useState(true);
   const { isAdmin } = useAuth();
   const { socket } = useSocket();
+  const { setSearchTerm } = useSearch();
   const navigate = useNavigate();
 
   // Redirect non-admins
@@ -45,7 +47,8 @@ export function QueueView() {
   const handlePresent = async (queueId: number) => {
     try {
       await queueApi.present(queueId);
-    navigate('/playing-now');
+      setSearchTerm(''); // Clear search filter when presenting
+      navigate('/playing-now');
     } catch (error) {
       console.error('Failed to present song:', error);
     }

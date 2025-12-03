@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { songsApi, queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
+import { useSearch } from '../../context/SearchContext';
 import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
@@ -141,6 +142,7 @@ export function SongView() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { setSong } = usePlayingNow();
+  const { setSearchTerm } = useSearch();
   
   const [song, setSongData] = useState<Song | null>(null);
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
@@ -182,6 +184,7 @@ export function SongView() {
 
   const handlePresentNow = () => {
     if (!id) return;
+    setSearchTerm(''); // Clear search filter when presenting
     setSong(parseInt(id, 10));
     navigate('/playing-now');
   };

@@ -78,6 +78,7 @@ export function SearchView() {
   };
 
   const handlePresentNow = (songId: number) => {
+    setSearchTerm(''); // Clear search filter when presenting
     setSong(songId);
     navigate('/playing-now');
   };
