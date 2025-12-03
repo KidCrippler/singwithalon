@@ -7,13 +7,16 @@
 
 /**
  * Format a chord line for display.
- * Converts 'o' to '°' for diminished chords (more elegant notation).
+ * Converts 'o' and 'º' to '°' for diminished chords (more elegant notation).
  * 
  * In chord lines, 'o' only appears as the diminished marker (e.g., Fo7, Bo),
  * so a simple character replacement is sufficient.
+ * 
+ * Note: We also normalize 'º' (U+00BA masculine ordinal indicator) to '°' (U+00B0 degree sign)
+ * since these characters look similar and users may type either one.
  */
 export function formatChordLineForDisplay(line: string): string {
-  return line.replaceAll('o', '°');
+  return line.replaceAll('o', '°').replaceAll('º', '°');
 }
 
 /**

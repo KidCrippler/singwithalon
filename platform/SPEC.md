@@ -367,13 +367,13 @@ D         C#7     F#m  A7
 
 **2. Chord Line Detection (content-based with regex):**
 - A line is a chord line IF AND ONLY IF **all whitespace-separated tokens** match the chord pattern
-- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
+- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|°|º|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?`
 - Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|sus[24]?|add|o|°|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
 - Bass-only pattern: `\/[A-G][#b]?` (just a note, e.g., `/F`, `/Bb`, `/A`, `/F#`)
 - Bracketed bass-only pattern: `\[\/[A-G][#b]?\]` (e.g., `[/A]`, `[/F#]`)
 - Empty brackets: `[]` (valid placeholder token in chord lines)
-- Special notation: `o` or `°` = diminished (e.g., `Fo7` = `F°7` = `Fdim7`), `+` = augmented
-  - Note: Both `o` and `°` are valid in source files; display always uses `°` for elegance
+- Special notation: `o`, `°`, or `º` = diminished (e.g., `Fo7` = `F°7` = `Fdim7`), `+` = augmented
+  - Note: `o` (lowercase letter), `°` (U+00B0 degree sign), and `º` (U+00BA masculine ordinal) are all valid in source files; display always uses `°` for elegance
 - **Extended notation support:**
   - Major chord suffixes: `maj`, `Maj`, `M` (e.g., `CMaj7`, `DM9`, `Fmaj7`)
   - Minor chord suffixes: `m`, `min`, `Min` (e.g., `Am`, `Cmin7`, `DMin7`)
@@ -608,7 +608,7 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 ### 7.5 Supported Chord Components
 - **Root notes**: A, B, C, D, E, F, G
 - **Accidentals**: # (sharp), b (flat)
-- **Quality modifiers**: m, min, maj, dim, aug, o (diminished), ° (diminished, alternate notation), + (augmented)
+- **Quality modifiers**: m, min, maj, dim, aug, o (diminished), °/º (diminished, alternate notation), + (augmented)
 - **Extensions**: 2, 4, 5, 6, 7, 9, 11, 13
 - **Suspensions**: sus, sus2, sus4
 - **Additions**: add9, add11, etc.
@@ -619,10 +619,13 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 `Am`, `G7`, `Cmaj7`, `Bm7b5`, `F#dim`, `Dsus4`, `Eadd9`, `A/C#`, `Fo7`, `B°7`
 
 ### 7.6 Diminished Notation
-- Both `o` and `°` are recognized as diminished notation during parsing
-- When rendering, always display `°` (degree symbol) instead of `o` for elegance
+- Three characters are recognized as diminished notation during parsing:
+  - `o` (lowercase letter o)
+  - `°` (U+00B0 degree sign)
+  - `º` (U+00BA masculine ordinal indicator) - often typed by mistake since it looks similar
+- When rendering, always display `°` (degree sign) for elegance
 - Display formatting is handled by `chordDisplay.ts` (separate from transposition logic)
-- Example: Input `Fo7` displays as `F°7`
+- Examples: Input `Fo7`, `F°7`, or `Fº7` all display as `F°7`
 
 ### 7.7 Spacing After Transposition
 - **Current approach**: Maintain chord start positions after transposition
@@ -1090,38 +1093,21 @@ platform/
 - [x] Connection status indicators
 - [ ] Final UI/UX polish (theme, logo integration)
 
-### Phase 9: Database Migration to Turso (post-deployment)
-Migrate from local SQLite to Turso (hosted SQLite/LibSQL) for serverless deployment compatibility.
+### Phase 9: Production Database Setup ✅
+The SQLite database is persisted using a mounted volume on the hosting platform.
 
-**Why Turso:**
-- SQLite-compatible API (minimal code changes)
-- Serverless-friendly (database persists independently of app lifecycle)
-- Free tier: 9GB storage, 500 databases
-- Perfect for sporadic usage patterns (app may be idle 99% of time)
+**Approach:**
+- Backend is deployed to a persistent server (not serverless)
+- A persistent volume is mounted at `/app/database`
+- SQLite database file stored at the configured `DATABASE_PATH`
+- Uses native `better-sqlite3` library (fast, synchronous, no code changes needed)
 
-**Migration Steps:**
-- [ ] Create Turso account and database
-- [ ] Install `@libsql/client` package
-- [ ] Update `db/index.ts` to use Turso client instead of `better-sqlite3`
-- [ ] Configure environment variables (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`)
-- [ ] Test all database operations (queue, sessions, playing state)
-- [ ] Update deployment configuration (Vercel env vars)
+**Configuration:**
+- Set `DATABASE_PATH=/app/database/singalong.db` environment variable
+- Mount persistent volume at `/app/database` on hosting platform
+- Database survives deployments and server restarts
 
-**Code Change (simplified):**
-```typescript
-// Before (better-sqlite3)
-import Database from 'better-sqlite3';
-const db = new Database('./database/singalong.db');
-
-// After (Turso/LibSQL)
-import { createClient } from '@libsql/client';
-const db = createClient({
-  url: process.env.TURSO_DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
-});
-```
-
-**Note:** This phase is not urgent for initial deployment but recommended before heavy usage to ensure database persistence across serverless cold starts.
+**Note:** This approach is simpler and faster than hosted database solutions (like Turso) since the backend runs as a persistent server rather than serverless functions.
 
 ---
 

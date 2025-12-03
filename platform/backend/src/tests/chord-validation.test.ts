@@ -36,6 +36,12 @@ const testCases: TestCase[] = [
   { input: 'B°7', expected: true, description: 'Diminished 7th with ° (standard position)' },
   { input: '°B7', expected: false, description: 'Invalid: ° before note letter is not valid notation' },
   { input: 'C+', expected: true, description: 'Augmented chord (+ notation)' },
+  { input: 'G+', expected: true, description: 'Augmented chord G+ (+ notation)' },
+  
+  // === Diminished with ordinal indicator (º U+00BA) ===
+  { input: 'C#º7', expected: true, description: 'Diminished 7th with ordinal indicator (º)' },
+  { input: 'Dº7', expected: true, description: 'Diminished 7th Dº7 with ordinal indicator' },
+  { input: 'Gº', expected: true, description: 'Diminished Gº with ordinal indicator' },
   
   // === Accidentals ===
   { input: 'F#', expected: true, description: 'Sharp chord' },
