@@ -1107,8 +1107,8 @@ body {
 }
 
 /* Scroll UP animation (going to NEXT verse) */
-/* Outgoing: 0 → -100% (scrolls up out of view) */
-/* Incoming: +100% → 0 (scrolls up into view) */
+/* Uses --scroll-percent CSS variable to control scroll amount (default 100%) */
+/* For overlap: set --scroll-percent to less than 100% so overlapping lines stay visible */
 .verse-transition-wrapper.transition-up .verse-content.outgoing {
   animation: slideOutUp 1s ease-in-out forwards;
 }
@@ -1119,17 +1119,16 @@ body {
 
 @keyframes slideOutUp {
   from { transform: translateY(0); }
-  to { transform: translateY(-100%); }
+  to { transform: translateY(calc(-1 * var(--scroll-percent, 100%))); }
 }
 
 @keyframes slideInFromBelow {
-  from { transform: translateY(100%); }
+  from { transform: translateY(var(--scroll-percent, 100%)); }
   to { transform: translateY(0); }
 }
 
 /* Scroll DOWN animation (going to PREVIOUS verse) */
-/* Outgoing: 0 → +100% (scrolls down out of view) */
-/* Incoming: -100% → 0 (scrolls down into view) */
+/* Uses --scroll-percent CSS variable to control scroll amount (default 100%) */
 .verse-transition-wrapper.transition-down .verse-content.outgoing {
   animation: slideOutDown 1s ease-in-out forwards;
 }
@@ -1140,11 +1139,11 @@ body {
 
 @keyframes slideOutDown {
   from { transform: translateY(0); }
-  to { transform: translateY(100%); }
+  to { transform: translateY(var(--scroll-percent, 100%)); }
 }
 
 @keyframes slideInFromAbove {
-  from { transform: translateY(-100%); }
+  from { transform: translateY(calc(-1 * var(--scroll-percent, 100%))); }
   to { transform: translateY(0); }
 }
 

@@ -455,6 +455,7 @@ export function PlayingNowView() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
+  const [scrollPercent, setScrollPercent] = useState(100); // Percentage to scroll (100% = full, less = overlap visible)
   const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const adminContainerRef = useRef<HTMLDivElement>(null);
@@ -620,13 +621,52 @@ export function PlayingNowView() {
       
       const goingForward = toIndex > fromIndex;
       
-      // Capture the outgoing content before it changes
+      // Capture the outgoing and incoming content
       const outgoing = getVerseLinesForDisplay(lyrics.lines, verses, fromIndex, linesPerVerse);
+      const incoming = getVerseLinesForDisplay(lyrics.lines, verses, toIndex, linesPerVerse);
       
-      // With the overlap approach, all verses have the same number of lines,
-      // so we always do a full scroll
+      // Calculate overlap: how many lines at the end of outgoing match the start of incoming (forward)
+      // or how many at the start of outgoing match the end of incoming (backward)
+      let overlapCount = 0;
+      const minLen = Math.min(outgoing.length, incoming.length);
+      
+      if (goingForward) {
+        // Forward: check if last N lines of outgoing match first N lines of incoming
+        for (let i = 1; i <= minLen; i++) {
+          let matches = true;
+          for (let j = 0; j < i; j++) {
+            const outLine = outgoing[outgoing.length - i + j];
+            const inLine = incoming[j];
+            if (outLine.text !== inLine.text || outLine.type !== inLine.type) {
+              matches = false;
+              break;
+            }
+          }
+          if (matches) overlapCount = i;
+        }
+      } else {
+        // Backward: check if first N lines of outgoing match last N lines of incoming
+        for (let i = 1; i <= minLen; i++) {
+          let matches = true;
+          for (let j = 0; j < i; j++) {
+            const outLine = outgoing[j];
+            const inLine = incoming[incoming.length - i + j];
+            if (outLine.text !== inLine.text || outLine.type !== inLine.type) {
+              matches = false;
+              break;
+            }
+          }
+          if (matches) overlapCount = i;
+        }
+      }
+      
+      // Calculate scroll percentage: scroll by (N - overlap) / N * 100%
+      // This leaves the overlapping lines visible during transition
+      const lineCount = outgoing.length;
+      const scrollPct = lineCount > 0 ? ((lineCount - overlapCount) / lineCount) * 100 : 100;
+      
       setOutgoingLines(outgoing);
-      
+      setScrollPercent(scrollPct);
       setTransitionDirection(goingForward ? 'up' : 'down');
       setIsTransitioning(true);
       
@@ -913,8 +953,11 @@ export function PlayingNowView() {
                   className="lyrics-container lyrics verse-single"
                 >
                   {isTransitioning ? (
-                    // Full scroll: both verses absolutely positioned, CSS handles animation
-                    <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
+                    // Partial scroll based on overlap: CSS variable controls scroll amount
+                    <div 
+                      className={`verse-transition-wrapper transition-${transitionDirection}`}
+                      style={{ '--scroll-percent': `${scrollPercent}%` } as React.CSSProperties}
+                    >
                       <div className="verse-content outgoing">
                         {outgoingLines.map((line, lineIndex) => (
                           <LineDisplay 
