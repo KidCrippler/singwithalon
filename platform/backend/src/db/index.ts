@@ -20,7 +20,7 @@ export function initDatabase(): Database.Database {
   db = new Database(config.database.path);
   db.pragma('journal_mode = WAL');
 
-  // Run schema
+  // Run schema (schema.sql is copied to dist during build)
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
 
