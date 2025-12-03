@@ -34,8 +34,8 @@ async function main() {
 
   // Register plugins
   await fastify.register(cors, {
-    origin: process.env.NODE_ENV === 'production'
-      ? false
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',')
       : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
     credentials: true,
   });
@@ -64,7 +64,8 @@ async function main() {
       reply.setCookie('singalong_viewer_session', sessionId, {
         path: '/',
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       });
     }
