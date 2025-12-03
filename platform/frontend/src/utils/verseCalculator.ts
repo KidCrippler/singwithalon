@@ -9,12 +9,19 @@ export const DEFAULT_LINES_PER_VERSE = 10;
  * Verse range with line indices
  */
 export interface VerseRange {
-  /** Index of first line in this verse (inclusive) */
+  /** Index of first line in this verse (inclusive) - for display */
   startIndex: number;
-  /** Index of last line in this verse (inclusive) */
+  /** Index of last line in this verse (inclusive) - for display */
   endIndex: number;
   /** Number of lyrics-visible lines in this verse */
   visibleLineCount: number;
+  /** 
+   * Index of first line that "first appears" in this verse (for highlighting).
+   * Lines before this index are overlap from the previous verse.
+   * For verse 0, this equals startIndex.
+   * For other verses, this is the first non-overlap line.
+   */
+  highlightStartIndex: number;
 }
 
 /**
@@ -74,6 +81,7 @@ export function filterForLyricsMode(lines: ParsedLine[], trimLeadingEmpty: boole
  * - Count only lyrics-visible lines (lyric, cue, empty) toward the limit
  * - Chord/directive lines belong to the verse of the lyrics they precede (look-ahead)
  * - Every `linesPerVerse` visible lines constitutes a new verse
+ * - No overlap in chords mode (highlightStartIndex === startIndex)
  * 
  * @param lines - Parsed song lines
  * @param linesPerVerse - Number of lyrics-visible lines per verse (default DEFAULT_LINES_PER_VERSE)
@@ -101,6 +109,7 @@ export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = DEF
           startIndex: currentVerseStart,
           endIndex: i,
           visibleLineCount,
+          highlightStartIndex: currentVerseStart, // No overlap in chords mode
         });
         
         // Start a new verse from the next line
@@ -128,6 +137,7 @@ export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = DEF
         startIndex: currentVerseStart,
         endIndex: lines.length - 1,
         visibleLineCount: remainingVisible,
+        highlightStartIndex: currentVerseStart, // No overlap in chords mode
       });
     }
   }
@@ -136,12 +146,18 @@ export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = DEF
 }
 
 /**
- * Calculate verse ranges for lyrics-only mode.
+ * Calculate verse ranges for lyrics-only mode with content-aware overlap.
  * 
- * Additional rules compared to chords mode:
- * - No consecutive empty lines count toward verses
- * - A verse should never start with an empty line (empty lines at verse boundaries go to previous verse)
- * - If the last verse has fewer than linesPerVerse lines, merge it with the previous verse
+ * Algorithm (overlap approach):
+ * - Each verse (except the first) starts with the last CONTENT line of the previous verse
+ * - If the last content line is followed by empty lines, those are included in the overlap too
+ * - This ensures the overlap is always visually meaningful (not just whitespace)
+ * - The last verse is anchored at the end (shows final N lines)
+ * 
+ * Highlighting rules:
+ * - A line is highlighted only in the verse where it "first appears"
+ * - For verse 0: all lines are highlighted
+ * - For other verses: only lines after the overlap are highlighted
  * 
  * @param lines - Parsed song lines
  * @param linesPerVerse - Number of lyrics-visible lines per verse (default DEFAULT_LINES_PER_VERSE)
@@ -152,96 +168,109 @@ export function calculateVersesForLyricsMode(lines: ParsedLine[], linesPerVerse:
     return [];
   }
 
-  const verses: VerseRange[] = [];
-  let currentVerseStart = 0;
-  let visibleLineCount = 0;
+  // Step 1: Build list of visible line info (after filtering)
+  // Track both the original index and whether it's empty
+  interface VisibleLine {
+    originalIndex: number;
+    isEmpty: boolean;
+  }
+  const visibleLines: VisibleLine[] = [];
   let prevWasEmpty = false;
-  // Track if we've seen any non-empty lyrics line yet (to skip leading empties)
-  let seenNonEmptyLyrics = false;
-
+  let seenNonEmpty = false;
+  
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    if (!isLyricsVisible(line)) {
-      // Chord/directive lines don't count but stay with current verse
-      continue;
-    }
+    if (!isLyricsVisible(line)) continue;
     
-    // Handle empty lines
     if (line.type === 'empty') {
-      if (prevWasEmpty) {
-        // Skip consecutive empty lines - don't count them
-        // If at verse start, advance currentVerseStart so this line isn't in any verse's range
-        if (visibleLineCount === 0) {
-          currentVerseStart = i + 1;
-        }
-        // If mid-verse, this line is in the current verse range but filter will also skip it
-        continue;
-      }
+      if (prevWasEmpty) continue; // Skip consecutive empties
+      if (!seenNonEmpty) continue; // Skip leading empties
       prevWasEmpty = true;
-      
-      // Skip leading empty lines at the start of the song
-      if (!seenNonEmptyLyrics) {
-        currentVerseStart = i + 1;
-        continue;
-      }
-      
-      // A verse should never START with an empty line
-      // If we're at the start of a verse (visibleLineCount == 0), 
-      // add this empty to the previous verse instead
-      if (visibleLineCount === 0 && verses.length > 0) {
-        // Extend previous verse to include this empty line
-        verses[verses.length - 1].endIndex = i;
-        verses[verses.length - 1].visibleLineCount++;
-        currentVerseStart = i + 1;
-        continue;
-      }
-      
-      // Normal case: count this empty line
-      visibleLineCount++;
-      
-      // Check if we've reached the verse limit
-      if (visibleLineCount >= linesPerVerse) {
-        verses.push({
-          startIndex: currentVerseStart,
-          endIndex: i,
-          visibleLineCount,
-        });
-        currentVerseStart = i + 1;
-        visibleLineCount = 0;
-      }
-      continue;
+      visibleLines.push({ originalIndex: i, isEmpty: true });
+    } else {
+      prevWasEmpty = false;
+      seenNonEmpty = true;
+      visibleLines.push({ originalIndex: i, isEmpty: false });
     }
-    
-    // Non-empty lyrics line
-    prevWasEmpty = false;
-    seenNonEmptyLyrics = true;
-    visibleLineCount++;
-    
-    // Check if we've reached the verse limit
-    if (visibleLineCount >= linesPerVerse) {
-      verses.push({
-        startIndex: currentVerseStart,
-        endIndex: i,
-        visibleLineCount,
-      });
-      currentVerseStart = i + 1;
-      visibleLineCount = 0;
-    }
-  }
-
-  // Handle remaining lines (last verse may be incomplete)
-  // visibleLineCount already tracks how many lines we've counted for this verse
-  if (currentVerseStart < lines.length && visibleLineCount > 0) {
-    verses.push({
-      startIndex: currentVerseStart,
-      endIndex: lines.length - 1,
-      visibleLineCount,
-    });
   }
   
-  // NOTE: We do NOT merge undersized last verse. Instead, when displaying,
-  // we pad it with lines from the previous verse (see getVerseLinesForDisplay)
+  const totalVisible = visibleLines.length;
+  
+  // Step 2: Handle trivial cases
+  if (totalVisible === 0) {
+    return [];
+  }
+  
+  if (totalVisible <= linesPerVerse) {
+    // Single verse - no overlap needed
+    return [{
+      startIndex: visibleLines[0].originalIndex,
+      endIndex: visibleLines[totalVisible - 1].originalIndex,
+      visibleLineCount: totalVisible,
+      highlightStartIndex: visibleLines[0].originalIndex,
+    }];
+  }
+  
+  // Step 3: Calculate verse boundaries with content-aware overlap
+  // - First verse starts at 0, shows N lines
+  // - Each subsequent verse starts at previous verse's last CONTENT line
+  // - If last content line is followed by empties, include those in overlap
+  // - Last verse is anchored at the end (shows final N lines)
+  
+  const N = linesPerVerse;
+  const verses: VerseRange[] = [];
+  
+  // Track the highest line index shown so far (for highlight calculation)
+  let maxShownVisibleIndex = -1;
+  
+  let currentVisibleStart = 0;
+  
+  while (currentVisibleStart < totalVisible) {
+    const currentVisibleEnd = currentVisibleStart + N - 1;
+    
+    // Check if this verse would extend past the end
+    if (currentVisibleEnd >= totalVisible - 1) {
+      // This is the last verse - anchor it at the end
+      const anchoredStart = Math.max(0, totalVisible - N);
+      const anchoredEnd = totalVisible - 1;
+      
+      // Highlight starts after what was shown in previous verses
+      const highlightStart = maxShownVisibleIndex + 1;
+      
+      verses.push({
+        startIndex: visibleLines[anchoredStart].originalIndex,
+        endIndex: visibleLines[anchoredEnd].originalIndex,
+        visibleLineCount: anchoredEnd - anchoredStart + 1,
+        highlightStartIndex: visibleLines[Math.max(anchoredStart, highlightStart)].originalIndex,
+      });
+      break;
+    }
+    
+    // Normal verse - full N lines
+    const highlightStart = maxShownVisibleIndex + 1;
+    
+    verses.push({
+      startIndex: visibleLines[currentVisibleStart].originalIndex,
+      endIndex: visibleLines[currentVisibleEnd].originalIndex,
+      visibleLineCount: N,
+      highlightStartIndex: visibleLines[Math.max(currentVisibleStart, highlightStart)].originalIndex,
+    });
+    
+    // Update max shown index
+    maxShownVisibleIndex = currentVisibleEnd;
+    
+    // Find the overlap point for the next verse
+    // We want to start at the last CONTENT (non-empty) line of this verse
+    // This ensures the overlap is always visually meaningful
+    let overlapStart = currentVisibleEnd;
+    while (overlapStart > currentVisibleStart && visibleLines[overlapStart].isEmpty) {
+      overlapStart--;
+    }
+    
+    // Advance to next verse starting from the last content line
+    currentVisibleStart = overlapStart;
+  }
   
   return verses;
 }
@@ -271,56 +300,32 @@ export function getVerseLines(
 }
 
 /**
- * Get lines for displaying a verse in lyrics mode, with padding for undersized last verse.
+ * Get lines for displaying a verse in lyrics mode.
  * 
- * When the last verse has fewer than linesPerVerse visible lines, we prepend lines
- * from the previous verse to fill up to linesPerVerse. This ensures viewers always
- * see a full screen of content, even on the last verse.
+ * With the overlap approach, each verse already includes the overlap lines,
+ * so no additional padding is needed.
  * 
  * @param lines - All parsed song lines
  * @param verses - Array of all verse ranges
  * @param verseIndex - Index of the verse to display
- * @param linesPerVerse - Target number of lines per verse
+ * @param _linesPerVerse - Unused (kept for API compatibility)
  * @returns Array of filtered lines for display
  */
 export function getVerseLinesForDisplay(
   lines: ParsedLine[],
   verses: VerseRange[],
   verseIndex: number,
-  linesPerVerse: number = DEFAULT_LINES_PER_VERSE
+  _linesPerVerse: number = DEFAULT_LINES_PER_VERSE
 ): ParsedLine[] {
   if (verses.length === 0 || verseIndex < 0 || verseIndex >= verses.length) {
     return [];
   }
   
   const verse = verses[verseIndex];
-  const isLastVerse = verseIndex === verses.length - 1;
   
   // Get the verse lines filtered for lyrics mode
-  const verseLines = getVerseLines(lines, verse, true);
-  
-  // If not the last verse, or if it has enough lines, return as-is
-  if (!isLastVerse || verseLines.length >= linesPerVerse) {
-    return verseLines;
-  }
-  
-  // Last verse is undersized - pad with lines from previous verse
-  const linesToAdd = linesPerVerse - verseLines.length;
-  
-  if (verseIndex === 0) {
-    // First (and only) verse - can't pad, just return what we have
-    return verseLines;
-  }
-  
-  // Get lines from the previous verse
-  const prevVerse = verses[verseIndex - 1];
-  const prevVerseLines = getVerseLines(lines, prevVerse, true);
-  
-  // Take the last N lines from the previous verse
-  const paddingLines = prevVerseLines.slice(-linesToAdd);
-  
-  // Prepend padding to current verse
-  return [...paddingLines, ...verseLines];
+  // With overlap, all verses already have the right lines
+  return getVerseLines(lines, verse, true);
 }
 
 /**

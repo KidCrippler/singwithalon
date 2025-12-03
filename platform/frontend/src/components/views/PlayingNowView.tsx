@@ -583,21 +583,15 @@ export function PlayingNowView() {
     return getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse);
   }, [lyrics, verses, currentVerseIndex, linesPerVerse]);
 
-  // State for partial scroll (when transitioning to/from padded last verse)
-  const [isPartialScroll, setIsPartialScroll] = useState(false);
-  const [mergedScrollLines, setMergedScrollLines] = useState<ParsedLine[]>([]);
-  const [scrollPercentage, setScrollPercentage] = useState(0);
-
   // Verse font sizing for viewer single-verse mode
   // During transition: measures incoming verse and animates font size alongside slide
-  // For partial scroll: skip animation (DOM has merged content, not final verse)
   // Pass songId to detect song changes and reset font size
   // Pass isLoading to skip calculations while new lyrics are loading
   useVerseFontSize(
     viewerVerseContainerRef, 
     [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length, lyricsAreValid], 
     isTransitioning, 
-    isPartialScroll,
+    false, // isPartialScroll - no longer needed with overlap approach
     state.currentSongId,
     !lyricsAreValid // Skip font calculations when lyrics don't match current song
   );
@@ -628,55 +622,10 @@ export function PlayingNowView() {
       
       // Capture the outgoing content before it changes
       const outgoing = getVerseLinesForDisplay(lyrics.lines, verses, fromIndex, linesPerVerse);
-      const incoming = getVerseLinesForDisplay(lyrics.lines, verses, toIndex, linesPerVerse);
       
-      // Check if this involves the last verse with padding
-      const lastVerseIndex = verses.length - 1;
-      const lastVerse = verses[lastVerseIndex];
-      const lastVerseIsPadded = lastVerse && lastVerse.visibleLineCount < linesPerVerse;
-      const involvesLastVerse = fromIndex === lastVerseIndex || toIndex === lastVerseIndex;
-      
-      if (involvesLastVerse && lastVerseIsPadded) {
-        // Partial scroll: create merged content
-        const actualLastVerseLines = lastVerse.visibleLineCount;
-        const paddingLines = linesPerVerse - actualLastVerseLines;
-        
-        if (goingForward && toIndex === lastVerseIndex) {
-          // Going TO the last verse
-          // Outgoing: full verse, Incoming: padded (paddingLines from prev + actualLastVerseLines)
-          // Merged: unique_outgoing + common + unique_incoming
-          const uniqueOutgoing = outgoing.slice(0, actualLastVerseLines); // First N lines leave
-          const common = outgoing.slice(actualLastVerseLines); // Last (padding) lines stay
-          const uniqueIncoming = incoming.slice(paddingLines); // New lines enter
-          
-          const merged = [...uniqueOutgoing, ...common, ...uniqueIncoming];
-          setMergedScrollLines(merged);
-          // Scroll from showing first 8 to showing last 8
-          // That's scrolling by actualLastVerseLines out of merged.length
-          setScrollPercentage((actualLastVerseLines / merged.length) * 100);
-          setIsPartialScroll(true);
-        } else if (!goingForward && fromIndex === lastVerseIndex) {
-          // Going FROM the last verse (backward)
-          // Outgoing: padded, Incoming: full verse
-          const uniqueIncoming = incoming.slice(0, actualLastVerseLines); // New lines enter from top
-          const common = incoming.slice(actualLastVerseLines); // These stay
-          const uniqueOutgoing = outgoing.slice(paddingLines); // These leave at bottom
-          
-          const merged = [...uniqueIncoming, ...common, ...uniqueOutgoing];
-          setMergedScrollLines(merged);
-          // Scroll from showing last 8 to showing first 8
-          setScrollPercentage((actualLastVerseLines / merged.length) * 100);
-          setIsPartialScroll(true);
-        } else {
-          // Normal full scroll
-          setOutgoingLines(outgoing);
-          setIsPartialScroll(false);
-        }
-      } else {
-        // Normal full scroll
-        setOutgoingLines(outgoing);
-        setIsPartialScroll(false);
-      }
+      // With the overlap approach, all verses have the same number of lines,
+      // so we always do a full scroll
+      setOutgoingLines(outgoing);
       
       setTransitionDirection(goingForward ? 'up' : 'down');
       setIsTransitioning(true);
@@ -685,8 +634,6 @@ export function PlayingNowView() {
       const timer = setTimeout(() => {
         setIsTransitioning(false);
         setOutgoingLines([]);
-        setMergedScrollLines([]);
-        setIsPartialScroll(false);
       }, 1000);
       
       prevVerseIndexRef.current = state.currentVerseIndex;
@@ -704,10 +651,12 @@ export function PlayingNowView() {
     }
   }, [isAdmin, showPurpleHighlight, verses, setVerse]);
 
-  // Check if a line is in the current verse (for highlighting)
+  // Check if a line should be highlighted in the current verse
+  // Only highlight lines that "first appear" in this verse (not overlap lines)
   const isLineInCurrentVerse = useCallback((lineIndex: number): boolean => {
     if (!currentVerse) return false;
-    return lineIndex >= currentVerse.startIndex && lineIndex <= currentVerse.endIndex;
+    // Use highlightStartIndex to exclude overlap lines from highlighting
+    return lineIndex >= currentVerse.highlightStartIndex && lineIndex <= currentVerse.endIndex;
   }, [currentVerse]);
 
   // No song playing - show splash screen
@@ -964,46 +913,29 @@ export function PlayingNowView() {
                   className="lyrics-container lyrics verse-single"
                 >
                   {isTransitioning ? (
-                    isPartialScroll ? (
-                      // Partial scroll for padded last verse: single merged content that scrolls partially
-                      <div 
-                        className={`verse-partial-scroll partial-${transitionDirection}`}
-                        style={{ '--scroll-percent': `${scrollPercentage}%` } as React.CSSProperties}
-                      >
-                        {mergedScrollLines.map((line, lineIndex) => (
+                    // Full scroll: both verses absolutely positioned, CSS handles animation
+                    <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
+                      <div className="verse-content outgoing">
+                        {outgoingLines.map((line, lineIndex) => (
                           <LineDisplay 
-                            key={`merged-${lineIndex}`}
+                            key={`out-${lineIndex}`}
                             line={line} 
                             showChords={false}
                             lineIndex={lineIndex}
                           />
                         ))}
                       </div>
-                    ) : (
-                      // Full scroll: both verses absolutely positioned, CSS handles animation
-                      <div className={`verse-transition-wrapper transition-${transitionDirection}`}>
-                        <div className="verse-content outgoing">
-                          {outgoingLines.map((line, lineIndex) => (
-                            <LineDisplay 
-                              key={`out-${lineIndex}`}
-                              line={line} 
-                              showChords={false}
-                              lineIndex={lineIndex}
-                            />
-                          ))}
-                        </div>
-                        <div className="verse-content incoming">
-                          {currentVerseLines.map((line, lineIndex) => (
-                            <LineDisplay 
-                              key={`in-${lineIndex}`}
-                              line={line} 
-                              showChords={false}
-                              lineIndex={lineIndex}
-                            />
-                          ))}
-                        </div>
+                      <div className="verse-content incoming">
+                        {currentVerseLines.map((line, lineIndex) => (
+                          <LineDisplay 
+                            key={`in-${lineIndex}`}
+                            line={line} 
+                            showChords={false}
+                            lineIndex={lineIndex}
+                          />
+                        ))}
                       </div>
-                    )
+                    </div>
                   ) : (
                     // Normal display: just current verse
                     currentVerseLines.map((line, lineIndex) => (
