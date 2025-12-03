@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
-import { formatChordLineForDisplay } from '../../services/chordDisplay';
+import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
@@ -306,9 +306,10 @@ export function SongView() {
                 return line.type === 'chords' ? (line.raw || line.text) : line.text;
               };
 
-              const getChordText = () => {
+              const getChordSegments = () => {
                 const chordText = line.raw || line.text;
-                return formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
+                const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
+                return segmentChordLine(transposedAndFormatted);
               };
 
               return (
@@ -318,7 +319,14 @@ export function SongView() {
                   ) : line.type === 'cue' ? (
                     <span className="cue">{line.text}</span>
                   ) : line.type === 'chords' ? (
-                    <span className="chords">{getChordText()}</span>
+                    // Render chord line with inline directives styled separately
+                    getChordSegments().map((segment, i) => (
+                      segment.type === 'directive' ? (
+                        <span key={i} className="directive">{segment.text}</span>
+                      ) : (
+                        <span key={i} className="chords">{segment.text}</span>
+                      )
+                    ))
                   ) : (
                     <span className="lyric">{getText()}</span>
                   )}

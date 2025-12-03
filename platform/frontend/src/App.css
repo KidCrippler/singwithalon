@@ -735,7 +735,8 @@ body {
 }
 
 /* {} Directives - Green, shown in chords mode only */
-.line-directive .directive {
+.line-directive .directive,
+.line-chords .directive {
   color: var(--directive-color);
   font-weight: 600;
   font-style: normal;

@@ -314,6 +314,9 @@ const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
 // Valid: --->, -->, <---, <--
 const ARROW_REGEX = /^(-{2,3}>|<-{2,3})$/;
 
+// Matches inline directives like {אקפלה} or {Brass Solo} within chord lines
+const INLINE_DIRECTIVE_REGEX = /^\{[^}]+\}$/;
+
 /**
  * Check if a token is a valid chord token.
  * Exported for testing purposes.
@@ -330,6 +333,8 @@ export function isValidChordToken(token: string): boolean {
   if (token === 'x' || /^\d+$/.test(token)) return true;
   // Handle parenthesized tokens (opening or closing parens in chord progressions)
   if (token.startsWith('(') || token.endsWith(')')) return true;
+  // Handle inline directives like {אקפלה} or {Intro}
+  if (INLINE_DIRECTIVE_REGEX.test(token)) return true;
   // Test against bracketed chord regex (e.g., [Em], [Am7])
   if (BRACKETED_CHORD_REGEX.test(token)) return true;
   // Test against bass-only notation (e.g., /F, /Bb, /A)
@@ -386,6 +391,11 @@ function flipArrow(arrow: string): string {
  * Step 2 (reverse tokens): "G  ---> Am"
  * Step 3 (flip arrows): "G  <--- Am"
  * 
+ * Example with directive: "Am       {אקפלה}"
+ * Step 1 (reverse all): "}הלפקא{       mA"
+ * Step 2 (reverse tokens): "{אקפלה}       Am"
+ * (Directive content is reversed so it displays correctly with bidi-override LTR)
+ * 
  * Exported for testing purposes.
  */
 export function reverseChordLineForRtl(line: string): string {
@@ -394,6 +404,21 @@ export function reverseChordLineForRtl(line: string): string {
   
   // Step 2: For each token, reverse it and fix bracket positions
   return reversed.replace(/\S+/g, (token) => {
+    // Special handling for {} directives
+    // After line reversal, {אקפלה} becomes }הלפקא{ and {Intro} becomes }ortnI{
+    if (token.startsWith('}') && token.endsWith('{')) {
+      const content = token.slice(1, -1);
+      // Check if content contains Hebrew characters
+      const hasHebrew = /[\u0590-\u05FF]/.test(content);
+      if (hasHebrew) {
+        // Hebrew content: keep reversed (for proper display with bidi-override)
+        return '{' + content + '}';
+      } else {
+        // English/other content: reverse back to original
+        return '{' + content.split('').reverse().join('') + '}';
+      }
+    }
+    
     // Reverse the token to restore chord names
     let result = token.split('').reverse().join('');
     
@@ -403,6 +428,7 @@ export function reverseChordLineForRtl(line: string): string {
     }
     
     // Check if brackets are balanced (at both ends) - if so, leave alone
+    // This includes () parens and [] chords like [Am7]
     const startsWithOpen = result.startsWith('(') || result.startsWith('[');
     const endsWithClose = result.endsWith(')') || result.endsWith(']');
     

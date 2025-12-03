@@ -108,6 +108,13 @@ const testCases: TestCase[] = [
   { input: 'Bb)', expected: true, description: 'Closing paren chord' },
   { input: '(Em)', expected: true, description: 'Fully parenthesized chord' },
   
+  // === Inline Directives (allowed in chord lines) ===
+  { input: '{אקפלה}', expected: true, description: 'Hebrew inline directive' },
+  { input: '{Intro}', expected: true, description: 'English inline directive' },
+  { input: '{Brass Solo}', expected: true, description: 'Multi-word inline directive' },
+  { input: '{Guitar}', expected: true, description: 'Instrument directive' },
+  { input: '{}', expected: false, description: 'Empty braces (not valid)' },
+  
   // === Invalid Tokens ===
   { input: 'Hello', expected: false, description: 'Regular word' },
   { input: 'X', expected: false, description: 'Invalid note (X)' },
@@ -197,6 +204,22 @@ const reversalTestCases: ReversalTestCase[] = [
     input: '                      Am  --->',
     expected: '<---  Am                      ',
     description: 'Arrow at end with leading spaces',
+  },
+  // Inline directives - content is reversed like everything else (for bidi-override display)
+  {
+    input: 'Am       {אקפלה}',
+    expected: '{הלפקא}       Am',
+    description: 'Chord with Hebrew directive - content reversed for LTR display',
+  },
+  {
+    input: '       Am       {אקפלה}',
+    expected: '{הלפקא}       Am       ',
+    description: 'Chord with Hebrew directive and leading spaces',
+  },
+  {
+    input: 'G   {Intro}   Am',
+    expected: 'Am   {Intro}   G',
+    description: 'English directive between chords - content preserved',
   },
 ];
 

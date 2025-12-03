@@ -383,8 +383,10 @@ D         C#7     F#m  A7
   - Bass-only notation: `/F`, `/Bb`, `/A` (valid), but NOT `/C7`, `/Fm7`, `/F#o7` (invalid - qualities not allowed)
   - Repeat markers: `x` followed by digit (e.g., `x 2`, `x 3`)
   - Parenthesized progressions: `(Cm Ab Eb Bb) x 2`
+  - **Inline directives:** `{...}` (e.g., `{אקפלה}`, `{Intro}`) - band instructions within chord lines
 - Edge cases like single-letter tokens: `A` alone is a valid chord
 - Example of valid chord line: `Am   Dm - E - [Am]   [/A]   [] Am!`
+- Example with inline directive: `       Am       {אקפלה}` (chord + directive on same line)
 - **Unit tests:** See `backend/src/tests/chord-validation.test.ts` for comprehensive test suite
 - Nice-to-have: Override mechanism for edge cases
 
@@ -395,6 +397,8 @@ D         C#7     F#m  A7
 | `[...]` | Crowd cue (non-chord text) | Red | Red |
 | `--->`, `-->`, `<---`, `<--` | Chord continuation arrows | Blue (treat as chord) | Hidden |
 | `(...)` | Inline notation | Keep as-is | Keep as-is |
+
+**Note on `{...}` directives:** Directives can appear as standalone lines OR inline within chord lines. When inline (e.g., `Am {אקפלה}`), the directive is styled green while surrounding chords are styled blue. In lyrics mode, the entire chord line (including inline directives) is hidden.
 
 **Note on arrows:** Continuation arrows can point either direction (left `<` or right `>`) and use either 2 or 3 hyphens. Use left-pointing arrows (`<---`, `<--`) for Hebrew/RTL songs and right-pointing arrows (`--->`, `-->`) for English/LTR songs. During RTL reversal, arrow directions are automatically flipped.
 
@@ -411,11 +415,14 @@ D         C#7     F#m  A7
   3. For each token, reverse it back to restore chord names
   4. For tokens with unbalanced brackets, move bracket to opposite side and swap type
   5. For arrow tokens, flip their direction (`--->` becomes `<---`, etc.)
+  6. For `{...}` directive tokens: Hebrew content stays reversed, English content is restored
   - Example: `"   C  G Am  D  Em    Em"` → `"Em    Em  D  Am G  C   "`
   - Example with parens: `"(Cm   Ab   Eb   Bb) x 2"` → `"2 x (Bb   Eb   Ab   Cm)"`
   - Example with mixed brackets: `"(Dm   Am   [E]   Am) x 3"` → `"3 x (Am   [E]   Am   Dm)"`
   - Example with bass-only: `"/E /E /A [/A]"` → `"[/A] /A /E /E"`
   - Example with arrows: `"Am --->  G"` → `"G  <--- Am"`
+  - Example with Hebrew directive: `"Am       {אקפלה}"` → `"{הלפקא}       Am"` (Hebrew content reversed for bidi-override)
+  - Example with English directive: `"G   {Intro}   Am"` → `"Am   {Intro}   G"` (English content preserved)
 - **CSS for RTL chord lines:** Reversed chord lines are displayed with `direction: ltr` (to preserve spacing) and `text-align: right` (to align with RTL lyrics)
 
 **5. Spacing Preservation:**
