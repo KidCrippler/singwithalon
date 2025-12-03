@@ -570,6 +570,16 @@ body {
   line-height: 1.35;
 }
 
+/* Smooth font size transition for verse mode - syncs with slide animation (both 1s) */
+.lyrics-container.verse-single {
+  transition: font-size 1s ease-in-out;
+}
+
+/* Disable font transition during measurement to avoid flickering */
+.lyrics-container.verse-single.measuring {
+  transition: none;
+}
+
 /* CHORDS MODE: Use Cousine monospace - has true Hebrew monospace support */
 .lyrics-container.chords {
   font-family: 'Cousine', 'Courier New', Courier, monospace;

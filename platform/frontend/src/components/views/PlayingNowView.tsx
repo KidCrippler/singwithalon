@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useAuth } from '../../context/AuthContext';
 import { songsApi } from '../../services/api';
@@ -103,56 +103,115 @@ function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>
 }
 
 // Hook for verse-mode font sizing - single column, maximize for readability
-// skipWhenTransitioning: when true, skip font calculation (to prevent measuring during animation)
+// isTransitioning: when true, measure incoming verse content and animate font size change
+// isPartialScroll: when true, skip animation (DOM content during partial scroll is merged, not final)
+// songId: used to detect song changes and reset font size
+// isLoading: when true, skip font calculations (content is stale)
 function useVerseFontSize(
   containerRef: React.RefObject<HTMLDivElement | null>, 
   deps: unknown[],
-  skipCalculation: boolean = false
+  isTransitioning: boolean = false,
+  isPartialScroll: boolean = false,
+  songId: number | null = null,
+  isLoading: boolean = false
 ) {
-  const calculateFontSize = useCallback((): boolean => {
-    const container = containerRef.current;
-    if (!container) return false;
+  // Track current font size to enable smooth transitions
+  const currentFontSizeRef = useRef<number>(40);
+  const prevTransitioningRef = useRef(isTransitioning);
+  const prevSongIdRef = useRef(songId);
+  // Hidden measurement container - created once and reused
+  const measureContainerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Reset font size when song changes
+  useEffect(() => {
+    if (songId !== prevSongIdRef.current) {
+      // Song changed - reset to default size immediately
+      const container = containerRef.current;
+      if (container) {
+        container.classList.add('measuring'); // Disable transition
+        container.style.setProperty('--dynamic-font-size', '40px');
+        container.classList.remove('measuring');
+      }
+      currentFontSizeRef.current = 40;
+      prevSongIdRef.current = songId;
+    }
+  }, [songId, containerRef]);
+  
+  // Get or create hidden measurement container
+  const getMeasureContainer = useCallback((container: HTMLDivElement): HTMLDivElement => {
+    const containerStyle = getComputedStyle(container);
+    
+    if (!measureContainerRef.current) {
+      const measureDiv = document.createElement('div');
+      document.body.appendChild(measureDiv);
+      measureContainerRef.current = measureDiv;
+    }
+    
+    const measureDiv = measureContainerRef.current;
+    // Copy all relevant styles from the real container
+    measureDiv.className = container.className + ' measuring';
+    measureDiv.style.cssText = `
+      position: absolute;
+      visibility: hidden;
+      pointer-events: none;
+      left: -9999px;
+      top: 0;
+      width: ${container.clientWidth}px;
+      height: ${container.clientHeight}px;
+      overflow: auto;
+      font-family: ${containerStyle.fontFamily};
+      padding: ${containerStyle.padding};
+      line-height: ${containerStyle.lineHeight};
+      column-count: 1;
+    `;
+    
+    // Add a style element for line-specific styles
+    let styleEl = measureDiv.querySelector('style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      measureDiv.appendChild(styleEl);
+    }
+    // Lines must not wrap for horizontal overflow detection
+    styleEl.textContent = `.line { white-space: nowrap; }`;
+    
+    return measureDiv;
+  }, []);
+
+  // Cleanup measurement container on unmount
+  useEffect(() => {
+    return () => {
+      if (measureContainerRef.current) {
+        document.body.removeChild(measureContainerRef.current);
+        measureContainerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Calculate optimal font size using hidden measurement container
+  const calculateOptimalSize = useCallback((content: Element, container: HTMLDivElement): number => {
+    const measureContainer = getMeasureContainer(container);
+    
+    // Copy content to measurement container (preserve the style element we added)
+    const styleEl = measureContainer.querySelector('style');
+    measureContainer.innerHTML = content.innerHTML;
+    if (styleEl) measureContainer.appendChild(styleEl);
     
     const availableHeight = container.clientHeight;
     const availableWidth = container.clientWidth;
-    if (availableHeight === 0 || availableWidth === 0) return false;
-    
-    // Check if there's actual content to measure - look for text spans
-    const textSpans = container.querySelectorAll('.lyric, .cue');
-    if (textSpans.length === 0) return false; // No content yet, need retry
-    
-    // Single column for verse mode
-    container.style.columnCount = '1';
-    
-    // Calculate available width for text (account for padding)
-    const containerStyle = getComputedStyle(container);
-    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
-    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-    const maxTextWidth = availableWidth - paddingLeft - paddingRight;
     
     // Binary search for optimal font size
-    let min = 12;
-    let max = 80; // Larger max for verse mode
-    let optimalSize = 12;
+    let min = 16;
+    let max = 80;
+    let optimalSize = 40; // Start with reasonable default
     
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
-      container.style.setProperty('--dynamic-font-size', `${mid}px`);
-      void container.offsetHeight; // Force reflow
+      measureContainer.style.setProperty('--dynamic-font-size', `${mid}px`);
+      void measureContainer.offsetHeight; // Force reflow
       
-      // Check vertical fit
-      const fitsVertically = container.scrollHeight <= availableHeight + 5;
-      
-      // Check horizontal fit - measure actual text span widths
-      let fitsHorizontally = true;
-      for (const span of textSpans) {
-        // Use getBoundingClientRect for accurate text width measurement
-        const spanWidth = span.getBoundingClientRect().width;
-        if (spanWidth > maxTextWidth) {
-          fitsHorizontally = false;
-          break;
-        }
-      }
+      // With overflow: auto, scrollWidth/scrollHeight accurately reflect content size
+      const fitsVertically = measureContainer.scrollHeight <= availableHeight + 2;
+      const fitsHorizontally = measureContainer.scrollWidth <= availableWidth + 2;
       
       if (fitsVertically && fitsHorizontally) {
         optimalSize = mid;
@@ -162,54 +221,102 @@ function useVerseFontSize(
       }
     }
     
-    container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
-    return true; // Success
-  }, [containerRef]);
-  
-  // Track previous skip state to detect transition end
-  const prevSkipRef = useRef(skipCalculation);
-  
-  useEffect(() => {
-    // Skip calculation during transitions to prevent measuring both verses
-    if (skipCalculation) {
-      prevSkipRef.current = true;
-      return;
+    // Ensure we never return a tiny font (minimum 20px for readability)
+    return Math.max(optimalSize, 20);
+  }, [getMeasureContainer]);
+
+  const calculateFontSize = useCallback((measureIncoming: boolean = false): boolean => {
+    const container = containerRef.current;
+    if (!container) return false;
+    
+    // Require minimum dimensions for accurate measurement
+    if (container.clientHeight < 100 || container.clientWidth < 100) return false;
+    
+    container.style.columnCount = '1';
+    
+    // Determine what content to measure
+    let contentToMeasure: Element | null = null;
+    if (measureIncoming) {
+      contentToMeasure = container.querySelector('.verse-content.incoming');
+    }
+    if (!contentToMeasure) {
+      contentToMeasure = container;
     }
     
+    // Check if there's content to measure - look for .line elements
+    const lineElements = contentToMeasure.querySelectorAll('.line');
+    if (lineElements.length === 0) return false; // No content yet
+    
+    // Also verify there's actual text content
+    const textSpans = contentToMeasure.querySelectorAll('.lyric, .cue');
+    if (textSpans.length === 0) return false;
+    
+    // Calculate optimal size using hidden container (doesn't affect visible display)
+    const optimalSize = calculateOptimalSize(contentToMeasure, container);
+    
+    // If this is for a transition, animate from current to optimal
+    if (measureIncoming && optimalSize !== currentFontSizeRef.current) {
+      // Set the target size - CSS transition will animate from current to target
+      container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
+      currentFontSizeRef.current = optimalSize;
+    } else if (!measureIncoming) {
+      // Direct set (no animation needed)
+      container.classList.add('measuring'); // Disable transition
+      container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
+      container.classList.remove('measuring');
+      currentFontSizeRef.current = optimalSize;
+    }
+    
+    return true;
+  }, [containerRef, calculateOptimalSize]);
+  
+  useEffect(() => {
+    // Skip all calculations while loading - content is stale/changing
+    if (isLoading) return;
+    
+    const wasTransitioning = prevTransitioningRef.current;
+    prevTransitioningRef.current = isTransitioning;
+    
     let retryCount = 0;
-    const maxRetries = 10;
+    const maxRetries = 15; // More retries for initial load
     let timeoutIds: ReturnType<typeof setTimeout>[] = [];
     
-    const attemptCalculation = () => {
-      const success = calculateFontSize();
+    const attemptCalculation = (measureIncoming: boolean) => {
+      const success = calculateFontSize(measureIncoming);
       if (!success && retryCount < maxRetries) {
         retryCount++;
-        const id = setTimeout(attemptCalculation, 30 + 30 * retryCount);
+        // Exponential backoff: 50ms, 100ms, 150ms, 200ms...
+        const delay = 50 * retryCount;
+        const id = setTimeout(() => attemptCalculation(measureIncoming), delay);
         timeoutIds.push(id);
       }
     };
     
-    // Detect if this is a transition ending (fast) vs new content loading (needs more time)
-    const wasTransitioning = prevSkipRef.current;
-    prevSkipRef.current = false;
-    
-    if (wasTransitioning) {
-      // Transition just ended - content is ready, calculate immediately
+    if (isTransitioning && !wasTransitioning) {
+      // Transition just STARTED
+      // Skip animated font change for partial scroll (DOM content is merged, not representative of final verse)
+      if (!isPartialScroll) {
+        const id = setTimeout(() => {
+          calculateFontSize(true);
+        }, 50);
+        timeoutIds.push(id);
+      }
+    } else if (!isTransitioning && wasTransitioning) {
+      // Transition just ENDED - ensure final size is accurate
       requestAnimationFrame(() => {
-        calculateFontSize();
+        calculateFontSize(false);
       });
-    } else {
-      // New content loading (song change, mode change) - needs time for DOM to settle
-      const initialId = setTimeout(attemptCalculation, 100);
+    } else if (!isTransitioning) {
+      // Normal state - initial load or content change
+      // attemptCalculation has built-in retry with exponential backoff
+      const initialId = setTimeout(() => attemptCalculation(false), 50);
       timeoutIds.push(initialId);
-      
-      // Fallback for edge cases
-      const secondId = setTimeout(calculateFontSize, 350);
-      timeoutIds.push(secondId);
     }
     
     const handleResize = () => {
-      requestAnimationFrame(() => calculateFontSize());
+      if (!isTransitioning && !isLoading) {
+        requestAnimationFrame(() => calculateFontSize(false));
+      }
     };
     
     window.addEventListener('resize', handleResize);
@@ -217,7 +324,7 @@ function useVerseFontSize(
       timeoutIds.forEach(id => clearTimeout(id));
       window.removeEventListener('resize', handleResize);
     };
-  }, [calculateFontSize, skipCalculation, ...deps]);
+  }, [calculateFontSize, isTransitioning, isPartialScroll, isLoading, ...deps]);
 }
 
 // Line with its original index for proper verse highlighting
@@ -334,6 +441,7 @@ export function PlayingNowView() {
   } = usePlayingNow();
   const { isAdmin } = useAuth();
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
+  const [lyricsSongId, setLyricsSongId] = useState<number | null>(null); // Track which song the lyrics belong to
   const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
@@ -365,20 +473,45 @@ export function PlayingNowView() {
     };
   }, []);
 
+  // Track previous song ID to detect song changes synchronously (before effects run)
+  const prevSongIdForLyricsRef = useRef(state.currentSongId);
+  
+  // Clear lyrics synchronously when song changes (before render)
+  // This prevents any flash of old content
+  if (state.currentSongId !== prevSongIdForLyricsRef.current) {
+    prevSongIdForLyricsRef.current = state.currentSongId;
+    // These will be applied in the current render cycle
+    if (lyrics !== null) {
+      setLyrics(null);
+      setLyricsSongId(null);
+    }
+  }
+  
   // Fetch lyrics when song changes
   useEffect(() => {
     if (state.currentSongId) {
       setIsLoading(true);
-      songsApi.getLyrics(state.currentSongId)
-        .then(setLyrics)
+      const songId = state.currentSongId; // Capture for closure
+      songsApi.getLyrics(songId)
+        .then((loadedLyrics) => {
+          // Only set if this is still the current song (prevents race conditions)
+          if (songId === prevSongIdForLyricsRef.current) {
+            setLyrics(loadedLyrics);
+            setLyricsSongId(songId);
+          }
+        })
         .catch(console.error)
         .finally(() => setIsLoading(false));
       // Pick a new random background for the new song (avoid repeating the current one)
       setCurrentBackground(prev => getRandomBackground(prev));
     } else {
       setLyrics(null);
+      setLyricsSongId(null);
     }
   }, [state.currentSongId]);
+  
+  // Check if lyrics are valid for current song
+  const lyricsAreValid = lyrics !== null && lyricsSongId === state.currentSongId;
 
   // Calculate verses
   // Use lyrics-mode verse calculation when displayMode is 'lyrics' for consistent behavior
@@ -436,19 +569,29 @@ export function PlayingNowView() {
     return getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse);
   }, [lyrics, verses, currentVerseIndex, linesPerVerse]);
 
-  // Verse font sizing for viewer single-verse mode
-  // Skip calculation during transition to prevent measuring both outgoing and incoming verses
-  // Include currentSongId and currentVerseLines.length to trigger recalc when song or content changes
-  useVerseFontSize(viewerVerseContainerRef, [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length], isTransitioning);
-
   // State for partial scroll (when transitioning to/from padded last verse)
   const [isPartialScroll, setIsPartialScroll] = useState(false);
   const [mergedScrollLines, setMergedScrollLines] = useState<ParsedLine[]>([]);
   const [scrollPercentage, setScrollPercentage] = useState(0);
 
+  // Verse font sizing for viewer single-verse mode
+  // During transition: measures incoming verse and animates font size alongside slide
+  // For partial scroll: skip animation (DOM has merged content, not final verse)
+  // Pass songId to detect song changes and reset font size
+  // Pass isLoading to skip calculations while new lyrics are loading
+  useVerseFontSize(
+    viewerVerseContainerRef, 
+    [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length, lyricsAreValid], 
+    isTransitioning, 
+    isPartialScroll,
+    state.currentSongId,
+    !lyricsAreValid // Skip font calculations when lyrics don't match current song
+  );
+
   // Handle verse transition animation
+  // useLayoutEffect ensures isTransitioning is set BEFORE useVerseFontSize runs
   const prevVerseIndexRef = useRef(state.currentVerseIndex);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (prevVerseIndexRef.current !== state.currentVerseIndex && lyrics && verses.length > 0) {
       const fromIndex = prevVerseIndexRef.current;
       const toIndex = state.currentVerseIndex;
@@ -553,7 +696,7 @@ export function PlayingNowView() {
     );
   }
 
-  if (isLoading || !lyrics) {
+  if (isLoading || !lyricsAreValid) {
     return (
       <div className="loading-container">
         <div className="loading-spinner" />
@@ -562,7 +705,8 @@ export function PlayingNowView() {
     );
   }
 
-  const isRtl = lyrics.metadata.direction === 'rtl';
+  // At this point, lyrics is guaranteed to be valid and match the current song
+  const isRtl = lyrics!.metadata.direction === 'rtl';
   const isAtFirstVerse = currentVerseIndex === 0;
   const isAtLastVerse = currentVerseIndex >= verses.length - 1;
 
@@ -752,10 +896,10 @@ export function PlayingNowView() {
               style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
             >
               {/* Song metadata header - only visible in fullscreen */}
-              {isFullscreen && lyrics && (
+              {isFullscreen && (
                 <div className={`fullscreen-song-header ${isRtl ? 'rtl' : 'ltr'}`}>
-                  <h1 className="fullscreen-title">{lyrics.metadata.title}</h1>
-                  <div className="fullscreen-artist">{lyrics.metadata.artist}</div>
+                  <h1 className="fullscreen-title">{lyrics!.metadata.title}</h1>
+                  <div className="fullscreen-artist">{lyrics!.metadata.artist}</div>
                   {state.song && (state.song.composers?.length || state.song.lyricists?.length || state.song.translators?.length) && (
                     <div className="fullscreen-credits">{formatCredits(state.song, isRtl)}</div>
                   )}
