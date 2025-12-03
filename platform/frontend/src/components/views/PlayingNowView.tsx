@@ -431,6 +431,7 @@ export function PlayingNowView() {
     effectiveKeyOffset,
     setViewerKeyOverride,
     isKeyOutOfSync,
+    setMaxVerseIndex,
     nextVerse, 
     prevVerse, 
     setVerse,
@@ -528,6 +529,11 @@ export function PlayingNowView() {
     return calculateVerses(lyrics.lines, linesPerVerse);
   }, [lyrics, linesPerVerse, state.displayMode]);
 
+  // Update context with max verse index for bounds checking in keyboard shortcuts
+  useEffect(() => {
+    setMaxVerseIndex(Math.max(0, verses.length - 1));
+  }, [verses.length, setMaxVerseIndex]);
+
   // Get current verse (clamped to valid range)
   const currentVerseIndex = Math.min(state.currentVerseIndex, Math.max(0, verses.length - 1));
   const currentVerse = verses[currentVerseIndex];
@@ -595,6 +601,21 @@ export function PlayingNowView() {
     if (prevVerseIndexRef.current !== state.currentVerseIndex && lyrics && verses.length > 0) {
       const fromIndex = prevVerseIndexRef.current;
       const toIndex = state.currentVerseIndex;
+      
+      // Check if both indices are valid - don't animate if out of bounds
+      const maxVerseIndex = verses.length - 1;
+      if (fromIndex < 0 || fromIndex > maxVerseIndex || toIndex < 0 || toIndex > maxVerseIndex) {
+        // Invalid index - just update ref, don't animate
+        prevVerseIndexRef.current = state.currentVerseIndex;
+        return;
+      }
+      
+      // Don't animate if source and destination are the same (clamped to same value)
+      if (fromIndex === toIndex) {
+        prevVerseIndexRef.current = state.currentVerseIndex;
+        return;
+      }
+      
       const goingForward = toIndex > fromIndex;
       
       // Capture the outgoing content before it changes

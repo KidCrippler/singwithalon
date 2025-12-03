@@ -27,6 +27,10 @@ interface PlayingNowContextValue {
   // Is viewer out of sync with admin's key?
   isKeyOutOfSync: boolean;
   
+  // Verse bounds tracking (set by PlayingNowView when it calculates verses)
+  maxVerseIndex: number;
+  setMaxVerseIndex: (max: number) => void;
+  
   // Actions
   setSong: (songId: number) => void;
   clearSong: () => void;
@@ -66,6 +70,10 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   
   // Viewer's local override for key offset (null = use admin preference)
   const [viewerKeyOverride, setViewerKeyOverride] = useState<number | null>(null);
+  
+  // Verse bounds tracking (set by PlayingNowView when it calculates verses)
+  const [maxVerseIndex, setMaxVerseIndex] = useState(0);
+  
   const { socket } = useSocket();
 
   // Computed effective values: when locked, use viewer's settings; otherwise use admin's
@@ -209,8 +217,12 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const nextVerse = useCallback(() => {
+    // Don't call API if we're already at or beyond the max verse
+    if (state.currentVerseIndex >= maxVerseIndex) {
+      return;
+    }
     stateApi.nextVerse().catch(console.error);
-  }, []);
+  }, [state.currentVerseIndex, maxVerseIndex]);
 
   const prevVerse = useCallback(() => {
     stateApi.prevVerse().catch(console.error);
@@ -257,6 +269,8 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       setViewerKeyOverride,
       effectiveKeyOffset,
       isKeyOutOfSync,
+      maxVerseIndex,
+      setMaxVerseIndex,
       setSong,
       clearSong,
       nextVerse,
