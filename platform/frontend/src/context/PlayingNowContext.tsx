@@ -221,12 +221,27 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     if (state.currentVerseIndex >= maxVerseIndex) {
       return;
     }
+    // Optimistic update - update UI immediately for responsiveness
+    setState(prev => ({
+      ...prev,
+      currentVerseIndex: prev.currentVerseIndex + 1,
+    }));
+    // Then sync with server (which broadcasts to other clients)
     stateApi.nextVerse().catch(console.error);
   }, [state.currentVerseIndex, maxVerseIndex]);
 
   const prevVerse = useCallback(() => {
+    if (state.currentVerseIndex <= 0) {
+      return;
+    }
+    // Optimistic update - update UI immediately for responsiveness
+    setState(prev => ({
+      ...prev,
+      currentVerseIndex: Math.max(0, prev.currentVerseIndex - 1),
+    }));
+    // Then sync with server (which broadcasts to other clients)
     stateApi.prevVerse().catch(console.error);
-  }, []);
+  }, [state.currentVerseIndex]);
 
   const setVerse = useCallback((verseIndex: number) => {
     stateApi.setVerse(verseIndex).catch(console.error);
@@ -246,10 +261,14 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   }, [state.currentKeyOffset]);
 
   const setDisplayMode = useCallback((displayMode: 'lyrics' | 'chords') => {
+    // Optimistic update
+    setState(prev => ({ ...prev, displayMode }));
     stateApi.setMode(displayMode).catch(console.error);
   }, []);
 
   const toggleVersesEnabled = useCallback(() => {
+    // Optimistic update
+    setState(prev => ({ ...prev, versesEnabled: !prev.versesEnabled }));
     stateApi.toggleVerses().catch(console.error);
   }, []);
 
