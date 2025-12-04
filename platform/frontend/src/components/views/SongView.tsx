@@ -8,6 +8,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
+import { getRandomBackground } from '../../utils/backgrounds';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -148,10 +149,11 @@ export function SongView() {
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('chords');
+  const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('lyrics'); // Default to lyrics for viewers
   const [keyOffset, setKeyOffset] = useState(0);
   const [requesterName, setRequesterName] = useState('');
   const [showQueueForm, setShowQueueForm] = useState(false);
+  const [currentBackground] = useState(() => getRandomBackground());
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -294,51 +296,81 @@ export function SongView() {
       </div>
 
       {/* Fullscreen lyrics - NO SCROLLING */}
-      <div 
-        ref={lyricsContainerRef}
-        className={`lyrics-container ${displayMode}`}
-      >
-        {sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="lyrics-section">
-            {section.map((line, lineIndex) => {
-              const getText = () => {
-                if (displayMode === 'lyrics') {
-                  // In lyrics mode: trim and collapse consecutive spaces to single space
-                  return line.text.trim().replace(/ {2,}/g, ' ');
-                }
-                return line.type === 'chords' ? (line.raw || line.text) : line.text;
-              };
+      {/* In lyrics mode, wrap with background container for pastoral styling */}
+      {displayMode === 'lyrics' ? (
+        <div 
+          className="song-view-lyrics-wrapper"
+          style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
+        >
+          <div 
+            ref={lyricsContainerRef}
+            className="lyrics-container lyrics"
+          >
+            {sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="lyrics-section">
+                {section.map((line, lineIndex) => {
+                  const getText = () => {
+                    // In lyrics mode: trim and collapse consecutive spaces to single space
+                    return line.text.trim().replace(/ {2,}/g, ' ');
+                  };
 
-              const getChordSegments = () => {
-                const chordText = line.raw || line.text;
-                const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
-                return segmentChordLine(transposedAndFormatted);
-              };
-
-              return (
-                <div key={lineIndex} className={`line line-${line.type}`}>
-                  {line.type === 'directive' ? (
-                    <span className="directive">{line.text}</span>
-                  ) : line.type === 'cue' ? (
-                    <span className="cue">{line.text}</span>
-                  ) : line.type === 'chords' ? (
-                    // Render chord line with inline directives styled separately
-                    getChordSegments().map((segment, i) => (
-                      segment.type === 'directive' ? (
-                        <span key={i} className="directive">{segment.text}</span>
+                  return (
+                    <div key={lineIndex} className={`line line-${line.type}`}>
+                      {line.type === 'cue' ? (
+                        <span className="cue">{line.text}</span>
                       ) : (
-                        <span key={i} className="chords">{segment.text}</span>
-                      )
-                    ))
-                  ) : (
-                    <span className="lyric">{getText()}</span>
-                  )}
-                </div>
-              );
-            })}
+                        <span className="lyric">{getText()}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div 
+          ref={lyricsContainerRef}
+          className="lyrics-container chords"
+        >
+          {sections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="lyrics-section">
+              {section.map((line, lineIndex) => {
+                const getText = () => {
+                  return line.type === 'chords' ? (line.raw || line.text) : line.text;
+                };
+
+                const getChordSegments = () => {
+                  const chordText = line.raw || line.text;
+                  const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
+                  return segmentChordLine(transposedAndFormatted);
+                };
+
+                return (
+                  <div key={lineIndex} className={`line line-${line.type}`}>
+                    {line.type === 'directive' ? (
+                      <span className="directive">{line.text}</span>
+                    ) : line.type === 'cue' ? (
+                      <span className="cue">{line.text}</span>
+                    ) : line.type === 'chords' ? (
+                      // Render chord line with inline directives styled separately
+                      getChordSegments().map((segment, i) => (
+                        segment.type === 'directive' ? (
+                          <span key={i} className="directive">{segment.text}</span>
+                        ) : (
+                          <span key={i} className="chords">{segment.text}</span>
+                        )
+                      ))
+                    ) : (
+                      <span className="lyric">{getText()}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
