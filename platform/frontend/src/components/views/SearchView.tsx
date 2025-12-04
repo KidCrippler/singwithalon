@@ -1,18 +1,17 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { songsApi, queueApi } from '../../services/api';
+import { queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
-import type { Song } from '../../types';
+import { useSongs } from '../../context/SongsContext';
 
 export function SearchView() {
-  const [songs, setSongs] = useState<Song[]>([]);
+  const { songs, isLoading, error, reloadSongs } = useSongs();
   const { searchTerm, setSearchTerm } = useSearch();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [addingToQueue, setAddingToQueue] = useState<number | null>(null);
   const [requesterName, setRequesterName] = useState('');
+  const [isReloading, setIsReloading] = useState(false);
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { setSong, state } = usePlayingNow();
@@ -31,13 +30,6 @@ export function SearchView() {
     }
     return '';
   }, [state.currentSongId, state.pendingSongIds, state.playedSongIds]);
-
-  useEffect(() => {
-    songsApi.list()
-      .then(setSongs)
-      .catch(err => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, []);
 
   // Check if a string starts with a Hebrew character
   const startsWithHebrew = (str: string): boolean => {
@@ -100,15 +92,13 @@ export function SearchView() {
   };
 
   const handleReloadSongs = async () => {
-    setIsLoading(true);
+    setIsReloading(true);
     try {
-      await songsApi.reload();
-      const newSongs = await songsApi.list();
-      setSongs(newSongs);
+      await reloadSongs();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reload songs');
+      alert(err instanceof Error ? err.message : 'Failed to reload songs');
     } finally {
-      setIsLoading(false);
+      setIsReloading(false);
     }
   };
 
@@ -149,8 +139,13 @@ export function SearchView() {
             נקה <span className="clear-icon">✕</span>
           </button>
           {isAdmin && (
-            <button onClick={handleReloadSongs} className="reload-btn" title="רענן רשימת שירים">
-              🔄
+            <button 
+              onClick={handleReloadSongs} 
+              className="reload-btn" 
+              title="רענן רשימת שירים"
+              disabled={isReloading}
+            >
+              {isReloading ? '...' : '🔄'}
             </button>
           )}
         </div>

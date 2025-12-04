@@ -4,6 +4,7 @@ import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { PlayingNowProvider } from './context/PlayingNowContext';
 import { SearchProvider } from './context/SearchContext';
+import { SongsProvider } from './context/SongsContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Header } from './components/layout/Header';
 import { SearchView } from './components/views/SearchView';
@@ -54,11 +55,13 @@ function App() {
     <BrowserRouter>
       <SocketProvider>
         <AuthProvider>
-          <PlayingNowProvider>
-            <SearchProvider>
-              <AppContent />
-            </SearchProvider>
-          </PlayingNowProvider>
+          <SongsProvider>
+            <PlayingNowProvider>
+              <SearchProvider>
+                <AppContent />
+              </SearchProvider>
+            </PlayingNowProvider>
+          </SongsProvider>
         </AuthProvider>
       </SocketProvider>
     </BrowserRouter>
