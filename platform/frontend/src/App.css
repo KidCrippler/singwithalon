@@ -34,6 +34,8 @@
 
 html {
   font-size: 16px;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
 }
 
 body {
@@ -41,6 +43,9 @@ body {
   background: var(--secondary-color);
   color: var(--text-primary);
   min-height: 100vh;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* App Layout */
@@ -277,6 +282,9 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   direction: rtl;
+  /* Explicit colors to override any dark mode browser preferences */
+  background-color: white;
+  color: var(--text-primary);
 }
 
 .search-input:focus {
@@ -766,6 +774,12 @@ body {
   flex-direction: column;
   background: white;
   overflow: hidden; /* NO SCROLLING */
+  /* Mobile viewport fixes */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Prevent any horizontal shift on mobile */
+  max-width: 100vw;
+  transform: translateZ(0); /* Create new stacking context for better mobile performance */
 }
 
 /* Reuse song-top-bar styles for playing now */
@@ -894,6 +908,10 @@ body {
   flex: 1;
   min-height: 0;
   position: relative;
+  /* Mobile fixes - prevent horizontal overflow */
+  overflow: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 /* When in fullscreen mode */
@@ -1079,6 +1097,10 @@ body {
   padding: 1rem 2rem;
   column-count: 1 !important;
   overflow: hidden; /* Clip the transition animation */
+  /* Mobile fixes - constrain dimensions */
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lyrics-container.verse-single .line {
@@ -1092,6 +1114,9 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  /* Mobile fixes - prevent overflow causing viewport shift */
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .verse-transition-wrapper .verse-content {
@@ -1104,6 +1129,9 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  /* Mobile fixes */
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Scroll UP animation (going to NEXT verse) */
@@ -1431,6 +1459,20 @@ body {
   transition: all 0.2s;
 }
 
+/* Transpose arrow buttons - larger, more visible */
+.transpose-controls .transpose-btn {
+  font-size: 1rem;
+  padding: 0;
+}
+
+.transpose-controls .transpose-btn .arrow-up,
+.transpose-controls .transpose-btn .arrow-down {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
 .transpose-controls button:hover:not(.disabled) {
   background: var(--secondary-color);
 }
@@ -1438,6 +1480,11 @@ body {
 .transpose-controls button.disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.transpose-controls button.disabled .arrow-up,
+.transpose-controls button.disabled .arrow-down {
+  color: #999;
 }
 
 .transpose-controls .transpose-value {

@@ -54,10 +54,11 @@ export function TransposeControls({
       <button
         onClick={handleDecrease}
         disabled={!canDecrease}
-        className={!canDecrease ? 'disabled' : ''}
+        className={`transpose-btn ${!canDecrease ? 'disabled' : ''}`}
         title="טון למטה"
+        aria-label="טון למטה"
       >
-        ⬇
+        <span className="arrow-down">▼</span>
       </button>
       
       <span className="transpose-value">
@@ -71,10 +72,11 @@ export function TransposeControls({
       <button
         onClick={handleIncrease}
         disabled={!canIncrease}
-        className={!canIncrease ? 'disabled' : ''}
+        className={`transpose-btn ${!canIncrease ? 'disabled' : ''}`}
         title="טון למעלה"
+        aria-label="טון למעלה"
       >
-        ⬆
+        <span className="arrow-up">▲</span>
       </button>
       
       {/* Admin-only sync button - sends one-time sync event */}
