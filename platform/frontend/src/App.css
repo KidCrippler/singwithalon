@@ -487,7 +487,7 @@ body {
   min-height: 0;
   position: relative;
   /* Background image - set dynamically via CSS variable */
-  background-image: var(--viewer-bg, url('/backgrounds/bg1.png'));
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -686,7 +686,7 @@ body {
 
 .playing-now-view .lyrics-container.lyrics {
   /* Background image - set dynamically via CSS variable */
-  background-image: var(--viewer-bg, url('/backgrounds/bg1.png'));
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -982,7 +982,7 @@ body {
 
 /* When in fullscreen mode */
 .fullscreen-container.is-fullscreen {
-  background-image: var(--viewer-bg, url('/backgrounds/bg1.png'));
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

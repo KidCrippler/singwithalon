@@ -1,19 +1,20 @@
 /**
  * Background image management for the sing-along viewer
- * - Dynamically discovers all .png and .jpg files in /public/backgrounds/
+ * - Dynamically discovers all .webp, .png and .jpg files in /public/backgrounds/
  * - Preloads all backgrounds to browser cache on app startup
  * - Provides random selection for each new song
  */
 
 // Dynamically import all background images using Vite's glob import
 // This scans at build time, so new images are picked up on rebuild
+// Prefer WebP for better compression, fallback to PNG/JPG
 const backgroundModules = import.meta.glob<{ default: string }>(
-  '/public/backgrounds/*.{png,jpg,jpeg}',
+  '/public/backgrounds/*.{webp,png,jpg,jpeg}',
   { eager: true, query: '?url', import: 'default' }
 );
 
 // Extract the public URLs from the glob result
-// Vite returns paths like "/public/backgrounds/bg1.png" -> we need "/backgrounds/bg1.png"
+// Vite returns paths like "/public/backgrounds/bg1.webp" -> we need "/backgrounds/bg1.webp"
 export const BACKGROUNDS: string[] = Object.keys(backgroundModules).map(
   path => path.replace('/public', '')
 );
@@ -47,7 +48,7 @@ export function getRandomBackground(exclude?: string): string {
   
   if (available.length === 0) {
     // Fallback if no backgrounds found or all excluded
-    return '/backgrounds/bg1.png';
+    return '/backgrounds/bg1.webp';
   }
   
   const index = Math.floor(Math.random() * available.length);
