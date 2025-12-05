@@ -41,6 +41,7 @@ export interface QueueEntry {
   song_id: number;
   requester_name: string;
   session_id: string;
+  notes: string | null;  // Optional notes from viewer (max 50 chars)
   status: 'pending' | 'played';
   created_at: string;
   played_at: string | null;

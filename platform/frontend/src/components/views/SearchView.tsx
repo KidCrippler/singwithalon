@@ -5,16 +5,19 @@ import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
 import { useSongs } from '../../context/SongsContext';
+import { QueueModal } from '../common/QueueModal';
+import { ToastContainer, useToast } from '../common/Toast';
+import type { Song } from '../../types';
 
 export function SearchView() {
   const { songs, isLoading, error, reloadSongs } = useSongs();
   const { searchTerm, setSearchTerm } = useSearch();
-  const [addingToQueue, setAddingToQueue] = useState<number | null>(null);
-  const [requesterName, setRequesterName] = useState('');
   const [isReloading, setIsReloading] = useState(false);
+  const [queueModalSong, setQueueModalSong] = useState<Song | null>(null);
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { setSong, state } = usePlayingNow();
+  const { toasts, showToast, dismissToast } = useToast();
 
   // Get song status class for coloring
   const getSongStatusClass = useCallback((songId: number): string => {
@@ -75,19 +78,21 @@ export function SearchView() {
     navigate('/playing-now');
   };
 
-  const handleAddToQueue = async (songId: number) => {
-    if (!requesterName.trim()) {
-      alert('Please enter your name');
-      return;
-    }
+  const handleQueueClick = (song: Song) => {
+    setQueueModalSong(song);
+  };
 
+  const handleQueueSubmit = async (requesterName: string, notes: string) => {
+    if (!queueModalSong) return;
+    
     try {
-      await queueApi.add(songId, requesterName.trim());
-      setAddingToQueue(null);
-      setRequesterName('');
-      alert('Song added to queue!');
+      await queueApi.add(queueModalSong.id, requesterName, notes || undefined);
+      showToast('השיר נוסף לתור בהצלחה!', 'success', queueModalSong.name);
+      setQueueModalSong(null);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add to queue');
+      const errorMessage = err instanceof Error ? err.message : 'משהו השתבש, נסה שוב';
+      showToast(errorMessage, 'error');
+      throw err; // Re-throw so modal knows submission failed
     }
   };
 
@@ -96,7 +101,7 @@ export function SearchView() {
     try {
       await reloadSongs();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to reload songs');
+      showToast(err instanceof Error ? err.message : 'שגיאה בטעינת שירים', 'error');
     } finally {
       setIsReloading(false);
     }
@@ -122,6 +127,8 @@ export function SearchView() {
 
   return (
     <div className="search-view">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      
       <div className="search-header">
         <div className="search-controls">
           <input
@@ -172,34 +179,28 @@ export function SearchView() {
                     ▶
                   </button>
                 ) : (
-                  addingToQueue === song.id ? (
-                    <div className="queue-form">
-                      <input
-                        type="text"
-                        placeholder="השם שלך"
-                        value={requesterName}
-                        onChange={(e) => setRequesterName(e.target.value)}
-                        className="name-input"
-                      />
-                      <button onClick={() => handleAddToQueue(song.id)}>✓</button>
-                      <button onClick={() => setAddingToQueue(null)}>✕</button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => setAddingToQueue(song.id)}
-                      className="queue-btn"
-                      title="הוסף לתור"
-                    >
-                      +
-                    </button>
-                  )
+                  <button 
+                    onClick={() => handleQueueClick(song)}
+                    className="queue-btn"
+                    title="הוסף לתור"
+                  >
+                    +
+                  </button>
                 )}
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Queue Modal */}
+      <QueueModal
+        isOpen={queueModalSong !== null}
+        songName={queueModalSong?.name || ''}
+        songArtist={queueModalSong?.singer || ''}
+        onSubmit={handleQueueSubmit}
+        onCancel={() => setQueueModalSong(null)}
+      />
     </div>
   );
 }
-

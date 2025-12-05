@@ -135,11 +135,14 @@ export function QueueView() {
                 {group.entries.map(entry => (
                   <div 
                     key={entry.id} 
-                    className={`queue-entry ${entry.status}`}
+                    className={`queue-entry ${entry.status} ${entry.notes ? 'has-notes' : ''}`}
                   >
                     <div className="entry-info">
                       <span className="song-name">{entry.songName}</span>
                       <span className="song-artist">{entry.songArtist}</span>
+                      {entry.notes && (
+                        <span className="entry-notes">💬 {entry.notes}</span>
+                      )}
                     </div>
                     <div className="entry-actions">
                       {entry.status === 'pending' && (

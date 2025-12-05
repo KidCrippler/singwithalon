@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS queue (
   song_id INTEGER NOT NULL,
   requester_name TEXT NOT NULL,
   session_id TEXT NOT NULL,
+  notes TEXT,  -- Optional notes from viewer (max 50 chars, enforced by API)
   status TEXT DEFAULT 'pending',  -- 'pending' | 'played'
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   played_at DATETIME

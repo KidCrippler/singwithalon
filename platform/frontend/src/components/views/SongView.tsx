@@ -9,6 +9,8 @@ import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
 import { getRandomBackground } from '../../utils/backgrounds';
+import { QueueModal } from '../common/QueueModal';
+import { ToastContainer, useToast } from '../common/Toast';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -151,9 +153,9 @@ export function SongView() {
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('lyrics'); // Default to lyrics for viewers
   const [keyOffset, setKeyOffset] = useState(0);
-  const [requesterName, setRequesterName] = useState('');
-  const [showQueueForm, setShowQueueForm] = useState(false);
+  const [showQueueModal, setShowQueueModal] = useState(false);
   const [currentBackground] = useState(() => getRandomBackground());
+  const { toasts, showToast, dismissToast } = useToast();
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -191,19 +193,17 @@ export function SongView() {
     navigate('/playing-now');
   };
 
-  const handleAddToQueue = async () => {
-    if (!id || !requesterName.trim()) {
-      alert('Please enter your name');
-      return;
-    }
-
+  const handleQueueSubmit = async (requesterName: string, notes: string) => {
+    if (!id || !song) return;
+    
     try {
-      await queueApi.add(parseInt(id, 10), requesterName.trim());
-      setShowQueueForm(false);
-      setRequesterName('');
-      alert('Song added to queue!');
+      await queueApi.add(parseInt(id, 10), requesterName, notes || undefined);
+      showToast('השיר נוסף לתור בהצלחה!', 'success', song.name);
+      setShowQueueModal(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add to queue');
+      const errorMessage = err instanceof Error ? err.message : 'משהו השתבש, נסה שוב';
+      showToast(errorMessage, 'error');
+      throw err; // Re-throw so modal knows submission failed
     }
   };
 
@@ -229,6 +229,8 @@ export function SongView() {
 
   return (
     <div className={`song-view ${isRtl ? 'rtl' : 'ltr'}`}>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      
       {/* Compact top bar with song info */}
       <div className="song-top-bar">
         <button onClick={() => navigate(-1)} className="back-btn">
@@ -276,19 +278,8 @@ export function SongView() {
             <button onClick={handlePresentNow} className="present-btn">
               ▶ הצג
             </button>
-          ) : showQueueForm ? (
-            <div className="queue-form-inline">
-              <input
-                type="text"
-                placeholder="השם שלך"
-                value={requesterName}
-                onChange={(e) => setRequesterName(e.target.value)}
-              />
-              <button onClick={handleAddToQueue}>✓</button>
-              <button onClick={() => setShowQueueForm(false)}>✕</button>
-            </div>
           ) : (
-            <button onClick={() => setShowQueueForm(true)} className="queue-btn">
+            <button onClick={() => setShowQueueModal(true)} className="queue-btn">
               +
             </button>
           )}
@@ -371,6 +362,15 @@ export function SongView() {
           ))}
         </div>
       )}
+
+      {/* Queue Modal */}
+      <QueueModal
+        isOpen={showQueueModal}
+        songName={song.name}
+        songArtist={song.singer}
+        onSubmit={handleQueueSubmit}
+        onCancel={() => setShowQueueModal(false)}
+      />
     </div>
   );
 }

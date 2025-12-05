@@ -9,6 +9,7 @@ const MAX_QUEUE_PER_SESSION = 25;
 interface AddToQueueBody {
   songId: number;
   requesterName: string;
+  notes?: string;  // Optional notes (max 50 chars, enforced below)
 }
 
 // Helper: Get enriched grouped queue with song info (excludes __SYSTEM__ entries)
@@ -67,7 +68,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
 
   // Add to queue (any viewer)
   fastify.post<{ Body: AddToQueueBody }>('/api/queue', async (request, reply) => {
-    const { songId, requesterName } = request.body;
+    const { songId, requesterName, notes } = request.body;
     const sessionId = request.sessionId;
 
     if (!sessionId) {
@@ -75,31 +76,34 @@ export async function queueRoutes(fastify: FastifyInstance) {
     }
 
     if (!songId || !requesterName?.trim()) {
-      return reply.status(400).send({ error: 'Song ID and requester name are required' });
+      return reply.status(400).send({ error: 'יש להזין שם' });
     }
 
     // Check if song exists
     const songsIndex = getSongsIndex();
     const song = songsIndex.find(s => s.id === songId);
     if (!song) {
-      return reply.status(404).send({ error: 'Song not found' });
+      return reply.status(404).send({ error: 'השיר לא נמצא' });
     }
 
     // Check if song is private (only admin can add private songs)
     const isAdmin = request.user?.isAdmin ?? false;
     if (song.isPrivate && !isAdmin) {
-      return reply.status(403).send({ error: 'Cannot add private song to queue' });
+      return reply.status(403).send({ error: 'לא ניתן להוסיף שיר זה לתור' });
     }
 
     // Check queue limit
     const currentCount = queueQueries.countBySession(sessionId);
     if (currentCount >= MAX_QUEUE_PER_SESSION) {
       return reply.status(429).send({ 
-        error: `Queue limit reached. Maximum ${MAX_QUEUE_PER_SESSION} songs per viewer.` 
+        error: `הגעת למגבלת השירים בתור (${MAX_QUEUE_PER_SESSION}). נסה שוב אחרי שחלק יבוצעו.` 
       });
     }
 
-    const entry = queueQueries.add(songId, requesterName.trim(), sessionId);
+    // Trim and limit notes to 50 characters
+    const trimmedNotes = notes?.trim().slice(0, 50) || undefined;
+
+    const entry = queueQueries.add(songId, requesterName.trim(), sessionId, trimmedNotes);
     
     // Notify admins via socket
     broadcastQueueUpdate();

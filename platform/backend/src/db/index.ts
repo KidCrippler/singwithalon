@@ -24,8 +24,24 @@ export function initDatabase(): Database.Database {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
   db.exec(schema);
 
+  // Run migrations for existing databases
+  runMigrations();
+
   console.log(`Database initialized at ${config.database.path}`);
   return db;
+}
+
+// Migrations for existing databases
+function runMigrations(): void {
+  // Migration 1: Add notes column to queue table (if it doesn't exist)
+  const tableInfo = db.prepare("PRAGMA table_info(queue)").all() as { name: string }[];
+  const hasNotesColumn = tableInfo.some(col => col.name === 'notes');
+  
+  if (!hasNotesColumn) {
+    console.log('Running migration: Adding notes column to queue table...');
+    db.exec('ALTER TABLE queue ADD COLUMN notes TEXT');
+    console.log('Migration complete: notes column added');
+  }
 }
 
 export function getDb(): Database.Database {
@@ -54,10 +70,10 @@ export const adminQueries = {
 
 // Queue queries
 export const queueQueries = {
-  add(songId: number, requesterName: string, sessionId: string): QueueEntry {
+  add(songId: number, requesterName: string, sessionId: string, notes?: string): QueueEntry {
     const result = getDb().prepare(
-      'INSERT INTO queue (song_id, requester_name, session_id) VALUES (?, ?, ?)'
-    ).run(songId, requesterName, sessionId);
+      'INSERT INTO queue (song_id, requester_name, session_id, notes) VALUES (?, ?, ?, ?)'
+    ).run(songId, requesterName, sessionId, notes || null);
     
     return getDb().prepare('SELECT * FROM queue WHERE id = ?').get(result.lastInsertRowid) as QueueEntry;
   },

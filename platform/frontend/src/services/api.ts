@@ -84,10 +84,10 @@ export const queueApi = {
     return fetchJson('/api/queue');
   },
 
-  async add(songId: number, requesterName: string): Promise<{ success: boolean; entry: QueueEntry }> {
+  async add(songId: number, requesterName: string, notes?: string): Promise<{ success: boolean; entry: QueueEntry }> {
     return fetchJson('/api/queue', {
       method: 'POST',
-      body: JSON.stringify({ songId, requesterName }),
+      body: JSON.stringify({ songId, requesterName, notes }),
     });
   },
 
