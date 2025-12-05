@@ -18,7 +18,7 @@ async function main() {
   }
 
   // Initialize database
-  initDatabase();
+  await initDatabase();
 
   // Create Fastify instance
   const fastify = Fastify({

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { createClient, Client, InStatement, InValue } from '@libsql/client';
 import { readFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
@@ -8,77 +8,144 @@ import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue } from '../
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-let db: Database.Database;
+let db: Client;
 
-export function initDatabase(): Database.Database {
-  // Ensure database directory exists
-  const dbDir = dirname(config.database.path);
-  if (!existsSync(dbDir)) {
-    mkdirSync(dbDir, { recursive: true });
+export async function initDatabase(): Promise<Client> {
+  if (config.database.useTurso) {
+    // Production: Connect to Turso
+    console.log('Connecting to Turso database...');
+    db = createClient({
+      url: config.database.tursoUrl,
+      authToken: config.database.tursoAuthToken,
+    });
+    console.log('Connected to Turso database');
+  } else {
+    // Development: Use local SQLite file
+    const dbPath = config.database.localPath;
+    const dbDir = dirname(dbPath);
+    
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true });
+    }
+
+    console.log(`Using local SQLite database at ${dbPath}`);
+    db = createClient({
+      url: `file:${dbPath}`,
+    });
   }
 
-  db = new Database(config.database.path);
-  db.pragma('journal_mode = WAL');
-
-  // Run schema (schema.sql is copied to dist during build)
+  // Run schema
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf-8');
-  db.exec(schema);
+  
+  // Split schema into individual statements and execute each
+  const statements = schema
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+  
+  for (const statement of statements) {
+    await db.execute(statement);
+  }
 
-  console.log(`Database initialized at ${config.database.path}`);
+  console.log('Database schema initialized');
   return db;
 }
 
-export function getDb(): Database.Database {
+export function getDb(): Client {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
   return db;
 }
 
+// Helper to convert LibSQL row to typed object
+function rowToObject<T>(row: Record<string, unknown>): T {
+  return row as T;
+}
+
 // Admin queries
 export const adminQueries = {
-  getByUsername(username: string): Admin | undefined {
-    return getDb().prepare('SELECT * FROM admins WHERE username = ?').get(username) as Admin | undefined;
+  async getByUsername(username: string): Promise<Admin | undefined> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM admins WHERE username = ?',
+      args: [username],
+    });
+    return result.rows[0] ? rowToObject<Admin>(result.rows[0] as Record<string, unknown>) : undefined;
   },
 
-  create(username: string, passwordHash: string): Admin {
-    const result = getDb().prepare('INSERT INTO admins (username, password_hash) VALUES (?, ?)').run(username, passwordHash);
-    return { id: result.lastInsertRowid as number, username, password_hash: passwordHash, created_at: new Date().toISOString() };
+  async create(username: string, passwordHash: string): Promise<Admin> {
+    const result = await getDb().execute({
+      sql: 'INSERT INTO admins (username, password_hash) VALUES (?, ?)',
+      args: [username, passwordHash],
+    });
+    return {
+      id: Number(result.lastInsertRowid),
+      username,
+      password_hash: passwordHash,
+      created_at: new Date().toISOString(),
+    };
   },
 
-  exists(): boolean {
-    const count = getDb().prepare('SELECT COUNT(*) as count FROM admins').get() as { count: number };
-    return count.count > 0;
+  async updatePassword(username: string, passwordHash: string): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'UPDATE admins SET password_hash = ? WHERE username = ?',
+      args: [passwordHash, username],
+    });
+    return (result.rowsAffected ?? 0) > 0;
+  },
+
+  async exists(): Promise<boolean> {
+    const result = await getDb().execute('SELECT COUNT(*) as count FROM admins');
+    const count = (result.rows[0] as Record<string, unknown>)?.count as number;
+    return count > 0;
+  },
+
+  async deleteByUsername(username: string): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'DELETE FROM admins WHERE username = ?',
+      args: [username],
+    });
+    return (result.rowsAffected ?? 0) > 0;
   },
 };
 
 // Queue queries
 export const queueQueries = {
-  add(songId: number, requesterName: string, sessionId: string, notes?: string): QueueEntry {
-    const result = getDb().prepare(
-      'INSERT INTO queue (song_id, requester_name, session_id, notes) VALUES (?, ?, ?, ?)'
-    ).run(songId, requesterName, sessionId, notes || null);
+  async add(songId: number, requesterName: string, sessionId: string, notes?: string): Promise<QueueEntry> {
+    const result = await getDb().execute({
+      sql: 'INSERT INTO queue (song_id, requester_name, session_id, notes) VALUES (?, ?, ?, ?)',
+      args: [songId, requesterName, sessionId, notes || null],
+    });
     
-    return getDb().prepare('SELECT * FROM queue WHERE id = ?').get(result.lastInsertRowid) as QueueEntry;
+    const entry = await getDb().execute({
+      sql: 'SELECT * FROM queue WHERE id = ?',
+      args: [Number(result.lastInsertRowid)],
+    });
+    return rowToObject<QueueEntry>(entry.rows[0] as Record<string, unknown>);
   },
 
-  remove(id: number, sessionId: string): boolean {
-    const result = getDb().prepare('DELETE FROM queue WHERE id = ? AND session_id = ?').run(id, sessionId);
-    return result.changes > 0;
+  async remove(id: number, sessionId: string): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'DELETE FROM queue WHERE id = ? AND session_id = ?',
+      args: [id, sessionId],
+    });
+    return (result.rowsAffected ?? 0) > 0;
   },
 
-  markPlayed(id: number): void {
-    getDb().prepare(
-      'UPDATE queue SET status = ?, played_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).run('played', id);
+  async markPlayed(id: number): Promise<void> {
+    await getDb().execute({
+      sql: 'UPDATE queue SET status = ?, played_at = CURRENT_TIMESTAMP WHERE id = ?',
+      args: ['played', id],
+    });
   },
 
-  getAll(): QueueEntry[] {
-    return getDb().prepare('SELECT * FROM queue ORDER BY created_at ASC').all() as QueueEntry[];
+  async getAll(): Promise<QueueEntry[]> {
+    const result = await getDb().execute('SELECT * FROM queue ORDER BY created_at ASC');
+    return result.rows.map(row => rowToObject<QueueEntry>(row as Record<string, unknown>));
   },
 
-  getGrouped(): GroupedQueue[] {
-    const entries = this.getAll();
+  async getGrouped(): Promise<GroupedQueue[]> {
+    const entries = await this.getAll();
     const groups = new Map<string, GroupedQueue>();
 
     for (const entry of entries) {
@@ -109,77 +176,85 @@ export const queueQueries = {
       }));
   },
 
-  countBySession(sessionId: string): number {
-    const result = getDb().prepare(
-      'SELECT COUNT(*) as count FROM queue WHERE session_id = ? AND status = ?'
-    ).get(sessionId, 'pending') as { count: number };
-    return result.count;
+  async countBySession(sessionId: string): Promise<number> {
+    const result = await getDb().execute({
+      sql: 'SELECT COUNT(*) as count FROM queue WHERE session_id = ? AND status = ?',
+      args: [sessionId, 'pending'],
+    });
+    return (result.rows[0] as Record<string, unknown>)?.count as number ?? 0;
   },
 
-  getBySession(sessionId: string): QueueEntry[] {
-    return getDb().prepare(
-      'SELECT * FROM queue WHERE session_id = ? ORDER BY created_at ASC'
-    ).all(sessionId) as QueueEntry[];
+  async getBySession(sessionId: string): Promise<QueueEntry[]> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM queue WHERE session_id = ? ORDER BY created_at ASC',
+      args: [sessionId],
+    });
+    return result.rows.map(row => rowToObject<QueueEntry>(row as Record<string, unknown>));
   },
 
   // Admin-only: Remove any entry by ID (no session check)
-  removeById(id: number): boolean {
-    const result = getDb().prepare('DELETE FROM queue WHERE id = ?').run(id);
-    return result.changes > 0;
+  async removeById(id: number): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'DELETE FROM queue WHERE id = ?',
+      args: [id],
+    });
+    return (result.rowsAffected ?? 0) > 0;
   },
 
   // Admin-only: Remove all entries for a session+requester group
-  removeByGroup(sessionId: string, requesterName: string): number {
-    const result = getDb().prepare('DELETE FROM queue WHERE session_id = ? AND requester_name = ?').run(sessionId, requesterName);
-    return result.changes;
+  async removeByGroup(sessionId: string, requesterName: string): Promise<number> {
+    const result = await getDb().execute({
+      sql: 'DELETE FROM queue WHERE session_id = ? AND requester_name = ?',
+      args: [sessionId, requesterName],
+    });
+    return result.rowsAffected ?? 0;
   },
 
   // Admin-only: Clear entire queue
-  truncate(): number {
-    const result = getDb().prepare('DELETE FROM queue').run();
-    return result.changes;
+  async truncate(): Promise<number> {
+    const result = await getDb().execute('DELETE FROM queue');
+    return result.rowsAffected ?? 0;
   },
 
   // Get distinct song IDs by status (for search view coloring)
-  getPendingSongIds(): number[] {
-    const results = getDb().prepare(
-      "SELECT DISTINCT song_id FROM queue WHERE status = 'pending'"
-    ).all() as { song_id: number }[];
-    return results.map(r => r.song_id);
+  async getPendingSongIds(): Promise<number[]> {
+    const result = await getDb().execute("SELECT DISTINCT song_id FROM queue WHERE status = 'pending'");
+    return result.rows.map(row => (row as Record<string, unknown>).song_id as number);
   },
 
-  getPlayedSongIds(): number[] {
-    const results = getDb().prepare(
-      "SELECT DISTINCT song_id FROM queue WHERE status = 'played'"
-    ).all() as { song_id: number }[];
-    return results.map(r => r.song_id);
+  async getPlayedSongIds(): Promise<number[]> {
+    const result = await getDb().execute("SELECT DISTINCT song_id FROM queue WHERE status = 'played'");
+    return result.rows.map(row => (row as Record<string, unknown>).song_id as number);
   },
 
   // Mark a song as played (for "Present Now" - not from queue)
-  markSongPlayed(songId: number): void {
+  async markSongPlayed(songId: number): Promise<void> {
     // Check if there's already a played entry for this song
-    const existing = getDb().prepare(
-      "SELECT id FROM queue WHERE song_id = ? AND status = 'played' LIMIT 1"
-    ).get(songId);
+    const existing = await getDb().execute({
+      sql: "SELECT id FROM queue WHERE song_id = ? AND status = 'played' LIMIT 1",
+      args: [songId],
+    });
     
-    if (!existing) {
+    if (existing.rows.length === 0) {
       // Add a system entry to track that this song was played
-      getDb().prepare(
-        "INSERT INTO queue (song_id, requester_name, session_id, status, played_at) VALUES (?, ?, ?, 'played', CURRENT_TIMESTAMP)"
-      ).run(songId, '__SYSTEM__', '__SYSTEM__');
+      await getDb().execute({
+        sql: "INSERT INTO queue (song_id, requester_name, session_id, status, played_at) VALUES (?, ?, ?, 'played', CURRENT_TIMESTAMP)",
+        args: [songId, '__SYSTEM__', '__SYSTEM__'],
+      });
     }
   },
 };
 
 // Playing state queries
 export const playingStateQueries = {
-  get(): PlayingState {
-    return getDb().prepare('SELECT * FROM playing_state WHERE id = 1').get() as PlayingState;
+  async get(): Promise<PlayingState> {
+    const result = await getDb().execute('SELECT * FROM playing_state WHERE id = 1');
+    return rowToObject<PlayingState>(result.rows[0] as Record<string, unknown>);
   },
 
-  update(updates: Partial<Omit<PlayingState, 'id'>>): PlayingState {
+  async update(updates: Partial<Omit<PlayingState, 'id'>>): Promise<PlayingState> {
     const fields: string[] = [];
-    const values: unknown[] = [];
+    const values: InValue[] = [];
 
     if (updates.current_song_id !== undefined) {
       fields.push('current_song_id = ?');
@@ -216,13 +291,16 @@ export const playingStateQueries = {
 
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
-      getDb().prepare(`UPDATE playing_state SET ${fields.join(', ')} WHERE id = 1`).run(...values);
+      await getDb().execute({
+        sql: `UPDATE playing_state SET ${fields.join(', ')} WHERE id = 1`,
+        args: values,
+      });
     }
 
     return this.get();
   },
 
-  clearSong(): PlayingState {
+  async clearSong(): Promise<PlayingState> {
     return this.update({
       current_song_id: null,
       current_verse_index: 0,
@@ -233,12 +311,16 @@ export const playingStateQueries = {
 
 // Session queries
 export const sessionQueries = {
-  upsert(sessionId: string, updates?: Partial<Session>): Session {
-    const existing = getDb().prepare('SELECT * FROM sessions WHERE session_id = ?').get(sessionId) as Session | undefined;
+  async upsert(sessionId: string, updates?: Partial<Session>): Promise<Session> {
+    const existingResult = await getDb().execute({
+      sql: 'SELECT * FROM sessions WHERE session_id = ?',
+      args: [sessionId],
+    });
+    const existing = existingResult.rows[0] as Record<string, unknown> | undefined;
     
     if (existing) {
       const fields: string[] = ['last_seen = CURRENT_TIMESTAMP'];
-      const values: unknown[] = [];
+      const values: InValue[] = [];
 
       if (updates?.requester_name !== undefined) {
         fields.push('requester_name = ?');
@@ -262,34 +344,48 @@ export const sessionQueries = {
       }
 
       values.push(sessionId);
-      getDb().prepare(`UPDATE sessions SET ${fields.join(', ')} WHERE session_id = ?`).run(...values);
+      await getDb().execute({
+        sql: `UPDATE sessions SET ${fields.join(', ')} WHERE session_id = ?`,
+        args: values,
+      });
     } else {
-      getDb().prepare(
-        'INSERT INTO sessions (session_id, requester_name, is_projector, resolution_width, resolution_height, lines_per_verse) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(
-        sessionId,
-        updates?.requester_name ?? null,
-        updates?.is_projector ? 1 : 0,
-        updates?.resolution_width ?? null,
-        updates?.resolution_height ?? null,
-        updates?.lines_per_verse ?? null
-      );
+      await getDb().execute({
+        sql: 'INSERT INTO sessions (session_id, requester_name, is_projector, resolution_width, resolution_height, lines_per_verse) VALUES (?, ?, ?, ?, ?, ?)',
+        args: [
+          sessionId,
+          updates?.requester_name ?? null,
+          updates?.is_projector ? 1 : 0,
+          updates?.resolution_width ?? null,
+          updates?.resolution_height ?? null,
+          updates?.lines_per_verse ?? null,
+        ],
+      });
     }
 
-    return getDb().prepare('SELECT * FROM sessions WHERE session_id = ?').get(sessionId) as Session;
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM sessions WHERE session_id = ?',
+      args: [sessionId],
+    });
+    return rowToObject<Session>(result.rows[0] as Record<string, unknown>);
   },
 
-  updateLastSeen(sessionId: string): void {
-    getDb().prepare('UPDATE sessions SET last_seen = CURRENT_TIMESTAMP WHERE session_id = ?').run(sessionId);
+  async updateLastSeen(sessionId: string): Promise<void> {
+    await getDb().execute({
+      sql: 'UPDATE sessions SET last_seen = CURRENT_TIMESTAMP WHERE session_id = ?',
+      args: [sessionId],
+    });
   },
 
-  cleanup(): number {
-    const result = getDb().prepare("DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours')").run();
-    return result.changes;
+  async cleanup(): Promise<number> {
+    const result = await getDb().execute("DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours')");
+    return result.rowsAffected ?? 0;
   },
 
-  get(sessionId: string): Session | undefined {
-    return getDb().prepare('SELECT * FROM sessions WHERE session_id = ?').get(sessionId) as Session | undefined;
+  async get(sessionId: string): Promise<Session | undefined> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM sessions WHERE session_id = ?',
+      args: [sessionId],
+    });
+    return result.rows[0] ? rowToObject<Session>(result.rows[0] as Record<string, unknown>) : undefined;
   },
 };
-

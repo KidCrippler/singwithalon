@@ -24,7 +24,7 @@ A real-time web application for managing sing-along events and band performances
 | Backend | Node.js + Fastify |
 | Frontend | React + Vite |
 | Real-time | Socket.io |
-| Database | SQLite (for queue, session, playing-now state) |
+| Database | LibSQL/Turso (SQLite-compatible; local file for dev, Turso for production) |
 | Song Storage | JSON index file + text files (lyrics/chords) stored externally, fetched via URL |
 
 ---
@@ -1094,20 +1094,33 @@ platform/
 - [ ] Final UI/UX polish (theme, logo integration)
 
 ### Phase 9: Production Database Setup ✅
-The SQLite database is persisted using a mounted volume on the hosting platform.
+The database layer uses LibSQL (via `@libsql/client`), which supports both local SQLite files and remote Turso databases.
 
-**Approach:**
-- Backend is deployed to a persistent server (not serverless)
-- A persistent volume is mounted at `/app/database`
-- SQLite database file stored at the configured `DATABASE_PATH`
-- Uses native `better-sqlite3` library (fast, synchronous, no code changes needed)
+**Two Deployment Options:**
+
+#### Option A: Turso (Recommended for Production)
+- Database hosted on Turso's edge network
+- Remote access via web dashboard and CLI
+- No volume management needed
+- Automatic backups and replication
 
 **Configuration:**
-- Set `DATABASE_PATH=/app/database/singalong.db` environment variable
-- Mount persistent volume at `/app/database` on hosting platform
-- Database survives deployments and server restarts
+```env
+TURSO_DATABASE_URL=libsql://your-db-name.turso.io
+TURSO_AUTH_TOKEN=your-auth-token
+```
 
-**Note:** This approach is simpler and faster than hosted database solutions (like Turso) since the backend runs as a persistent server rather than serverless functions.
+#### Option B: Local SQLite (Development)
+- SQLite file on local filesystem
+- Fast, zero-latency queries
+- No external dependencies
+
+**Configuration:**
+```env
+DATABASE_PATH=./database/singalong.db
+```
+
+**Note:** If both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set, Turso is used. Otherwise, falls back to local SQLite at `DATABASE_PATH`.
 
 ---
 

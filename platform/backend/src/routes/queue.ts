@@ -13,9 +13,9 @@ interface AddToQueueBody {
 }
 
 // Helper: Get enriched grouped queue with song info (excludes __SYSTEM__ entries)
-function getEnrichedGroupedQueue() {
+async function getEnrichedGroupedQueue() {
   const songsIndex = getSongsIndex();
-    const groupedQueue = queueQueries.getGrouped();
+  const groupedQueue = await queueQueries.getGrouped();
   // Filter out __SYSTEM__ entries (used for tracking "Present Now" plays)
   return groupedQueue
     .filter(group => group.sessionId !== '__SYSTEM__')
@@ -33,37 +33,37 @@ function getEnrichedGroupedQueue() {
 }
 
 // Helper: Get song status for search view coloring
-function getSongStatus() {
-  const state = playingStateQueries.get();
+async function getSongStatus() {
+  const state = await playingStateQueries.get();
   return {
     currentSongId: state.current_song_id,
-    pendingSongIds: queueQueries.getPendingSongIds(),
-    playedSongIds: queueQueries.getPlayedSongIds(),
+    pendingSongIds: await queueQueries.getPendingSongIds(),
+    playedSongIds: await queueQueries.getPlayedSongIds(),
   };
 }
 
 // Helper: Broadcast song status to all clients (for search view coloring)
-function broadcastSongStatus() {
+async function broadcastSongStatus() {
   const io = getIO();
   if (io) {
-    io.to('playing-now').emit('songs:status-changed', getSongStatus());
+    io.to('playing-now').emit('songs:status-changed', await getSongStatus());
   }
 }
 
 // Helper: Broadcast queue update to admins via socket
-function broadcastQueueUpdate() {
+async function broadcastQueueUpdate() {
   const io = getIO();
   if (io) {
-    io.to('admin').emit('queue:updated', { queue: getEnrichedGroupedQueue() });
+    io.to('admin').emit('queue:updated', { queue: await getEnrichedGroupedQueue() });
   }
   // Also broadcast song status for search view coloring
-  broadcastSongStatus();
+  await broadcastSongStatus();
 }
 
 export async function queueRoutes(fastify: FastifyInstance) {
   // Get current queue (admin only)
   fastify.get('/api/queue', { preHandler: requireAdmin }, async (request, reply) => {
-    return getEnrichedGroupedQueue();
+    return await getEnrichedGroupedQueue();
   });
 
   // Add to queue (any viewer)
@@ -93,7 +93,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
     }
 
     // Check queue limit
-    const currentCount = queueQueries.countBySession(sessionId);
+    const currentCount = await queueQueries.countBySession(sessionId);
     if (currentCount >= MAX_QUEUE_PER_SESSION) {
       return reply.status(429).send({ 
         error: `הגעת למגבלת השירים בתור (${MAX_QUEUE_PER_SESSION}). נסה שוב אחרי שחלק יבוצעו.` 
@@ -103,10 +103,10 @@ export async function queueRoutes(fastify: FastifyInstance) {
     // Trim and limit notes to 50 characters
     const trimmedNotes = notes?.trim().slice(0, 50) || undefined;
 
-    const entry = queueQueries.add(songId, requesterName.trim(), sessionId, trimmedNotes);
+    const entry = await queueQueries.add(songId, requesterName.trim(), sessionId, trimmedNotes);
     
     // Notify admins via socket
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
     
     return { 
       success: true, 
@@ -127,13 +127,13 @@ export async function queueRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Session ID required' });
     }
 
-    const removed = queueQueries.remove(entryId, sessionId);
+    const removed = await queueQueries.remove(entryId, sessionId);
     if (!removed) {
       return reply.status(404).send({ error: 'Queue entry not found or not yours to remove' });
     }
 
     // Notify admins via socket
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
 
     return { success: true };
   });
@@ -146,7 +146,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Session ID required' });
     }
 
-    const entries = queueQueries.getBySession(sessionId);
+    const entries = await queueQueries.getBySession(sessionId);
     return enrichEntriesWithSongInfo(entries);
   });
 
@@ -157,7 +157,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
     const queueId = parseInt(request.params.id, 10);
     
     // Get the queue entry
-    const entries = queueQueries.getAll();
+    const entries = await queueQueries.getAll();
     const entry = entries.find(e => e.id === queueId);
     
     if (!entry) {
@@ -165,16 +165,16 @@ export async function queueRoutes(fastify: FastifyInstance) {
     }
 
     // Mark the previous song as played (if there was one)
-    const currentState = playingStateQueries.get();
+    const currentState = await playingStateQueries.get();
     if (currentState.current_song_id) {
-      queueQueries.markSongPlayed(currentState.current_song_id);
+      await queueQueries.markSongPlayed(currentState.current_song_id);
     }
 
     // Mark this queue entry as played
-    queueQueries.markPlayed(queueId);
+    await queueQueries.markPlayed(queueId);
 
     // Set as current song
-    const state = playingStateQueries.update({
+    const state = await playingStateQueries.update({
       current_song_id: entry.song_id,
       current_verse_index: 0,
       current_key_offset: 0,
@@ -193,7 +193,7 @@ export async function queueRoutes(fastify: FastifyInstance) {
     }
 
     // Broadcast queue update to admins (also broadcasts song status)
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
 
     return { success: true };
   });
@@ -202,12 +202,12 @@ export async function queueRoutes(fastify: FastifyInstance) {
   fastify.delete<{ Params: { id: string } }>('/api/queue/:id/admin', { preHandler: requireAdmin }, async (request, reply) => {
     const queueId = parseInt(request.params.id, 10);
     
-    const removed = queueQueries.removeById(queueId);
+    const removed = await queueQueries.removeById(queueId);
     if (!removed) {
       return reply.status(404).send({ error: 'Queue entry not found' });
     }
 
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
     return { success: true };
   });
 
@@ -219,21 +219,21 @@ export async function queueRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'sessionId and requesterName are required' });
     }
     
-    const count = queueQueries.removeByGroup(sessionId, requesterName);
+    const count = await queueQueries.removeByGroup(sessionId, requesterName);
     if (count === 0) {
       return reply.status(404).send({ error: 'No entries found for this group' });
     }
 
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
     return { success: true, deletedCount: count };
   });
 
   // Admin truncate queue (clear all) - also clears the current song
   fastify.delete('/api/queue', { preHandler: requireAdmin }, async (request, reply) => {
-    queueQueries.truncate();
+    await queueQueries.truncate();
     
     // Also clear the current song (return to splash screen)
-    playingStateQueries.clearSong();
+    await playingStateQueries.clearSong();
     
     // Broadcast song cleared to all viewers
     const io = getIO();
@@ -241,21 +241,21 @@ export async function queueRoutes(fastify: FastifyInstance) {
       io.to('playing-now').emit('song:cleared', {});
     }
     
-    broadcastQueueUpdate();
+    await broadcastQueueUpdate();
     return { success: true };
   });
 }
 
 // Helper: Enrich queue entries with song info
-function enrichEntriesWithSongInfo(entries: ReturnType<typeof queueQueries.getBySession>) {
-    const songsIndex = getSongsIndex();
+function enrichEntriesWithSongInfo(entries: Awaited<ReturnType<typeof queueQueries.getBySession>>) {
+  const songsIndex = getSongsIndex();
   return entries.map(entry => {
-      const song = songsIndex.find(s => s.id === entry.song_id);
-      return {
-        ...entry,
-        songName: song?.name ?? 'Unknown Song',
-        songArtist: song?.singer ?? 'Unknown Artist',
-      };
+    const song = songsIndex.find(s => s.id === entry.song_id);
+    return {
+      ...entry,
+      songName: song?.name ?? 'Unknown Song',
+      songArtist: song?.singer ?? 'Unknown Artist',
+    };
   });
 }
 

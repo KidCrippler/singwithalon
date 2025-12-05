@@ -13,7 +13,15 @@ export const config = {
     host: process.env.HOST || '0.0.0.0',
   },
   database: {
-    path: process.env.DATABASE_PATH || join(__dirname, '../../database/singalong.db'),
+    // Turso (production) - takes precedence if set
+    tursoUrl: process.env.TURSO_DATABASE_URL || '',
+    tursoAuthToken: process.env.TURSO_AUTH_TOKEN || '',
+    // Local SQLite file (development fallback)
+    localPath: process.env.DATABASE_PATH || join(__dirname, '../../database/singalong.db'),
+    // Helper to check if using Turso
+    get useTurso(): boolean {
+      return Boolean(this.tursoUrl && this.tursoAuthToken);
+    },
   },
   auth: {
     cookieSecret: process.env.COOKIE_SECRET || '',

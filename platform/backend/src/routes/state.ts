@@ -22,27 +22,27 @@ function getEnrichedSong(songId: number | null) {
 }
 
 // Helper: Get song status for search view coloring
-function getSongStatus() {
-  const state = playingStateQueries.get();
+async function getSongStatus() {
+  const state = await playingStateQueries.get();
   return {
     currentSongId: state.current_song_id,
-    pendingSongIds: queueQueries.getPendingSongIds(),
-    playedSongIds: queueQueries.getPlayedSongIds(),
+    pendingSongIds: await queueQueries.getPendingSongIds(),
+    playedSongIds: await queueQueries.getPlayedSongIds(),
   };
 }
 
 // Helper: Broadcast song status to all clients (for search view coloring)
-function broadcastSongStatus() {
+async function broadcastSongStatus() {
   const io = getIO();
   if (!io) return;
-  io.to('playing-now').emit('songs:status-changed', getSongStatus());
+  io.to('playing-now').emit('songs:status-changed', await getSongStatus());
 }
 
 // Helper: Broadcast song changed to all viewers
-function broadcastSongChanged() {
+async function broadcastSongChanged() {
   const io = getIO();
   if (!io) return;
-  const state = playingStateQueries.get();
+  const state = await playingStateQueries.get();
   io.to('playing-now').emit('song:changed', {
     songId: state.current_song_id,
     verseIndex: state.current_verse_index,
@@ -51,14 +51,14 @@ function broadcastSongChanged() {
     versesEnabled: !!state.verses_enabled,
   });
   // Also broadcast song status for search view coloring
-  broadcastSongStatus();
+  await broadcastSongStatus();
 }
 
 export async function stateRoutes(fastify: FastifyInstance) {
   // Get current playing state
   fastify.get('/api/state', async (request, reply) => {
-    const state = playingStateQueries.get();
-    const songStatus = getSongStatus();
+    const state = await playingStateQueries.get();
+    const songStatus = await getSongStatus();
     return {
       currentSongId: state.current_song_id,
       currentVerseIndex: state.current_verse_index,
@@ -88,24 +88,24 @@ export async function stateRoutes(fastify: FastifyInstance) {
     }
 
     // Mark the previous song as played (if there was one)
-    const currentState = playingStateQueries.get();
+    const currentState = await playingStateQueries.get();
     if (currentState.current_song_id) {
-      queueQueries.markSongPlayed(currentState.current_song_id);
+      await queueQueries.markSongPlayed(currentState.current_song_id);
     }
 
-    playingStateQueries.update({
+    await playingStateQueries.update({
       current_song_id: songId,
       current_verse_index: 0,
       current_key_offset: 0,
     });
 
-    broadcastSongChanged();
+    await broadcastSongChanged();
     return { success: true };
   });
 
   // Clear current song (show splash)
   fastify.delete('/api/state/song', { preHandler: requireAdmin }, async (request, reply) => {
-    playingStateQueries.clearSong();
+    await playingStateQueries.clearSong();
     
     const io = getIO();
     io?.to('playing-now').emit('song:cleared', {});
@@ -115,9 +115,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
 
   // Next verse
   fastify.post('/api/state/verse/next', { preHandler: requireAdmin }, async (request, reply) => {
-    const state = playingStateQueries.get();
+    const state = await playingStateQueries.get();
     const newIndex = state.current_verse_index + 1;
-    playingStateQueries.update({ current_verse_index: newIndex });
+    await playingStateQueries.update({ current_verse_index: newIndex });
     
     const io = getIO();
     io?.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
@@ -127,9 +127,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
 
   // Previous verse
   fastify.post('/api/state/verse/prev', { preHandler: requireAdmin }, async (request, reply) => {
-    const state = playingStateQueries.get();
+    const state = await playingStateQueries.get();
     const newIndex = Math.max(0, state.current_verse_index - 1);
-    playingStateQueries.update({ current_verse_index: newIndex });
+    await playingStateQueries.update({ current_verse_index: newIndex });
     
     const io = getIO();
     io?.to('playing-now').emit('verse:changed', { verseIndex: newIndex });
@@ -140,7 +140,7 @@ export async function stateRoutes(fastify: FastifyInstance) {
   // Set specific verse
   fastify.post<{ Body: { verseIndex: number } }>('/api/state/verse', { preHandler: requireAdmin }, async (request, reply) => {
     const { verseIndex } = request.body;
-    playingStateQueries.update({ current_verse_index: verseIndex });
+    await playingStateQueries.update({ current_verse_index: verseIndex });
     
     const io = getIO();
     io?.to('playing-now').emit('verse:changed', { verseIndex });
@@ -162,7 +162,7 @@ export async function stateRoutes(fastify: FastifyInstance) {
   // Set display mode
   fastify.post<{ Body: { displayMode: 'lyrics' | 'chords' } }>('/api/state/mode', { preHandler: requireAdmin }, async (request, reply) => {
     const { displayMode } = request.body;
-    playingStateQueries.update({ display_mode: displayMode });
+    await playingStateQueries.update({ display_mode: displayMode });
     
     const io = getIO();
     io?.to('playing-now').emit('mode:changed', { displayMode });
@@ -172,9 +172,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
 
   // Toggle verses enabled
   fastify.post('/api/state/verses/toggle', { preHandler: requireAdmin }, async (request, reply) => {
-    const state = playingStateQueries.get();
+    const state = await playingStateQueries.get();
     const newVersesEnabled = state.verses_enabled ? 0 : 1;
-    playingStateQueries.update({ verses_enabled: newVersesEnabled });
+    await playingStateQueries.update({ verses_enabled: newVersesEnabled });
     
     const io = getIO();
     io?.to('playing-now').emit('verses:toggled', { versesEnabled: !!newVersesEnabled });
@@ -192,7 +192,7 @@ export async function stateRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Session ID required' });
     }
 
-    sessionQueries.upsert(sessionId, {
+    await sessionQueries.upsert(sessionId, {
       is_projector: true,
       resolution_width: width,
       resolution_height: height,
@@ -200,9 +200,9 @@ export async function stateRoutes(fastify: FastifyInstance) {
     });
 
     // Check if this is the first projector
-    const state = playingStateQueries.get();
+    const state = await playingStateQueries.get();
     if (!state.projector_width) {
-      playingStateQueries.update({
+      await playingStateQueries.update({
         projector_width: width,
         projector_height: height,
         projector_lines_per_verse: linesPerVerse,

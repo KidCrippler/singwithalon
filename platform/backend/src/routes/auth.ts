@@ -18,18 +18,29 @@ export async function authRoutes(fastify: FastifyInstance) {
       const users = config.adminUsers.split(',').map(u => u.trim()).filter(Boolean);
       for (const userEntry of users) {
         const [username, password] = userEntry.split(':');
-        if (username && password && !adminQueries.getByUsername(username)) {
+        if (username && password) {
+          const existingAdmin = await adminQueries.getByUsername(username);
           const passwordHash = await bcrypt.hash(password, 10);
-          adminQueries.create(username, passwordHash);
-          console.log(`Created admin user: ${username}`);
+          
+          if (!existingAdmin) {
+            await adminQueries.create(username, passwordHash);
+            console.log(`Created admin user: ${username}`);
+          } else {
+            // Update password if it changed (allows password changes via env var)
+            const passwordChanged = !(await bcrypt.compare(password, existingAdmin.password_hash));
+            if (passwordChanged) {
+              await adminQueries.updatePassword(username, passwordHash);
+              console.log(`Updated password for admin user: ${username}`);
+            }
+          }
         }
       }
     }
     
     // Fallback: create default admin if no admins exist and DEFAULT_ADMIN_PASSWORD is set
-    if (!adminQueries.exists() && config.defaultAdminPassword) {
+    if (!(await adminQueries.exists()) && config.defaultAdminPassword) {
       const passwordHash = await bcrypt.hash(config.defaultAdminPassword, 10);
-      adminQueries.create('admin', passwordHash);
+      await adminQueries.create('admin', passwordHash);
       console.log('Created default admin user: admin');
     }
   });
@@ -42,7 +53,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Username and password are required' });
     }
 
-    const admin = adminQueries.getByUsername(username);
+    const admin = await adminQueries.getByUsername(username);
     if (!admin) {
       return reply.status(401).send({ error: 'Invalid credentials' });
     }

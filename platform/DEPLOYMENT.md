@@ -11,17 +11,19 @@ This guide covers deploying the SingWithAlon platform:
 
 1. [Prerequisites](#prerequisites)
 2. [Local Development Setup](#local-development-setup)
-3. [Backend Deployment (Railway)](#backend-deployment-railway)
-4. [Frontend Deployment (Vercel)](#frontend-deployment-vercel)
-5. [Custom Domain Setup](#custom-domain-setup)
-6. [Post-Deployment Verification](#post-deployment-verification)
-7. [Troubleshooting](#troubleshooting)
+3. [Turso Database Setup](#turso-database-setup)
+4. [Backend Deployment (Railway)](#backend-deployment-railway)
+5. [Frontend Deployment (Vercel)](#frontend-deployment-vercel)
+6. [Custom Domain Setup](#custom-domain-setup)
+7. [Post-Deployment Verification](#post-deployment-verification)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
-- [ ] Railway account (paid plan for persistent volumes)
+- [ ] Railway account (free tier works - no volume needed with Turso)
+- [ ] Turso account (free tier at [turso.tech](https://turso.tech))
 - [ ] Vercel account (free tier works)
 - [ ] GitHub repository with the platform code
 - [ ] Domain `yousing.live` registered on name.com
@@ -90,6 +92,62 @@ Frontend runs at `http://localhost:5173`, backend at `http://localhost:3001`.
 
 ---
 
+## Turso Database Setup
+
+Turso is a SQLite-compatible database that runs as a hosted service. It provides remote access, a web dashboard, and CLI tools for querying your data.
+
+### Step 1: Create Turso Account
+
+1. Go to [turso.tech](https://turso.tech) and sign up (free tier available)
+2. Install the Turso CLI:
+   ```bash
+   # macOS
+   brew install tursodatabase/tap/turso
+   
+   # Other platforms: see https://docs.turso.tech/cli/installation
+   ```
+
+### Step 2: Create Database
+
+```bash
+# Login to Turso
+turso auth login
+
+# Create a new database (choose a region close to your Railway deployment)
+turso db create singalong --location lhr  # London region
+
+# Get the database URL
+turso db show singalong --url
+# Output: libsql://singalong-kidcrippler.aws-eu-west-1.turso.io
+
+# Create an auth token
+turso db tokens create singalong
+# Output: your-auth-token-here
+```
+
+### Step 3: Save Credentials
+
+Save these values - you'll need them for Railway:
+- **TURSO_DATABASE_URL**: `libsql://singalong-yourusername.turso.io`
+- **TURSO_AUTH_TOKEN**: `your-auth-token-here`
+
+### Turso Dashboard & CLI
+
+You can access your database anytime:
+
+```bash
+# Open web dashboard
+turso db shell singalong
+
+# Run SQL queries
+turso db shell singalong "SELECT * FROM admins;"
+
+# View all databases
+turso db list
+```
+
+---
+
 ## Backend Deployment (Railway)
 
 ### Step 1: Create Railway Project
@@ -108,18 +166,7 @@ Frontend runs at `http://localhost:5173`, backend at `http://localhost:3001`.
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 
-### Step 3: Add Persistent Volume
-
-⚠️ **Critical for SQLite persistence!**
-
-1. Click on your backend service
-2. Go to **Settings** → **Volumes**
-3. Click **"Add Volume"**
-4. Set:
-   - **Mount Path**: `/app/database`
-   - **Size**: 1GB (or as needed)
-
-### Step 4: Set Environment Variables
+### Step 3: Set Environment Variables
 
 In the backend service, go to **Variables** and add:
 
@@ -127,7 +174,8 @@ In the backend service, go to **Variables** and add:
 |----------|-------|
 | `NODE_ENV` | `production` |
 | `HOST` | `0.0.0.0` |
-| `DATABASE_PATH` | `/app/database/singalong.db` |
+| `TURSO_DATABASE_URL` | `libsql://singalong-yourusername.turso.io` |
+| `TURSO_AUTH_TOKEN` | `<your-turso-auth-token>` |
 | `COOKIE_SECRET` | `<your-generated-secret>` |
 | `SONGS_JSON_URL` | `https://raw.githubusercontent.com/KidCrippler/songs/master/songs.json` |
 | `ADMIN_USERS` | `admin:<your-secure-password>` |
@@ -135,17 +183,19 @@ In the backend service, go to **Variables** and add:
 
 > ⚠️ **Do NOT set `PORT`** — Railway automatically assigns and injects the port. Your app reads it from `process.env.PORT`.
 
+> 💡 Get `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from the [Turso Database Setup](#turso-database-setup) section.
+
 > 💡 Generate `COOKIE_SECRET` with: `openssl rand -hex 32`
 
 > 💡 **CORS_ORIGIN** supports multiple origins separated by commas. Include `localhost` origins if you want to test against production backend from your local machine.
 
-### Step 5: Deploy
+### Step 4: Deploy
 
 1. Railway will auto-deploy on push to main branch
 2. Wait for the build to complete
 3. Note your Railway URL (e.g., `singwithalon-backend-production.up.railway.app`)
 
-### Step 6: (Optional) Custom Backend Domain
+### Step 5: (Optional) Custom Backend Domain
 
 If you want `api.yousing.live` instead of Railway's URL:
 
@@ -297,14 +347,15 @@ curl -I https://new.yousing.live
 2. Both frontend and backend must use HTTPS
 3. Check browser console for cookie warnings
 
-### Database Not Persisting
+### Database Connection Issues (Turso)
 
-**Symptom**: Data is lost after redeploy
+**Symptom**: Backend fails to start, logs show database connection errors
 
 **Fix**:
-1. Verify Railway volume is mounted at `/app/database`
-2. Verify `DATABASE_PATH` is set to `/app/database/singalong.db`
-3. Check Railway logs for database initialization messages
+1. Verify `TURSO_DATABASE_URL` is set correctly (should start with `libsql://`)
+2. Verify `TURSO_AUTH_TOKEN` is valid (regenerate with `turso db tokens create singalong`)
+3. Check that the database exists: `turso db list`
+4. Test connection: `turso db shell singalong "SELECT 1;"`
 
 ### DNS Not Resolving
 
@@ -319,13 +370,17 @@ curl -I https://new.yousing.live
 
 ## Environment Variables Summary
 
-### Backend (Railway)
+### Backend (Railway/Production)
 
 ```env
 # Do NOT set PORT - Railway auto-assigns it
 NODE_ENV=production
 HOST=0.0.0.0
-DATABASE_PATH=/app/database/singalong.db
+
+# Turso Database (production)
+TURSO_DATABASE_URL=libsql://singalong-yourusername.turso.io
+TURSO_AUTH_TOKEN=<your-turso-token>
+
 COOKIE_SECRET=<openssl rand -hex 32>
 SONGS_JSON_URL=https://raw.githubusercontent.com/KidCrippler/songs/master/songs.json
 ADMIN_USERS=admin:<secure-password>
@@ -338,7 +393,10 @@ CORS_ORIGIN=https://new.yousing.live,http://localhost:5173,http://localhost:5174
 PORT=3001
 HOST=0.0.0.0
 NODE_ENV=development
+
+# Local SQLite (development) - Turso vars NOT set, so falls back to this
 DATABASE_PATH=../database/singalong.db
+
 COOKIE_SECRET=<openssl rand -hex 32>
 SONGS_JSON_URL=https://raw.githubusercontent.com/KidCrippler/songs/master/songs.json
 ADMIN_USERS=admin:<your-password>
@@ -358,9 +416,10 @@ VITE_SOCKET_URL=https://api.yousing.live
 
 ## Deployment Checklist
 
+- [ ] Turso database created (`turso db create singalong`)
+- [ ] Turso auth token generated
 - [ ] Railway backend service created
-- [ ] Railway volume mounted at `/app/database`
-- [ ] Railway environment variables set
+- [ ] Railway environment variables set (including Turso credentials)
 - [ ] Backend deployed and responding
 - [ ] Vercel frontend project created
 - [ ] Vercel root directory set to `platform/frontend`
