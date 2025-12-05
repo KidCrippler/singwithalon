@@ -24,28 +24,6 @@ async function databaseHasData(): Promise<boolean> {
   }
 }
 
-// Check if database has old (single-tenant) schema that needs migration
-async function hasOldSchema(): Promise<boolean> {
-  try {
-    // Check if playing_state table exists
-    const tableExists = await db.execute(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='playing_state'"
-    );
-    if (tableExists.rows.length === 0) return false;
-    
-    // Check if playing_state has admin_id column (new schema)
-    const columns = await db.execute("PRAGMA table_info(playing_state)");
-    const hasAdminId = columns.rows.some(
-      (row) => (row as Record<string, unknown>).name === 'admin_id'
-    );
-    
-    // Old schema if table exists but doesn't have admin_id
-    return !hasAdminId;
-  } catch {
-    return false;
-  }
-}
-
 // Drop all tables for RESET_DB
 async function dropAllTables(): Promise<void> {
   console.log('Dropping all tables...');
@@ -123,36 +101,18 @@ export async function initDatabase(): Promise<Client> {
     });
   }
 
-  // Check for old schema that needs migration
-  const oldSchema = await hasOldSchema();
+  // Handle RESET_DB - allows wiping and recreating the database
   const resetDb = config.database.resetDb;
-  
-  if (oldSchema && resetDb !== 'CONFIRM') {
-    console.error('');
-    console.error('❌ DATABASE MIGRATION REQUIRED');
-    console.error('');
-    console.error('   Your database has the old single-tenant schema.');
-    console.error('   The multi-tenant migration requires a fresh database.');
-    console.error('');
-    console.error('   To proceed, set the environment variable:');
-    console.error('     RESET_DB=CONFIRM');
-    console.error('');
-    console.error('   ⚠️  WARNING: This will DELETE ALL EXISTING DATA!');
-    console.error('');
-    process.exit(1);
-  }
-
-  // Handle RESET_DB
   if (resetDb === 'true' || resetDb === 'CONFIRM') {
     const hasData = await databaseHasData();
     
-    if (resetDb === 'true' && hasData && !oldSchema) {
+    if (resetDb === 'true' && hasData) {
       console.error('❌ RESET_DB=true but database has data.');
       console.error('   Set RESET_DB=CONFIRM to force reset, or remove RESET_DB to keep data.');
       process.exit(1);
     }
     
-    if (resetDb === 'CONFIRM' || !hasData || oldSchema) {
+    if (resetDb === 'CONFIRM' || !hasData) {
       console.log('RESET_DB enabled - recreating database schema...');
       await dropAllTables();
     }

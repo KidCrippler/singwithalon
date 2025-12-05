@@ -153,7 +153,8 @@ export function authHook(fastify: FastifyInstance) {
   });
 }
 
-// Legacy middleware for backwards compatibility during migration
+// Middleware for global admin endpoints (not room-scoped)
+// Used by endpoints like /api/songs/reload that any admin can access
 export function requireAdmin(request: FastifyRequest, reply: FastifyReply, done: () => void) {
   if (!request.user?.isAdmin) {
     reply.status(401).send({ error: 'Admin authentication required' });
