@@ -3,7 +3,12 @@
  * - Dynamically discovers all .webp, .png and .jpg files in /public/backgrounds/
  * - Preloads all backgrounds to browser cache on app startup
  * - Provides random selection for each new song
+ * - Supports per-song AI-generated backgrounds from R2
  */
+
+// R2 base URL for song-specific backgrounds (optional)
+// Remove trailing slash if present to avoid double-slashes in URLs
+const SONG_BACKGROUNDS_URL = (import.meta.env.VITE_SONG_BACKGROUNDS_URL || '').replace(/\/$/, '');
 
 // Dynamically import all background images using Vite's glob import
 // This scans at build time, so new images are picked up on rebuild
@@ -53,5 +58,42 @@ export function getRandomBackground(exclude?: string): string {
   
   const index = Math.floor(Math.random() * available.length);
   return available[index];
+}
+
+/**
+ * Get background URL for a specific song.
+ * Attempts to load a song-specific background from R2, falls back to random pastoral.
+ * 
+ * @param songId - The song ID to get background for
+ * @param currentBackground - Current background to exclude from fallback selection
+ * @returns Promise resolving to the background URL (song-specific or fallback)
+ */
+export async function getSongBackground(
+  songId: number,
+  currentBackground?: string
+): Promise<string> {
+  // If R2 URL not configured, use random fallback
+  if (!SONG_BACKGROUNDS_URL) {
+    return getRandomBackground(currentBackground);
+  }
+
+  const songBackgroundUrl = `${SONG_BACKGROUNDS_URL}/${songId}.webp`;
+
+  // Try to load the song-specific background silently
+  return new Promise((resolve) => {
+    const img = new Image();
+    
+    img.onload = () => {
+      // Song-specific background exists and loaded successfully
+      resolve(songBackgroundUrl);
+    };
+    
+    img.onerror = () => {
+      // Song-specific background doesn't exist, fall back to random pastoral
+      resolve(getRandomBackground(currentBackground));
+    };
+    
+    img.src = songBackgroundUrl;
+  });
 }
 

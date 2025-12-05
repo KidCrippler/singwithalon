@@ -8,7 +8,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
-import { getRandomBackground } from '../../utils/backgrounds';
+import { getRandomBackground, getSongBackground } from '../../utils/backgrounds';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -514,8 +514,8 @@ export function PlayingNowView() {
         })
         .catch(console.error)
         .finally(() => setIsLoading(false));
-      // Pick a new random background for the new song (avoid repeating the current one)
-      setCurrentBackground(prev => getRandomBackground(prev));
+      // Try to load song-specific background, fall back to random pastoral
+      getSongBackground(songId, currentBackground).then(setCurrentBackground);
     } else {
       setLyrics(null);
       setLyricsSongId(null);

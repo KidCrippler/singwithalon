@@ -8,7 +8,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
-import { getRandomBackground } from '../../utils/backgrounds';
+import { getSongBackground, getRandomBackground } from '../../utils/backgrounds';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
@@ -154,7 +154,7 @@ export function SongView() {
   const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('lyrics'); // Default to lyrics for viewers
   const [keyOffset, setKeyOffset] = useState(0);
   const [showQueueModal, setShowQueueModal] = useState(false);
-  const [currentBackground] = useState(() => getRandomBackground());
+  const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
   const { toasts, showToast, dismissToast } = useToast();
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
@@ -172,6 +172,8 @@ export function SongView() {
       .then(([songData, lyricsData]) => {
         setSongData(songData);
         setLyrics(lyricsData);
+        // Load song-specific background (falls back to random pastoral)
+        getSongBackground(songId, currentBackground).then(setCurrentBackground);
       })
       .catch(err => setError(err.message))
       .finally(() => setIsLoading(false));
