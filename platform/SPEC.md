@@ -1306,7 +1306,50 @@ VITE_DEFAULT_ROOM=alon  # Room to redirect to when accessing / or /admin
 
 ---
 
-## 17. Future Considerations (Out of Scope for V1)
+## 17. Analytics
+
+### 17.1 Overview
+
+The application tracks song-related events to enable offline analysis of sing-along sessions. Analytics are collected in a fire-and-forget manner — failures are logged but never crash the application or block user actions.
+
+### 17.2 Tracked Events
+
+| Action | Trigger | Description |
+|--------|---------|-------------|
+| `queued` | `search` | Viewer added a song to the queue from search results |
+| `queued` | `song_view` | Viewer added a song to the queue from single-song page |
+| `played` | `search` | Admin played directly from search (no viewer credit) |
+| `played` | `song_view` | Admin played from single-song "Present Now" (no viewer credit) |
+| `played` | `queue` | Admin played from queue (viewer who requested gets credit) |
+| `removed_by_viewer` | `queue` | Viewer cancelled their own request (future feature) |
+| `removed_by_admin` | `queue` | Admin deleted a queue entry |
+
+### 17.3 Event Sessions
+
+Analytics are grouped by **event_id** — a UUID that represents a single sing-along session. A new event starts when the admin truncates the queue. This allows analysis per event (e.g., "which songs were played at Saturday's session").
+
+### 17.4 Viewer Attribution
+
+- When a song is played from the queue, the **viewer who requested it** gets credit (their name and session ID are recorded)
+- When a song is played directly by admin (from search or song view), **no viewer** is credited
+- This distinction enables metrics like "queue vs. direct play ratio" and "which viewers got to sing the most"
+
+### 17.5 Derivable Metrics
+
+With the tracked data, you can calculate:
+
+| Metric | How |
+|--------|-----|
+| Most popular songs (global) | Count plays per song across all rooms |
+| Most popular songs (per room) | Count plays per song filtered by room |
+| Queue vs. direct play ratio | Compare plays with `trigger='queue'` vs other triggers |
+| Top viewers per event | Count plays with viewer credit, grouped by event |
+| Request success rate | Ratio of `queued` to `played` (from queue) per song |
+| Songs that get removed often | Count `removed_by_admin` actions per song |
+
+---
+
+## 18. Future Considerations (Out of Scope for V1)
 
 1. **Song caching**: Pre-download all songs for offline resilience
 2. **Setlist feature**: Pre-plan song order for a show
@@ -1323,7 +1366,7 @@ VITE_DEFAULT_ROOM=alon  # Room to redirect to when accessing / or /admin
 
 ---
 
-## 18. Visual Reference
+## 19. Visual Reference
 
 ### Lyrics + Chords Mode (Band View)
 - White background

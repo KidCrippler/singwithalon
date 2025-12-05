@@ -3,6 +3,7 @@ import { playingStateQueries, sessionQueries, queueQueries, adminQueries } from 
 import { getSongsIndex } from './songs.js';
 import { resolveRoom, requireRoomOwner } from './auth.js';
 import { getIO, broadcastToRoom } from '../socket/index.js';
+import { analytics, AnalyticsTrigger } from '../services/analytics.js';
 
 interface RoomParams {
   username: string;
@@ -94,12 +95,12 @@ export async function stateRoutes(fastify: FastifyInstance) {
   // === Admin State Controls (room-scoped) ===
 
   // Set current song
-  fastify.post<{ Params: RoomParams; Body: { songId: number } }>(
+  fastify.post<{ Params: RoomParams; Body: { songId: number; trigger?: 'search' | 'song_view' } }>(
     '/api/rooms/:username/state/song',
     { preHandler: [resolveRoom, requireRoomOwner] },
     async (request, reply) => {
       const adminId = request.room!.adminId;
-      const { songId } = request.body;
+      const { songId, trigger = 'search' } = request.body;
       
       const songsIndex = getSongsIndex();
       const song = songsIndex.find(s => s.id === songId);
@@ -112,6 +113,15 @@ export async function stateRoutes(fastify: FastifyInstance) {
       if (currentState?.current_song_id) {
         await queueQueries.markSongPlayed(adminId, currentState.current_song_id);
       }
+
+      // Track analytics - admin direct play (no viewer credit)
+      analytics.trackSongEvent({
+        roomId: adminId,
+        songId,
+        action: 'played',
+        trigger: trigger as AnalyticsTrigger,
+        // No viewerName/sessionId - this is admin direct play
+      });
 
       await playingStateQueries.update(adminId, {
         current_song_id: songId,

@@ -28,11 +28,48 @@ async function databaseHasData(): Promise<boolean> {
 async function dropAllTables(): Promise<void> {
   console.log('Dropping all tables...');
   // Order matters due to foreign keys
+  await db.execute('DROP TABLE IF EXISTS song_analytics');
   await db.execute('DROP TABLE IF EXISTS sessions');
   await db.execute('DROP TABLE IF EXISTS queue');
   await db.execute('DROP TABLE IF EXISTS playing_state');
   await db.execute('DROP TABLE IF EXISTS admins');
   console.log('All tables dropped.');
+}
+
+// Check if a table exists
+async function tableExists(tableName: string): Promise<boolean> {
+  const result = await db.execute({
+    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+    args: [tableName],
+  });
+  return result.rows.length > 0;
+}
+
+// Migration: Create song_analytics table if it doesn't exist
+// TODO: Remove this after deployment - the schema.sql handles this for new installs
+async function migrateSongAnalytics(): Promise<void> {
+  const exists = await tableExists('song_analytics');
+  if (!exists) {
+    console.log('Creating song_analytics table (migration)...');
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS song_analytics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+        song_id INTEGER NOT NULL,
+        viewer_name TEXT,
+        session_id TEXT,
+        action TEXT NOT NULL,
+        trigger TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_room ON song_analytics(room_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_event ON song_analytics(event_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_song ON song_analytics(song_id)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_created ON song_analytics(created_at)');
+    console.log('song_analytics table created successfully.');
+  }
 }
 
 // Sync admins from ADMIN_USERS env var
@@ -130,6 +167,9 @@ export async function initDatabase(): Promise<Client> {
   }
 
   console.log('Database schema initialized');
+
+  // Run migrations for existing databases
+  await migrateSongAnalytics();
 
   // Sync admins from env var
   await syncAdminsFromEnv();

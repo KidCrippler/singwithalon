@@ -33,7 +33,7 @@ interface PlayingNowContextValue {
   setMaxVerseIndex: (max: number) => void;
   
   // Actions
-  setSong: (songId: number) => void;
+  setSong: (songId: number, trigger?: 'search' | 'song_view') => void;
   clearSong: () => void;
   nextVerse: () => void;
   prevVerse: () => void;
@@ -222,9 +222,9 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
 
   // Admin actions - all via REST API (server broadcasts via socket)
   // All actions now require roomUsername
-  const setSong = useCallback((songId: number) => {
+  const setSong = useCallback((songId: number, trigger: 'search' | 'song_view' = 'search') => {
     if (!roomUsername) return;
-    stateApi.setSong(roomUsername, songId).catch(console.error);
+    stateApi.setSong(roomUsername, songId, trigger).catch(console.error);
   }, [roomUsername]);
 
   const clearSong = useCallback(() => {

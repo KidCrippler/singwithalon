@@ -137,10 +137,10 @@ export const stateApi = {
   },
 
   // Admin controls
-  async setSong(roomUsername: string, songId: number): Promise<{ success: boolean }> {
+  async setSong(roomUsername: string, songId: number, trigger: 'search' | 'song_view' = 'search'): Promise<{ success: boolean }> {
     return fetchJson(`/api/rooms/${roomUsername}/state/song`, {
       method: 'POST',
-      body: JSON.stringify({ songId }),
+      body: JSON.stringify({ songId, trigger }),
     });
   },
 

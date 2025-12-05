@@ -189,7 +189,7 @@ export function SongView() {
   const handlePresentNow = () => {
     if (!id) return;
     setSearchTerm(''); // Clear search filter when presenting
-    setSong(parseInt(id, 10));
+    setSong(parseInt(id, 10), 'song_view');
     navigate(`/${username}/playing-now`);
   };
 

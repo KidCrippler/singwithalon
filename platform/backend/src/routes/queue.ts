@@ -3,6 +3,7 @@ import { queueQueries, playingStateQueries } from '../db/index.js';
 import { resolveRoom, requireRoomOwner } from './auth.js';
 import { getSongsIndex } from './songs.js';
 import { broadcastToRoom } from '../socket/index.js';
+import { analytics } from '../services/analytics.js';
 
 const MAX_QUEUE_PER_SESSION = 25;
 
@@ -112,6 +113,16 @@ export async function queueRoutes(fastify: FastifyInstance) {
 
       const entry = await queueQueries.add(adminId, songId, requesterName.trim(), sessionId, trimmedNotes);
       
+      // Track analytics
+      analytics.trackSongEvent({
+        roomId: adminId,
+        songId,
+        action: 'queued',
+        trigger: 'search',
+        viewerName: requesterName.trim(),
+        sessionId,
+      });
+      
       // Notify admins in room via socket
       await broadcastQueueUpdate(adminId);
       
@@ -195,6 +206,16 @@ export async function queueRoutes(fastify: FastifyInstance) {
       // Mark this queue entry as played
       await queueQueries.markPlayed(queueId);
 
+      // Track analytics - song played from queue, credit goes to the requester
+      analytics.trackSongEvent({
+        roomId: adminId,
+        songId: entry.song_id,
+        action: 'played',
+        trigger: 'queue',
+        viewerName: entry.requester_name,
+        sessionId: entry.session_id,
+      });
+
       // Set as current song
       const state = await playingStateQueries.update(adminId, {
         current_song_id: entry.song_id,
@@ -228,9 +249,25 @@ export async function queueRoutes(fastify: FastifyInstance) {
       const adminId = request.room!.adminId;
       const queueId = parseInt(request.params.id, 10);
       
+      // Get entry info before deleting (for analytics)
+      const entries = await queueQueries.getAll(adminId);
+      const entry = entries.find(e => e.id === queueId);
+      
       const removed = await queueQueries.removeById(queueId);
       if (!removed) {
         return reply.status(404).send({ error: 'Queue entry not found' });
+      }
+
+      // Track analytics
+      if (entry) {
+        analytics.trackSongEvent({
+          roomId: adminId,
+          songId: entry.song_id,
+          action: 'removed_by_admin',
+          trigger: 'queue',
+          viewerName: entry.requester_name,
+          sessionId: entry.session_id,
+        });
       }
 
       await broadcastQueueUpdate(adminId);
@@ -268,6 +305,9 @@ export async function queueRoutes(fastify: FastifyInstance) {
       const adminId = request.room!.adminId;
       
       await queueQueries.truncate(adminId);
+      
+      // Start new analytics event (queue truncate = new session/event)
+      analytics.resetEvent(adminId);
       
       // Also clear the current song (return to splash screen)
       await playingStateQueries.clearSong(adminId);

@@ -60,3 +60,21 @@ CREATE INDEX IF NOT EXISTS idx_queue_status ON queue(status);
 CREATE INDEX IF NOT EXISTS idx_sessions_admin ON sessions(admin_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_last_seen ON sessions(last_seen);
 CREATE INDEX IF NOT EXISTS idx_admins_active ON admins(is_active);
+
+-- Song analytics (append-only event log)
+CREATE TABLE IF NOT EXISTS song_analytics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  song_id INTEGER NOT NULL,
+  viewer_name TEXT,                    -- NULL if admin direct play from search/song_view
+  session_id TEXT,                     -- NULL if admin direct play
+  action TEXT NOT NULL,                -- 'queued', 'played', 'removed_by_viewer', 'removed_by_admin'
+  trigger TEXT NOT NULL,               -- 'search', 'song_view', 'queue'
+  event_id TEXT NOT NULL,              -- UUID, new on queue truncate
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_room ON song_analytics(room_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_event ON song_analytics(event_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_song ON song_analytics(song_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_created ON song_analytics(created_at);
