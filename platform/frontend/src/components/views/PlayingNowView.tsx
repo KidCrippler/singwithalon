@@ -8,7 +8,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
-import { getRandomBackground, getSongBackground } from '../../utils/backgrounds';
+import { getSongBackground } from '../../utils/backgrounds';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -458,7 +458,7 @@ export function PlayingNowView() {
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
   const [scrollPercent, setScrollPercent] = useState(100); // Percentage to scroll (100% = full, less = overlap visible)
-  const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
+  const [currentBackground, setCurrentBackground] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerFullContainerRef = useRef<HTMLDivElement>(null);
@@ -515,7 +515,7 @@ export function PlayingNowView() {
         .catch(console.error)
         .finally(() => setIsLoading(false));
       // Try to load song-specific background, fall back to random pastoral
-      getSongBackground(songId, currentBackground).then(setCurrentBackground);
+      getSongBackground(songId).then(setCurrentBackground);
     } else {
       setLyrics(null);
       setLyricsSongId(null);
@@ -913,7 +913,7 @@ export function PlayingNowView() {
             <div 
               ref={fullscreenContainerRef}
               className={`fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
-              style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
+              style={currentBackground ? { '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties : undefined}
             >
               {/* Song metadata header - only visible in fullscreen */}
               {isFullscreen && (

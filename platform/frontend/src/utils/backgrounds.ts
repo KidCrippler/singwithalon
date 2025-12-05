@@ -62,7 +62,8 @@ export function getRandomBackground(exclude?: string): string {
 
 /**
  * Get background URL for a specific song.
- * Attempts to load a song-specific background from R2, falls back to random pastoral.
+ * Uses HEAD request to check existence (no body download), then CSS loads the actual image.
+ * Falls back to random pastoral if song-specific background doesn't exist.
  * 
  * @param songId - The song ID to get background for
  * @param currentBackground - Current background to exclude from fallback selection
@@ -79,21 +80,16 @@ export async function getSongBackground(
 
   const songBackgroundUrl = `${SONG_BACKGROUNDS_URL}/${songId}.webp`;
 
-  // Try to load the song-specific background silently
-  return new Promise((resolve) => {
-    const img = new Image();
-    
-    img.onload = () => {
-      // Song-specific background exists and loaded successfully
-      resolve(songBackgroundUrl);
-    };
-    
-    img.onerror = () => {
-      // Song-specific background doesn't exist, fall back to random pastoral
-      resolve(getRandomBackground(currentBackground));
-    };
-    
-    img.src = songBackgroundUrl;
-  });
+  try {
+    // Use HEAD request to check if image exists without downloading it
+    const response = await fetch(songBackgroundUrl, { method: 'HEAD' });
+    if (response.ok) {
+      return songBackgroundUrl;
+    }
+  } catch {
+    // Network error or CORS issue - fall through to fallback
+  }
+  
+  return getRandomBackground(currentBackground);
 }
 

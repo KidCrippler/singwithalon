@@ -8,7 +8,7 @@ import { formatCredits } from '../../utils/formatCredits';
 import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
-import { getSongBackground, getRandomBackground } from '../../utils/backgrounds';
+import { getSongBackground } from '../../utils/backgrounds';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
@@ -154,7 +154,7 @@ export function SongView() {
   const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('lyrics'); // Default to lyrics for viewers
   const [keyOffset, setKeyOffset] = useState(0);
   const [showQueueModal, setShowQueueModal] = useState(false);
-  const [currentBackground, setCurrentBackground] = useState(() => getRandomBackground());
+  const [currentBackground, setCurrentBackground] = useState('');
   const { toasts, showToast, dismissToast } = useToast();
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
@@ -173,7 +173,7 @@ export function SongView() {
         setSongData(songData);
         setLyrics(lyricsData);
         // Load song-specific background (falls back to random pastoral)
-        getSongBackground(songId, currentBackground).then(setCurrentBackground);
+        getSongBackground(songId).then(setCurrentBackground);
       })
       .catch(err => setError(err.message))
       .finally(() => setIsLoading(false));
@@ -293,7 +293,7 @@ export function SongView() {
       {displayMode === 'lyrics' ? (
         <div 
           className="song-view-lyrics-wrapper"
-          style={{ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties}
+          style={currentBackground ? { '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties : undefined}
         >
           <div 
             ref={lyricsContainerRef}
