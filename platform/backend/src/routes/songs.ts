@@ -179,8 +179,10 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
   let lineIndex = 0;
 
   // Try to extract metadata from the beginning
+  // Note: Must strip directional chars (like RLM U+200F) before checking for empty lines,
+  // otherwise a line like " ‏" (space + RLM) won't be detected as empty after trim()
   for (let i = 0; i < lines.length && !metadataEnded; i++) {
-    const line = lines[i].trim();
+    const line = stripDirectionalChars(lines[i]).trim();
     
     if (line === '') {
       metadataEnded = true;
@@ -188,11 +190,14 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
       continue;
     }
 
-    if (i === 0 && line.includes(' - ')) {
+    // Check for title line: "Song Title - Artist" or "Song Title – Artist" (en-dash)
+    // Some files use en-dash (U+2013) instead of hyphen
+    if (i === 0 && (line.includes(' - ') || line.includes(' – '))) {
       // First line: "Song Title - Artist"
-      const [t, a] = line.split(' - ');
-      if (t) title = t.trim();
-      if (a) artist = a.trim();
+      const separator = line.includes(' - ') ? ' - ' : ' – ';
+      const [t, a] = line.split(separator);
+      if (t) title = stripDirectionalChars(t).trim();
+      if (a) artist = stripDirectionalChars(a).trim();
       lineIndex = i + 1;
     } else if (line.match(/^(מילים|לחן|Lyrics|Music|מילים ולחן|Lyrics and Music)/i)) {
       credits = line;
@@ -207,7 +212,10 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
   // Parse remaining lines
   for (let i = lineIndex; i < lines.length; i++) {
     const line = lines[i];
-    const trimmed = line.trim();
+    // Strip directional control chars early - they can cause rendering issues
+    // (e.g., RLM U+200F scattered throughout lyric lines scrambles display)
+    const cleanedLine = stripDirectionalChars(line);
+    const trimmed = cleanedLine.trim();
 
     if (trimmed === '') {
       parsedLines.push({ type: 'empty', text: '' });
@@ -219,14 +227,12 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
       parsedLines.push({ type: 'cue', text: extractDirectiveText(trimmed) });
     } else if (isChordLine(trimmed)) {
       // For RTL songs, reverse chord lines so they display correctly
-      // Strip directional chars before reversing to avoid corruption
       // Trim trailing whitespace (meaningless, can cause font sizing issues)
-      const cleanedLine = stripDirectionalChars(line).trimEnd();
-      const chordLine = isRtl ? reverseChordLineForRtl(cleanedLine) : cleanedLine;
+      const chordLine = isRtl ? reverseChordLineForRtl(cleanedLine.trimEnd()) : cleanedLine.trimEnd();
       parsedLines.push({ type: 'chords', text: chordLine, raw: chordLine });
     } else {
       // Trim trailing whitespace (meaningless, can cause font sizing issues)
-      parsedLines.push({ type: 'lyric', text: line.trimEnd() });
+      parsedLines.push({ type: 'lyric', text: cleanedLine.trimEnd() });
     }
   }
 
