@@ -3,11 +3,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
+import { useSearch } from '../../context/SearchContext';
+import { useQueue } from '../../context/QueueContext';
 
 export function Header() {
   const { user, isAdmin, logout } = useAuth();
   const { isConnected } = useSocket();
   const { clearSong, state } = usePlayingNow();
+  const { filteredCount } = useSearch();
+  const { queueCount } = useQueue();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,7 +62,7 @@ export function Header() {
               to="/admin" 
               className={location.pathname === '/admin' ? 'active' : ''}
             >
-              חיפוש
+              חיפוש {filteredCount > 0 && `(${filteredCount})`}
             </Link>
             <Link 
               to="/playing-now"
@@ -70,7 +74,7 @@ export function Header() {
               to="/queue"
               className={location.pathname === '/queue' ? 'active' : ''}
             >
-              תור
+              תור {queueCount > 0 && `(${queueCount})`}
             </Link>
           </>
         ) : (
@@ -79,7 +83,7 @@ export function Header() {
               to="/"
               className={location.pathname === '/' ? 'active' : ''}
             >
-              חיפוש
+              חיפוש {filteredCount > 0 && `(${filteredCount})`}
             </Link>
             <Link 
               to="/playing-now"

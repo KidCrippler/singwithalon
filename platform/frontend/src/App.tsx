@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { PlayingNowProvider } from './context/PlayingNowContext';
 import { SearchProvider } from './context/SearchContext';
 import { SongsProvider } from './context/SongsContext';
+import { QueueProvider } from './context/QueueContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Header } from './components/layout/Header';
 import { SearchView } from './components/views/SearchView';
@@ -58,7 +59,9 @@ function App() {
           <SongsProvider>
             <PlayingNowProvider>
               <SearchProvider>
-                <AppContent />
+                <QueueProvider>
+                  <AppContent />
+                </QueueProvider>
               </SearchProvider>
             </PlayingNowProvider>
           </SongsProvider>

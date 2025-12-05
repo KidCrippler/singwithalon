@@ -35,12 +35,14 @@ export function QueueView() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('queue:updated', (payload: { queue: GroupedQueue[] }) => {
+    const handleQueueUpdate = (payload: { queue: GroupedQueue[] }) => {
       setQueue(payload.queue);
-    });
+    };
+
+    socket.on('queue:updated', handleQueueUpdate);
 
     return () => {
-      socket.off('queue:updated');
+      socket.off('queue:updated', handleQueueUpdate);
     };
   }, [socket]);
 

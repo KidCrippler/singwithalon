@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -11,7 +11,7 @@ import type { Song } from '../../types';
 
 export function SearchView() {
   const { songs, isLoading, error, reloadSongs } = useSongs();
-  const { searchTerm, setSearchTerm } = useSearch();
+  const { searchTerm, setSearchTerm, setFilteredCount } = useSearch();
   const [isReloading, setIsReloading] = useState(false);
   const [queueModalSong, setQueueModalSong] = useState<Song | null>(null);
   const navigate = useNavigate();
@@ -67,6 +67,11 @@ export function SearchView() {
       song.singer.toLowerCase().includes(term)
     );
   }, [sortedSongs, searchTerm]);
+
+  // Update filtered count in context for Header to display
+  useEffect(() => {
+    setFilteredCount(filteredSongs.length);
+  }, [filteredSongs.length, setFilteredCount]);
 
   const handleViewSong = (songId: number) => {
     navigate(`/song/${songId}`);
