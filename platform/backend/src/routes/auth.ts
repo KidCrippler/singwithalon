@@ -3,95 +3,130 @@ import '@fastify/cookie';
 import bcrypt from 'bcrypt';
 import { adminQueries } from '../db/index.js';
 import { config } from '../config.js';
-import type { AuthUser } from '../types/index.js';
+import type { AuthUser, Room } from '../types/index.js';
 
 interface LoginBody {
+  password: string;  // Username comes from URL param, not body
+}
+
+interface RoomParams {
   username: string;
-  password: string;
+}
+
+// Room resolution middleware - resolves username to adminId
+export async function resolveRoom(request: FastifyRequest<{ Params: RoomParams }>, reply: FastifyReply) {
+  const { username } = request.params;
+  
+  if (!username) {
+    return reply.status(400).send({ error: 'Room username required' });
+  }
+
+  const admin = await adminQueries.getActiveByUsername(username);
+  if (!admin) {
+    return reply.status(404).send({ error: 'Room not found' });
+  }
+
+  // Attach room to request
+  request.room = {
+    adminId: admin.id,
+    username: admin.username,
+    displayName: admin.display_name,
+  };
+}
+
+// Middleware to require admin authentication AND room ownership
+export function requireRoomOwner(request: FastifyRequest, reply: FastifyReply, done: () => void) {
+  if (!request.user?.isAdmin) {
+    reply.status(401).send({ error: 'Admin authentication required' });
+    return;
+  }
+  
+  if (!request.room) {
+    reply.status(400).send({ error: 'Room context required' });
+    return;
+  }
+  
+  // Verify the logged-in admin owns this room
+  if (request.user.id !== request.room.adminId) {
+    reply.status(403).send({ error: 'Not authorized for this room' });
+    return;
+  }
+  
+  done();
 }
 
 export async function authRoutes(fastify: FastifyInstance) {
-  // Seed admin users on startup from ADMIN_USERS env var
-  fastify.addHook('onReady', async () => {
-    // Seed admins from ADMIN_USERS env var (format: "user1:pass1,user2:pass2")
-    if (config.adminUsers) {
-      const users = config.adminUsers.split(',').map(u => u.trim()).filter(Boolean);
-      for (const userEntry of users) {
-        const [username, password] = userEntry.split(':');
-        if (username && password) {
-          const existingAdmin = await adminQueries.getByUsername(username);
-          const passwordHash = await bcrypt.hash(password, 10);
-          
-          if (!existingAdmin) {
-            await adminQueries.create(username, passwordHash);
-            console.log(`Created admin user: ${username}`);
-          } else {
-            // Update password if it changed (allows password changes via env var)
-            const passwordChanged = !(await bcrypt.compare(password, existingAdmin.password_hash));
-            if (passwordChanged) {
-              await adminQueries.updatePassword(username, passwordHash);
-              console.log(`Updated password for admin user: ${username}`);
-            }
-          }
-        }
+  // Note: Admin seeding is now handled in db/index.ts via syncAdminsFromEnv()
+
+  // Room-scoped login endpoint (strict: only accepts credentials for :username)
+  fastify.post<{ Params: RoomParams; Body: LoginBody }>(
+    '/api/rooms/:username/auth/login',
+    { preHandler: resolveRoom },
+    async (request, reply) => {
+      const { password } = request.body;
+      const room = request.room!;
+
+      if (!password) {
+        return reply.status(400).send({ error: 'Password is required' });
       }
+
+      // Get the admin for this room
+      const admin = await adminQueries.getActiveByUsername(room.username);
+      if (!admin) {
+        return reply.status(404).send({ error: 'Room not found' });
+      }
+
+      const isValid = await bcrypt.compare(password, admin.password_hash);
+      if (!isValid) {
+        return reply.status(401).send({ error: 'Invalid credentials' });
+      }
+
+      // Set session cookie with admin info
+      const sessionData: AuthUser = {
+        id: admin.id,
+        username: admin.username,
+        isAdmin: true,
+      };
+
+      reply.setCookie(config.auth.cookieName, JSON.stringify(sessionData), {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        signed: true,
+      });
+
+      return { 
+        success: true, 
+        user: { 
+          id: admin.id,
+          username: admin.username, 
+          displayName: admin.display_name,
+          isAdmin: true 
+        } 
+      };
     }
-    
-    // Fallback: create default admin if no admins exist and DEFAULT_ADMIN_PASSWORD is set
-    if (!(await adminQueries.exists()) && config.defaultAdminPassword) {
-      const passwordHash = await bcrypt.hash(config.defaultAdminPassword, 10);
-      await adminQueries.create('admin', passwordHash);
-      console.log('Created default admin user: admin');
-    }
-  });
+  );
 
-  // Login endpoint
-  fastify.post<{ Body: LoginBody }>('/api/auth/login', async (request, reply) => {
-    const { username, password } = request.body;
-
-    if (!username || !password) {
-      return reply.status(400).send({ error: 'Username and password are required' });
-    }
-
-    const admin = await adminQueries.getByUsername(username);
-    if (!admin) {
-      return reply.status(401).send({ error: 'Invalid credentials' });
-    }
-
-    const isValid = await bcrypt.compare(password, admin.password_hash);
-    if (!isValid) {
-      return reply.status(401).send({ error: 'Invalid credentials' });
-    }
-
-    // Set session cookie
-    const sessionData: AuthUser = {
-      id: admin.id,
-      username: admin.username,
-      isAdmin: true,
-    };
-
-    reply.setCookie(config.auth.cookieName, JSON.stringify(sessionData), {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      signed: true,
-    });
-
-    return { success: true, user: { username: admin.username, isAdmin: true } };
-  });
-
-  // Logout endpoint
+  // Logout endpoint (global, not room-scoped)
   fastify.post('/api/auth/logout', async (request, reply) => {
     reply.clearCookie(config.auth.cookieName, { path: '/' });
     return { success: true };
   });
 
-  // Check auth status
+  // Check auth status (global)
   fastify.get('/api/auth/me', async (request, reply) => {
     if (request.user) {
-      return { authenticated: true, user: request.user };
+      // Get admin details including display_name
+      const admin = await adminQueries.getById(request.user.id);
+      return { 
+        authenticated: true, 
+        user: {
+          ...request.user,
+          displayName: admin?.display_name || null,
+        }
+      };
     }
     return { authenticated: false };
   });
@@ -100,6 +135,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 // Auth verification hook - adds user to request if authenticated
 export function authHook(fastify: FastifyInstance) {
   fastify.decorateRequest('user', null);
+  fastify.decorateRequest('room', null);
   
   fastify.addHook('preHandler', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -117,7 +153,7 @@ export function authHook(fastify: FastifyInstance) {
   });
 }
 
-// Middleware to require admin authentication
+// Legacy middleware for backwards compatibility during migration
 export function requireAdmin(request: FastifyRequest, reply: FastifyReply, done: () => void) {
   if (!request.user?.isAdmin) {
     reply.status(401).send({ error: 'Admin authentication required' });
@@ -125,4 +161,3 @@ export function requireAdmin(request: FastifyRequest, reply: FastifyReply, done:
   }
   done();
 }
-

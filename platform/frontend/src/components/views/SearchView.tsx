@@ -1,12 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
 import { useSongs } from '../../context/SongsContext';
+import { useRoom } from '../../context/RoomContext';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
+import { LoginView } from './LoginView';
 import type { Song } from '../../types';
 
 export function SearchView() {
@@ -15,9 +17,14 @@ export function SearchView() {
   const [isReloading, setIsReloading] = useState(false);
   const [queueModalSong, setQueueModalSong] = useState<Song | null>(null);
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { username } = useParams<{ username: string }>();
+  const { isRoomOwner } = useAuth();
   const { setSong, state } = usePlayingNow();
+  const { roomError, isRoomLoading } = useRoom();
   const { toasts, showToast, dismissToast } = useToast();
+
+  // Check if this is an admin route (needs login)
+  const isAdminRoute = window.location.pathname.endsWith('/admin');
 
   // Get song status class for coloring
   const getSongStatusClass = useCallback((songId: number): string => {
@@ -43,8 +50,8 @@ export function SearchView() {
   // Sort songs: Hebrew first (alphabetically), then English (alphabetically)
   // Also filter out private songs when in viewer mode (not admin)
   const sortedSongs = useMemo(() => {
-    // Filter out private songs when not in admin mode
-    const visibleSongs = isAdmin ? songs : songs.filter(song => !song.isPrivate);
+    // Filter out private songs when not room owner
+    const visibleSongs = isRoomOwner ? songs : songs.filter(song => !song.isPrivate);
     
     return [...visibleSongs].sort((a, b) => {
       const aIsHebrew = startsWithHebrew(a.name);
@@ -57,7 +64,7 @@ export function SearchView() {
       // Within same group, sort alphabetically by name
       return a.name.localeCompare(b.name, aIsHebrew ? 'he' : 'en');
     });
-  }, [songs, isAdmin]);
+  }, [songs, isRoomOwner]);
 
   const filteredSongs = useMemo(() => {
     if (!searchTerm.trim()) return sortedSongs;
@@ -74,13 +81,13 @@ export function SearchView() {
   }, [filteredSongs.length, setFilteredCount]);
 
   const handleViewSong = (songId: number) => {
-    navigate(`/song/${songId}`);
+    navigate(`/${username}/song/${songId}`);
   };
 
   const handlePresentNow = (songId: number) => {
     setSearchTerm(''); // Clear search filter when presenting
     setSong(songId);
-    navigate('/playing-now');
+    navigate(`/${username}/playing-now`);
   };
 
   const handleQueueClick = (song: Song) => {
@@ -88,10 +95,10 @@ export function SearchView() {
   };
 
   const handleQueueSubmit = async (requesterName: string, notes: string) => {
-    if (!queueModalSong) return;
+    if (!queueModalSong || !username) return;
     
     try {
-      await queueApi.add(queueModalSong.id, requesterName, notes || undefined);
+      await queueApi.add(username, queueModalSong.id, requesterName, notes || undefined);
       showToast('השיר נוסף לתור בהצלחה!', 'success', queueModalSong.name);
       setQueueModalSong(null);
     } catch (err) {
@@ -111,6 +118,30 @@ export function SearchView() {
       setIsReloading(false);
     }
   };
+
+  // First check room loading/error state before showing anything
+  if (isRoomLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner" />
+        <p>טוען חדר...</p>
+      </div>
+    );
+  }
+
+  if (roomError) {
+    return (
+      <div className="error-container">
+        <h2>🚫 חדר לא נמצא</h2>
+        <p>{roomError}</p>
+      </div>
+    );
+  }
+
+  // Show login view if on admin route and not authenticated as room owner
+  if (isAdminRoute && !isRoomOwner) {
+    return <LoginView />;
+  }
 
   if (isLoading) {
     return (
@@ -150,7 +181,7 @@ export function SearchView() {
           >
             נקה <span className="clear-icon">✕</span>
           </button>
-          {isAdmin && (
+          {isRoomOwner && (
             <button 
               onClick={handleReloadSongs} 
               className="reload-btn" 
@@ -175,7 +206,7 @@ export function SearchView() {
                 {song.isPrivate && <span className="private-badge">🔒</span>}
               </div>
               <div className="song-actions">
-                {isAdmin ? (
+                {isRoomOwner ? (
                   <button 
                     onClick={() => handlePresentNow(song.id)}
                     className="present-btn"

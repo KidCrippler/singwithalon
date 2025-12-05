@@ -22,6 +22,8 @@ export const config = {
     get useTurso(): boolean {
       return Boolean(this.tursoUrl && this.tursoAuthToken);
     },
+    // RESET_DB: 'true' = reset if empty, 'CONFIRM' = force reset
+    resetDb: process.env.RESET_DB || '',
   },
   auth: {
     cookieSecret: process.env.COOKIE_SECRET || '',
@@ -35,7 +37,7 @@ export const config = {
   },
   // Admin users seeded on startup (format: "user1:pass1,user2:pass2")
   adminUsers: process.env.ADMIN_USERS || '',
-  // Fallback admin password (used only if ADMIN_USERS is empty and no admins exist)
-  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD || '',
+  // Default room to redirect / and /admin to
+  defaultRoom: process.env.DEFAULT_ROOM || 'alon',
 };
 

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
+import { useRoom } from './RoomContext';
 import { stateApi, songsApi } from '../services/api';
 import type { PlayingState, SongStatusPayload } from '../types';
 
@@ -74,7 +75,8 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   // Verse bounds tracking (set by PlayingNowView when it calculates verses)
   const [maxVerseIndex, setMaxVerseIndex] = useState(0);
   
-  const { socket } = useSocket();
+  const { socket, isConnected, joinRoom } = useSocket();
+  const { roomUsername, getSessionId } = useRoom();
 
   // Computed effective values: when locked, use viewer's settings; otherwise use admin's
   const effectiveDisplayMode = viewerModeLocked ? viewerDisplayMode : state.displayMode;
@@ -99,13 +101,27 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     });
   }, [state.displayMode, state.versesEnabled]);
 
-  // Fetch initial state
+  // Join socket room when room changes
   useEffect(() => {
-    stateApi.get()
+    if (!socket || !isConnected || !roomUsername) return;
+    
+    const sid = getSessionId();
+    joinRoom(roomUsername, sid);
+  }, [socket, isConnected, roomUsername, joinRoom, getSessionId]);
+
+  // Fetch initial state when room is available
+  useEffect(() => {
+    if (!roomUsername) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    stateApi.get(roomUsername)
       .then(setState)
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [roomUsername]);
 
   // Listen for socket events
   useEffect(() => {
@@ -120,9 +136,6 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
         displayMode: payload.displayMode,
         versesEnabled: payload.versesEnabled,
       }));
-      // Viewer settings persist when locked (no reset needed)
-      // When not locked, we just use admin's state anyway
-      
       // Initialize viewer's key to admin's key (but as their own independent offset)
       setViewerKeyOverride(payload.keyOffset);
     });
@@ -208,15 +221,19 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   }, [state.currentSongId]);
 
   // Admin actions - all via REST API (server broadcasts via socket)
+  // All actions now require roomUsername
   const setSong = useCallback((songId: number) => {
-    stateApi.setSong(songId).catch(console.error);
-  }, []);
+    if (!roomUsername) return;
+    stateApi.setSong(roomUsername, songId).catch(console.error);
+  }, [roomUsername]);
 
   const clearSong = useCallback(() => {
-    stateApi.clearSong().catch(console.error);
-  }, []);
+    if (!roomUsername) return;
+    stateApi.clearSong(roomUsername).catch(console.error);
+  }, [roomUsername]);
 
   const nextVerse = useCallback(() => {
+    if (!roomUsername) return;
     // Don't call API if we're already at or beyond the max verse
     if (state.currentVerseIndex >= maxVerseIndex) {
       return;
@@ -227,10 +244,11 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       currentVerseIndex: prev.currentVerseIndex + 1,
     }));
     // Then sync with server (which broadcasts to other clients)
-    stateApi.nextVerse().catch(console.error);
-  }, [state.currentVerseIndex, maxVerseIndex]);
+    stateApi.nextVerse(roomUsername).catch(console.error);
+  }, [roomUsername, state.currentVerseIndex, maxVerseIndex]);
 
   const prevVerse = useCallback(() => {
+    if (!roomUsername) return;
     if (state.currentVerseIndex <= 0) {
       return;
     }
@@ -240,12 +258,13 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       currentVerseIndex: Math.max(0, prev.currentVerseIndex - 1),
     }));
     // Then sync with server (which broadcasts to other clients)
-    stateApi.prevVerse().catch(console.error);
-  }, [state.currentVerseIndex]);
+    stateApi.prevVerse(roomUsername).catch(console.error);
+  }, [roomUsername, state.currentVerseIndex]);
 
   const setVerse = useCallback((verseIndex: number) => {
-    stateApi.setVerse(verseIndex).catch(console.error);
-  }, []);
+    if (!roomUsername) return;
+    stateApi.setVerse(roomUsername, verseIndex).catch(console.error);
+  }, [roomUsername]);
 
   // Admin key change - local only, no server call
   const setKeyOffset = useCallback((keyOffset: number) => {
@@ -257,20 +276,23 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
 
   // Sync admin's current key to all viewers
   const syncKeyToAll = useCallback(() => {
-    stateApi.syncKey(state.currentKeyOffset).catch(console.error);
-  }, [state.currentKeyOffset]);
+    if (!roomUsername) return;
+    stateApi.syncKey(roomUsername, state.currentKeyOffset).catch(console.error);
+  }, [roomUsername, state.currentKeyOffset]);
 
   const setDisplayMode = useCallback((displayMode: 'lyrics' | 'chords') => {
+    if (!roomUsername) return;
     // Optimistic update
     setState(prev => ({ ...prev, displayMode }));
-    stateApi.setMode(displayMode).catch(console.error);
-  }, []);
+    stateApi.setMode(roomUsername, displayMode).catch(console.error);
+  }, [roomUsername]);
 
   const toggleVersesEnabled = useCallback(() => {
+    if (!roomUsername) return;
     // Optimistic update
     setState(prev => ({ ...prev, versesEnabled: !prev.versesEnabled }));
-    stateApi.toggleVerses().catch(console.error);
-  }, []);
+    stateApi.toggleVerses(roomUsername).catch(console.error);
+  }, [roomUsername]);
 
   return (
     <PlayingNowContext.Provider value={{

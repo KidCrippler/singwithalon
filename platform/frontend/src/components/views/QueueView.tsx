@@ -1,39 +1,42 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { useSearch } from '../../context/SearchContext';
+import { useRoom } from '../../context/RoomContext';
 import { queueApi } from '../../services/api';
 import type { GroupedQueue } from '../../types';
 
 export function QueueView() {
   const [queue, setQueue] = useState<GroupedQueue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAdmin } = useAuth();
-  const { socket } = useSocket();
+  const { isRoomOwner } = useAuth();
+  const { socket, isRoomJoined } = useSocket();
   const { setSearchTerm } = useSearch();
+  const { roomUsername, roomError, isRoomLoading } = useRoom();
+  const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
 
-  // Redirect non-admins
+  // Redirect non-owners
   useEffect(() => {
-    if (!isAdmin) {
-      navigate('/admin');
+    if (!isRoomLoading && !isRoomOwner && username) {
+      navigate(`/${username}/admin`);
     }
-  }, [isAdmin, navigate]);
+  }, [isRoomOwner, isRoomLoading, username, navigate]);
 
   // Fetch initial queue
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isRoomOwner || !roomUsername) return;
     
-    queueApi.list()
+    queueApi.list(roomUsername)
       .then(setQueue)
       .catch(console.error)
       .finally(() => setIsLoading(false));
-  }, [isAdmin]);
+  }, [isRoomOwner, roomUsername]);
 
   // Listen for queue updates
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isRoomJoined) return;
 
     const handleQueueUpdate = (payload: { queue: GroupedQueue[] }) => {
       setQueue(payload.queue);
@@ -44,30 +47,33 @@ export function QueueView() {
     return () => {
       socket.off('queue:updated', handleQueueUpdate);
     };
-  }, [socket]);
+  }, [socket, isRoomJoined]);
 
   const handlePresent = async (queueId: number) => {
+    if (!roomUsername) return;
     try {
-      await queueApi.present(queueId);
+      await queueApi.present(roomUsername, queueId);
       setSearchTerm(''); // Clear search filter when presenting
-      navigate('/playing-now');
+      navigate(`/${username}/playing-now`);
     } catch (error) {
       console.error('Failed to present song:', error);
     }
   };
 
   const handleDeleteEntry = async (queueId: number) => {
+    if (!roomUsername) return;
     try {
-      await queueApi.adminDelete(queueId);
+      await queueApi.adminDelete(roomUsername, queueId);
     } catch (error) {
       console.error('Failed to delete entry:', error);
     }
   };
 
   const handleDeleteGroup = async (sessionId: string, requesterName: string) => {
+    if (!roomUsername) return;
     if (confirm(`האם למחוק את כל השירים של ${requesterName}?`)) {
       try {
-        await queueApi.deleteGroup(sessionId, requesterName);
+        await queueApi.deleteGroup(roomUsername, sessionId, requesterName);
       } catch (error) {
         console.error('Failed to delete group:', error);
       }
@@ -75,16 +81,35 @@ export function QueueView() {
   };
 
   const handleTruncateQueue = async () => {
+    if (!roomUsername) return;
     if (confirm('האם לרוקן את כל התור? פעולה זו תמחק את כל הבקשות.')) {
       try {
-        await queueApi.truncate();
+        await queueApi.truncate(roomUsername);
       } catch (error) {
         console.error('Failed to truncate queue:', error);
       }
     }
   };
 
-  if (!isAdmin) {
+  if (isRoomLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner" />
+        <p>טוען חדר...</p>
+      </div>
+    );
+  }
+
+  if (roomError) {
+    return (
+      <div className="error-container">
+        <h2>🚫 חדר לא נמצא</h2>
+        <p>{roomError}</p>
+      </div>
+    );
+  }
+
+  if (!isRoomOwner) {
     return null;
   }
 
@@ -187,4 +212,3 @@ export function QueueView() {
     </div>
   );
 }
-

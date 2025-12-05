@@ -84,10 +84,24 @@ export interface AuthUser {
   id: number;
   username: string;
   isAdmin: boolean;
+  displayName?: string | null;
 }
 
 export interface AuthState {
   authenticated: boolean;
   user: AuthUser | null;
+}
+
+// Room types (multi-tenant)
+export interface Room {
+  username: string;
+  displayName: string | null;
+  adminId: number;
+}
+
+// Playing state now includes room info
+export interface PlayingStateWithRoom extends PlayingState {
+  roomUsername: string;
+  roomDisplayName: string | null;
 }
 

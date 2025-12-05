@@ -51,11 +51,14 @@ export interface Admin {
   id: number;
   username: string;
   password_hash: string;
+  display_name: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
 export interface QueueEntry {
   id: number;
+  admin_id: number;  // Room this entry belongs to
   song_id: number;
   requester_name: string;
   session_id: string;
@@ -67,6 +70,7 @@ export interface QueueEntry {
 
 export interface PlayingState {
   id: number;
+  admin_id: number;  // Room this state belongs to
   current_song_id: number | null;
   current_verse_index: number;
   current_key_offset: number;
@@ -80,6 +84,7 @@ export interface PlayingState {
 
 export interface Session {
   session_id: string;
+  admin_id: number;  // Room this session belongs to
   requester_name: string | null;
   is_projector: boolean;
   resolution_width: number | null;
@@ -87,6 +92,13 @@ export interface Session {
   lines_per_verse: number | null;
   created_at: string;
   last_seen: string;
+}
+
+// Room context (attached to requests)
+export interface Room {
+  adminId: number;
+  username: string;
+  displayName: string | null;
 }
 
 // Socket event payloads
@@ -144,6 +156,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     user?: AuthUser;
     sessionId?: string;
+    room?: Room;  // Room context for room-scoped routes
   }
 }
 

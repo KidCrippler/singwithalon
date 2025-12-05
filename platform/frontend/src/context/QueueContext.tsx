@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
+import { useRoom } from './RoomContext';
 import { queueApi } from '../services/api';
 import type { GroupedQueue } from '../types';
 
@@ -12,8 +13,9 @@ const QueueContext = createContext<QueueContextValue | null>(null);
 
 export function QueueProvider({ children }: { children: React.ReactNode }) {
   const [queueCount, setQueueCount] = useState(0);
-  const { isAdmin } = useAuth();
-  const { socket } = useSocket();
+  const { isRoomOwner } = useAuth();
+  const { socket, isRoomJoined } = useSocket();
+  const { roomUsername } = useRoom();
 
   // Helper to count total entries across all groups
   const countEntries = useCallback((groups: GroupedQueue[]): number => {
@@ -24,21 +26,21 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, []);
 
-  // Fetch initial queue count (admin only)
+  // Fetch initial queue count (room owner only)
   useEffect(() => {
-    if (!isAdmin) {
+    if (!isRoomOwner || !roomUsername) {
       setQueueCount(0);
       return;
     }
 
-    queueApi.list()
+    queueApi.list(roomUsername)
       .then(groups => setQueueCount(countEntries(groups)))
       .catch(err => console.error('Failed to fetch queue count:', err));
-  }, [isAdmin, countEntries]);
+  }, [isRoomOwner, roomUsername, countEntries]);
 
   // Listen for queue updates via socket
   useEffect(() => {
-    if (!socket || !isAdmin) return;
+    if (!socket || !isRoomOwner || !isRoomJoined) return;
 
     const handleQueueUpdate = (payload: { queue: GroupedQueue[] }) => {
       setQueueCount(countEntries(payload.queue));
@@ -49,7 +51,7 @@ export function QueueProvider({ children }: { children: React.ReactNode }) {
     return () => {
       socket.off('queue:updated', handleQueueUpdate);
     };
-  }, [socket, isAdmin, countEntries]);
+  }, [socket, isRoomOwner, isRoomJoined, countEntries]);
 
   return (
     <QueueContext.Provider value={{ queueCount }}>
@@ -65,4 +67,3 @@ export function useQueue() {
   }
   return context;
 }
-

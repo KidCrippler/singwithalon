@@ -1,18 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
 import { useQueue } from '../../context/QueueContext';
+import { useRoom } from '../../context/RoomContext';
 
 export function Header() {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isRoomOwner, logout } = useAuth();
   const { isConnected } = useSocket();
   const { clearSong, state } = usePlayingNow();
   const { filteredCount } = useSearch();
   const { queueCount } = useQueue();
+  const { room } = useRoom();
   const location = useLocation();
+  const { username } = useParams<{ username: string }>();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -39,15 +42,19 @@ export function Header() {
     setMenuOpen(false);
   };
 
-  const isAdminRoute = location.pathname.startsWith('/admin') || 
-                       location.pathname === '/queue' ||
-                       location.pathname === '/login';
+  // Build room-scoped URLs
+  const roomBase = username ? `/${username}` : '';
+  const isAdminRoute = location.pathname.endsWith('/admin') || 
+                       location.pathname.endsWith('/queue');
+
+  // Display name from room context or fallback
+  const displayName = room?.displayName || 'שרים עם אלון';
 
   return (
     <header className="app-header">
       <div className="header-left">
-        <Link to={isAdmin ? '/admin' : '/'} className="logo">
-          🎤 שרים עם אלון
+        <Link to={isRoomOwner ? `${roomBase}/admin` : roomBase || '/'} className="logo">
+          🎤 {displayName}
         </Link>
         
         <span className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
@@ -56,23 +63,23 @@ export function Header() {
       </div>
 
       <nav className="header-nav">
-        {isAdmin ? (
+        {isRoomOwner ? (
           <>
             <Link 
-              to="/admin" 
-              className={location.pathname === '/admin' ? 'active' : ''}
+              to={`${roomBase}/admin`}
+              className={location.pathname === `${roomBase}/admin` ? 'active' : ''}
             >
               חיפוש {filteredCount > 0 && `(${filteredCount})`}
             </Link>
             <Link 
-              to="/playing-now"
-              className={location.pathname === '/playing-now' ? 'active' : ''}
+              to={`${roomBase}/playing-now`}
+              className={location.pathname === `${roomBase}/playing-now` ? 'active' : ''}
             >
               מתנגן עכשיו
             </Link>
             <Link 
-              to="/queue"
-              className={location.pathname === '/queue' ? 'active' : ''}
+              to={`${roomBase}/queue`}
+              className={location.pathname === `${roomBase}/queue` ? 'active' : ''}
             >
               תור {queueCount > 0 && `(${queueCount})`}
             </Link>
@@ -80,14 +87,14 @@ export function Header() {
         ) : (
           <>
             <Link 
-              to="/"
-              className={location.pathname === '/' ? 'active' : ''}
+              to={roomBase || '/'}
+              className={location.pathname === roomBase || location.pathname === '/' ? 'active' : ''}
             >
               חיפוש {filteredCount > 0 && `(${filteredCount})`}
             </Link>
             <Link 
-              to="/playing-now"
-              className={location.pathname === '/playing-now' ? 'active' : ''}
+              to={`${roomBase}/playing-now`}
+              className={location.pathname === `${roomBase}/playing-now` ? 'active' : ''}
             >
               מתנגן עכשיו
             </Link>
@@ -96,7 +103,7 @@ export function Header() {
       </nav>
 
       <div className="header-right">
-        {isAdmin ? (
+        {isRoomOwner ? (
           <div className="admin-info" ref={menuRef}>
             <span>👤 {user?.username}</span>
             <button 
@@ -122,10 +129,9 @@ export function Header() {
             )}
           </div>
         ) : isAdminRoute ? (
-          <Link to="/login" className="login-link">התחבר</Link>
+          <Link to={`${roomBase}/admin`} className="login-link">התחבר</Link>
         ) : null}
       </div>
     </header>
   );
 }
-

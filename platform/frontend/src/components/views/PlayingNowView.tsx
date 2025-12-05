@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useAuth } from '../../context/AuthContext';
+import { useRoom } from '../../context/RoomContext';
 import { songsApi } from '../../services/api';
 import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine, DEFAULT_LINES_PER_VERSE } from '../../utils/verseCalculator';
 import { formatCredits } from '../../utils/formatCredits';
@@ -448,7 +449,8 @@ export function PlayingNowView() {
     setDisplayMode,
     toggleVersesEnabled,
   } = usePlayingNow();
-  const { isAdmin } = useAuth();
+  const { isRoomOwner } = useAuth();
+  const { room } = useRoom();
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [lyricsSongId, setLyricsSongId] = useState<number | null>(null); // Track which song the lyrics belong to
   const [isLoading, setIsLoading] = useState(false);
@@ -682,14 +684,14 @@ export function PlayingNowView() {
     prevVerseIndexRef.current = state.currentVerseIndex;
   }, [state.currentVerseIndex, lyrics, verses, linesPerVerse]);
 
-  // Handle click on line to navigate to verse (admin only)
+  // Handle click on line to navigate to verse (room owner only)
   const handleLineClick = useCallback((lineIndex: number) => {
-    if (!isAdmin || !showPurpleHighlight) return;
+    if (!isRoomOwner || !showPurpleHighlight) return;
     const verseIdx = findVerseForLine(verses, lineIndex);
     if (verseIdx >= 0) {
       setVerse(verseIdx);
     }
-  }, [isAdmin, showPurpleHighlight, verses, setVerse]);
+  }, [isRoomOwner, showPurpleHighlight, verses, setVerse]);
 
   // Check if a line should be highlighted in the current verse
   // Only highlight lines that "first appear" in this verse (not overlap lines)
@@ -704,7 +706,7 @@ export function PlayingNowView() {
     return (
       <div className="playing-now-splash">
         <div className="splash-content">
-          <h1>🎤 שרים עם אלון</h1>
+          <h1>🎤 {room?.displayName || 'שרים עם אלון'}</h1>
           <p>ממתין לשיר...</p>
           <div className="qr-placeholder">
             <span>QR Code</span>
@@ -733,7 +735,7 @@ export function PlayingNowView() {
       {/* Compact top bar with song info and admin controls */}
       <div className="song-top-bar">
         {/* Admin controls inline */}
-        {isAdmin && (
+        {isRoomOwner && (
           <div className="admin-controls">
             <button 
               onClick={prevVerse} 
@@ -782,7 +784,7 @@ export function PlayingNowView() {
         )}
 
         {/* Viewer controls - 3 buttons matching admin interface */}
-        {!isAdmin && (
+        {!isRoomOwner && (
           <div className="viewer-controls">
             {/* Button 1: Display mode toggle - chords/lyrics */}
             {/* When locked: shows and controls viewer's setting */}
@@ -855,7 +857,7 @@ export function PlayingNowView() {
       </div>
 
       {/* === ADMIN VIEW: Always shows chords with multi-column layout === */}
-      {isAdmin && (
+      {isRoomOwner && (
         <div 
           ref={adminContainerRef}
           className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''}`}
@@ -882,7 +884,7 @@ export function PlayingNowView() {
       )}
 
       {/* === VIEWER VIEW: 3 modes === */}
-      {!isAdmin && (
+      {!isRoomOwner && (
         <>
           {/* Mode 1: Chords enabled - same as admin, multi-column, no highlight */}
           {viewerShowsChords && (

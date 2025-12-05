@@ -30,3 +30,16 @@ export function getIO(): Server | null {
   return ioInstance;
 }
 
+// Helper: Get room name for a given admin and type
+export function getRoomName(adminId: number, type: 'viewers' | 'admin' | 'projectors'): string {
+  return `room:${adminId}:${type}`;
+}
+
+// Helper: Broadcast to a room (used by REST routes)
+export function broadcastToRoom(adminId: number, type: 'viewers' | 'admin' | 'projectors', event: string, payload: unknown): void {
+  const io = getIO();
+  if (!io) return;
+  
+  const roomName = getRoomName(adminId, type);
+  io.to(roomName).emit(event, payload);
+}

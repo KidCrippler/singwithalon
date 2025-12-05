@@ -1,30 +1,34 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useRoom } from '../../context/RoomContext';
 
 export function LoginView() {
-  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isRoomOwner } = useAuth();
+  const { room, roomError, isRoomLoading } = useRoom();
+  const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
 
-  // Redirect if already logged in (has credentials)
+  // Redirect if already logged in as room owner
   React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/admin');
+    if (isRoomOwner && username) {
+      navigate(`/${username}/admin`);
     }
-  }, [isAuthenticated, navigate]);
+  }, [isRoomOwner, username, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username) return;
+    
     setError(null);
     setIsLoading(true);
 
     try {
       await login(username, password);
-      navigate('/admin');
+      navigate(`/${username}/admin`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -32,21 +36,46 @@ export function LoginView() {
     }
   };
 
+  if (isRoomLoading) {
+    return (
+      <div className="login-view">
+        <div className="login-card">
+          <p>טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (roomError) {
+    return (
+      <div className="login-view">
+        <div className="login-card">
+          <h1>🚫 חדר לא נמצא</h1>
+          <p>{roomError}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="login-view">
       <div className="login-card">
         <h1>🔐 התחברות מנהל</h1>
         
+        {/* Show which room we're logging into */}
+        <p className="login-room-info">
+          כניסה לחדר: <strong>{room?.displayName || username}</strong>
+        </p>
+        
         <form onSubmit={handleSubmit}>
+          {/* Username is determined by URL, shown but not editable */}
           <div className="form-group">
-            <label htmlFor="username">שם משתמש</label>
+            <label>שם משתמש</label>
             <input
-              id="username"
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
+              value={username || ''}
+              disabled
+              className="disabled-input"
             />
           </div>
           
@@ -59,6 +88,7 @@ export function LoginView() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
+              autoFocus
             />
           </div>
 
@@ -74,4 +104,3 @@ export function LoginView() {
     </div>
   );
 }
-

@@ -141,9 +141,9 @@ function groupIntoSections(lines: ParsedLine[], displayMode: 'lyrics' | 'chords'
 }
 
 export function SongView() {
-  const { id } = useParams<{ id: string }>();
+  const { id, username } = useParams<{ id: string; username: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isRoomOwner } = useAuth();
   const { setSong } = usePlayingNow();
   const { setSearchTerm } = useSearch();
   
@@ -190,14 +190,14 @@ export function SongView() {
     if (!id) return;
     setSearchTerm(''); // Clear search filter when presenting
     setSong(parseInt(id, 10));
-    navigate('/playing-now');
+    navigate(`/${username}/playing-now`);
   };
 
   const handleQueueSubmit = async (requesterName: string, notes: string) => {
-    if (!id || !song) return;
+    if (!id || !song || !username) return;
     
     try {
-      await queueApi.add(parseInt(id, 10), requesterName, notes || undefined);
+      await queueApi.add(username, parseInt(id, 10), requesterName, notes || undefined);
       showToast('השיר נוסף לתור בהצלחה!', 'success', song.name);
       setShowQueueModal(false);
     } catch (err) {
@@ -274,7 +274,7 @@ export function SongView() {
         </div>
 
         <div className="action-buttons">
-          {isAdmin ? (
+          {isRoomOwner ? (
             <button onClick={handlePresentNow} className="present-btn">
               ▶ הצג
             </button>

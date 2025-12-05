@@ -1,4 +1,4 @@
-import type { Song, ParsedSong, PlayingState, GroupedQueue, QueueEntry, AuthState } from '../types';
+import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -40,12 +40,16 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
-// Auth API
+// Auth API (room-scoped login)
 export const authApi = {
-  async login(username: string, password: string): Promise<{ success: boolean; user: { username: string; isAdmin: boolean } }> {
-    return fetchJson('/api/auth/login', {
+  // Room-scoped login - only accepts password (username from URL)
+  async login(roomUsername: string, password: string): Promise<{ 
+    success: boolean; 
+    user: { id: number; username: string; displayName: string | null; isAdmin: boolean } 
+  }> {
+    return fetchJson(`/api/rooms/${roomUsername}/auth/login`, {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ password }),
     });
   },
 
@@ -58,7 +62,7 @@ export const authApi = {
   },
 };
 
-// Songs API
+// Songs API (global, not room-scoped)
 export const songsApi = {
   async list(): Promise<Song[]> {
     return fetchJson('/api/songs');
@@ -77,106 +81,112 @@ export const songsApi = {
   },
 };
 
-// Queue API
+// Queue API (room-scoped)
 export const queueApi = {
-  // Viewer operations
-  async list(): Promise<GroupedQueue[]> {
-    return fetchJson('/api/queue');
+  // Admin: get full queue for room
+  async list(roomUsername: string): Promise<GroupedQueue[]> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue`);
   },
 
-  async add(songId: number, requesterName: string, notes?: string): Promise<{ success: boolean; entry: QueueEntry }> {
-    return fetchJson('/api/queue', {
+  // Viewer: add to room's queue
+  async add(roomUsername: string, songId: number, requesterName: string, notes?: string): Promise<{ success: boolean; entry: QueueEntry }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue`, {
       method: 'POST',
       body: JSON.stringify({ songId, requesterName, notes }),
     });
   },
 
-  async remove(id: number): Promise<{ success: boolean }> {
-    return fetchJson(`/api/queue/${id}`, { method: 'DELETE' });
+  // Viewer: remove own entry
+  async remove(roomUsername: string, id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue/${id}`, { method: 'DELETE' });
   },
 
-  async getMine(): Promise<QueueEntry[]> {
-    return fetchJson('/api/queue/mine');
+  // Viewer: get own entries in room
+  async getMine(roomUsername: string): Promise<QueueEntry[]> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue/mine`);
   },
 
-  // Admin operations
-  async present(id: number): Promise<{ success: boolean }> {
-    return fetchJson(`/api/queue/${id}/present`, { method: 'POST' });
+  // Admin: present from queue
+  async present(roomUsername: string, id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue/${id}/present`, { method: 'POST' });
   },
 
-  async adminDelete(id: number): Promise<{ success: boolean }> {
-    return fetchJson(`/api/queue/${id}/admin`, { method: 'DELETE' });
+  // Admin: delete any entry
+  async adminDelete(roomUsername: string, id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue/${id}/admin`, { method: 'DELETE' });
   },
 
-  async deleteGroup(sessionId: string, requesterName: string): Promise<{ success: boolean; deletedCount: number }> {
-    return fetchJson('/api/queue/group', {
+  // Admin: delete group
+  async deleteGroup(roomUsername: string, sessionId: string, requesterName: string): Promise<{ success: boolean; deletedCount: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue/group`, {
       method: 'DELETE',
       body: JSON.stringify({ sessionId, requesterName }),
     });
   },
 
-  async truncate(): Promise<{ success: boolean }> {
-    return fetchJson('/api/queue', { method: 'DELETE' });
+  // Admin: truncate room's queue
+  async truncate(roomUsername: string): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/queue`, { method: 'DELETE' });
   },
 };
 
-// State API
+// State API (room-scoped)
 export const stateApi = {
-  async get(): Promise<PlayingState> {
-    return fetchJson('/api/state');
+  async get(roomUsername: string): Promise<PlayingStateWithRoom> {
+    return fetchJson(`/api/rooms/${roomUsername}/state`);
   },
 
   // Admin controls
-  async setSong(songId: number): Promise<{ success: boolean }> {
-    return fetchJson('/api/state/song', {
+  async setSong(roomUsername: string, songId: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/song`, {
       method: 'POST',
       body: JSON.stringify({ songId }),
     });
   },
 
-  async clearSong(): Promise<{ success: boolean }> {
-    return fetchJson('/api/state/song', { method: 'DELETE' });
+  async clearSong(roomUsername: string): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/song`, { method: 'DELETE' });
   },
 
-  async nextVerse(): Promise<{ success: boolean; verseIndex: number }> {
-    return fetchJson('/api/state/verse/next', { method: 'POST' });
+  async nextVerse(roomUsername: string): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/verse/next`, { method: 'POST' });
   },
 
-  async prevVerse(): Promise<{ success: boolean; verseIndex: number }> {
-    return fetchJson('/api/state/verse/prev', { method: 'POST' });
+  async prevVerse(roomUsername: string): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/verse/prev`, { method: 'POST' });
   },
 
-  async setVerse(verseIndex: number): Promise<{ success: boolean; verseIndex: number }> {
-    return fetchJson('/api/state/verse', {
+  async setVerse(roomUsername: string, verseIndex: number): Promise<{ success: boolean; verseIndex: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/verse`, {
       method: 'POST',
       body: JSON.stringify({ verseIndex }),
     });
   },
 
   // syncKey: Admin sends their current local key to all viewers
-  async syncKey(keyOffset: number): Promise<{ success: boolean; keyOffset: number }> {
-    return fetchJson('/api/state/key/sync', {
+  async syncKey(roomUsername: string, keyOffset: number): Promise<{ success: boolean; keyOffset: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/key/sync`, {
       method: 'POST',
       body: JSON.stringify({ keyOffset }),
     });
   },
 
-  async setMode(displayMode: 'lyrics' | 'chords'): Promise<{ success: boolean; displayMode: string }> {
-    return fetchJson('/api/state/mode', {
+  async setMode(roomUsername: string, displayMode: 'lyrics' | 'chords'): Promise<{ success: boolean; displayMode: string }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/mode`, {
       method: 'POST',
       body: JSON.stringify({ displayMode }),
     });
   },
 
-  async toggleVerses(): Promise<{ success: boolean; versesEnabled: boolean }> {
-    return fetchJson('/api/state/verses/toggle', { method: 'POST' });
+  async toggleVerses(roomUsername: string): Promise<{ success: boolean; versesEnabled: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/state/verses/toggle`, { method: 'POST' });
   },
 };
 
-// Projector API
+// Projector API (room-scoped)
 export const projectorApi = {
-  async register(width: number, height: number, linesPerVerse: number): Promise<{ success: boolean; isFirstProjector: boolean }> {
-    return fetchJson('/api/projector/register', {
+  async register(roomUsername: string, width: number, height: number, linesPerVerse: number): Promise<{ success: boolean; isFirstProjector: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/projector/register`, {
       method: 'POST',
       body: JSON.stringify({ width, height, linesPerVerse }),
     });
@@ -187,4 +197,3 @@ export const projectorApi = {
 export async function healthCheck(): Promise<{ status: string; timestamp: string }> {
   return fetchJson('/api/health');
 }
-
