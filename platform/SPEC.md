@@ -4,10 +4,17 @@
 
 A real-time web application for managing sing-along events and band performances. The app displays song lyrics and chords, supports live synchronization across multiple viewers, and enables audience participation through a song request queue.
 
+### Multi-Tenant Architecture
+The application supports multiple independent **rooms**, each controlled by a different admin. Each room operates as a completely isolated sing-along experience with its own:
+- Playing state (current song, verse, key offset)
+- Song request queue
+- Connected viewers and projectors
+
 ### Core Concepts
-- **Admin**: Controls which song is playing, manages the queue, advances verses
-- **Viewer**: Watches the current song, can request songs from the catalog
-- **Projector**: A special viewer type that displays lyrics for a crowd; its resolution determines verse boundaries
+- **Room**: An isolated sing-along space owned by one admin (identified by username in the URL)
+- **Admin (Room Owner)**: Controls their room - which song is playing, manages the queue, advances verses
+- **Viewer**: Watches a specific room's current song, can request songs from the catalog
+- **Projector**: A special viewer type that displays lyrics for a crowd; its resolution determines verse boundaries for that room
 
 ### Language Support
 - **Primary**: Hebrew (RTL) - ~85% of songs
@@ -31,58 +38,69 @@ A real-time web application for managing sing-along events and band performances
 
 ## 3. User Roles & Authentication
 
-### 3.1 URL Structure
+### 3.1 URL Structure (Room-Based)
+
+All URLs are scoped to a specific room identified by the admin's username:
 
 | URL | Purpose | Auth Required |
 |-----|---------|---------------|
-| `http://mydomain.com/` | Viewer entry point | No |
-| `http://mydomain.com/admin` | Admin/Projector entry point | No (initially) |
+| `http://mydomain.com/:username` | Viewer entry point for a specific room | No |
+| `http://mydomain.com/:username/admin` | Admin entry point for a specific room | No (initially) |
+| `http://mydomain.com/` | Redirects to default room (`/:defaultRoom`) | No |
+| `http://mydomain.com/admin` | Redirects to default room admin (`/:defaultRoom/admin`) | No |
 
-**Viewer URL (`/`):**
-- Goes directly to Search View
+**Room Viewer URL (`/:username`):**
+- Goes directly to Search View for that room
 - No login option visible
 - Full viewer functionality (search, view songs, add to queue, watch Playing Now)
+- All actions are scoped to the specified room
 
-**Admin URL (`/admin`):**
+**Room Admin URL (`/:username/admin`):**
 - Initially looks and functions exactly like viewer
 - Has a visible "Login" button/option
-- After successful login:
+- Login validates against the room's admin credentials only
+- After successful login (if credentials match room owner):
   - Page refreshes/updates
-  - Admin permissions granted
+  - Room owner permissions granted
   - Queue tab becomes visible
   - Private songs become visible
   - "Present Now" buttons appear on songs
   - Admin controls appear on Playing Now view
+- Attempting to log in with different admin credentials fails (strict room ownership)
 
-### 3.2 Admin
+### 3.2 Admin (Room Owner)
 - **Authentication**: Username + password → stored as HTTP-only cookie
-- **Capabilities** (after login):
+- **Room Ownership**: Each admin owns exactly one room (identified by their username)
+- **Capabilities** (after login, within their own room only):
   - View all songs (including private)
   - Search and present any song
   - Control "Playing Now" (change song, advance verses, set key/transpose)
   - Manage queue (view, present from queue)
   - Toggle between lyrics-only and lyrics+chords modes
   - Clear current song (return to splash screen)
+- **Authorization**: Admins can only control their own room; attempting to control another room results in 403 Forbidden
 - **Admin Menu** (☰ hamburger icon in header):
   - "נקה שיר" - Clear current song and return to splash screen
   - "התנתק" - Log out
 - **Projector Mode**: Admin can toggle "This is a projector" during/after login
   - Checkbox during login OR button in UI after login
-  - First projector to connect sets the resolution for verse calculation
-  - Subsequent projectors receive the same verse boundaries (may display incorrectly if different resolution)
+  - First projector to connect to a room sets the resolution for that room's verse calculation
+  - Subsequent projectors in the same room receive the same verse boundaries (may display incorrectly if different resolution)
 
 ### 3.3 Viewer (Anonymous)
 - **No authentication required**
+- **Room-Scoped**: All viewer actions are scoped to the room they're viewing
+- **Session Isolation**: Each room visit generates a unique session ID (opening the same room in two tabs creates two separate sessions)
 - **Capabilities**:
-  - Browse and search public songs
+  - Browse and search public songs (global catalog)
   - View any public song's lyrics/chords
-  - Add songs to the queue (with their name)
-  - Watch "Playing Now" screen
+  - Add songs to the room's queue (with their name)
+  - Watch the room's "Playing Now" screen
   - Toggle personal preferences:
     - Lyrics-only vs Lyrics+chords
     - Verse mode vs Full-song mode
     - Override transposition (in chords mode only, absolute offset -6 to +6)
-  - View and cancel their own queue requests
+  - View and cancel their own queue requests within the room
 
 ---
 
@@ -170,12 +188,14 @@ A real-time web application for managing sing-along events and band performances
   - Entire layout flips for RTL songs
 
 ### 4.3 Playing Now View
-- **Purpose**: Live, synchronized song display for everyone
+- **Purpose**: Live, synchronized song display for everyone in the room
+- **Room-Scoped**: Shows the current song for the specific room being viewed
 - **Behavior**:
-  - WebSocket-connected to server
-  - When admin changes song, all connected viewers see new song
-  - When admin advances verse, all viewers in verse-mode see update
+  - WebSocket-connected to server, joined to room's broadcast channel
+  - When room owner changes song, all connected viewers in that room see new song
+  - When room owner advances verse, all viewers in that room in verse-mode see update
   - 500ms latency tolerance is acceptable
+  - Updates from other rooms are isolated and don't affect this view
 - **Initial State** (no song playing):
   - Display custom splash screen with logo + QR code (admin-provided image asset)
 - **Viewer Controls** (visible to all):
@@ -194,19 +214,20 @@ A real-time web application for managing sing-along events and band performances
   - Header remains visible across all verses
   - Press Escape to exit fullscreen (browser native behavior)
   - On exit, original headers are restored
-- **Admin Controls** (small overlay, top-left corner, non-intrusive):
+- **Room Owner Controls** (small overlay, top-left corner, non-intrusive, visible only to room owner):
   - Previous verse button (◀)
   - Next verse button (▶)
   - Toggle verses enabled (📖)
   - Toggle display mode (🎸/🎤)
-  - Transpose controls: `[ ⬇ ] N [ ⬆ ] [ 📡 ]` (always visible since admin always sees chords)
+  - Transpose controls: `[ ⬇ ] N [ ⬆ ] [ 📡 ]` (always visible since owner always sees chords)
 - **Keyboard Shortcuts** (critical for Bluetooth pedal support):
   - Arrow Up / Page Up → Previous verse
   - Arrow Down / Page Down → Next verse
-  - **Works globally when admin is logged in, regardless of focused element**
+  - **Works globally when room owner is logged in and in admin mode, regardless of focused element**
 
-### 4.4 Queue View (Admin Only)
-- **Purpose**: Manage song requests from viewers
+### 4.4 Queue View (Room Owner Only)
+- **Purpose**: Manage song requests from viewers in the room
+- **Room-Scoped**: Shows only the queue for the current room
 - **Real-time Updates**: Queue updates automatically via WebSocket when viewers add/remove songs
 - **Display**:
   - Grouped by requester (name + session ID combination)
@@ -232,29 +253,48 @@ A real-time web application for managing sing-along events and band performances
   - Max 25 songs per viewer in queue
 
 ### 4.5 Admin Navigation
+- **Header** displays room's display name (e.g., "שרים עם אלון") as the logo/title
 - **Tab Bar** at top of screen with 3 tabs:
   - Search
   - Playing Now
   - Queue
-- All tabs accessible at any time
-- **Keyboard shortcuts for verse navigation work across ALL tabs**
+- All tabs accessible at any time (links are room-scoped: `/:username/playing-now`, etc.)
+- **Keyboard shortcuts for verse navigation work across ALL tabs** (only when room owner)
 - **"Reload Songs" button** (in header or settings): Re-fetches songs.json from Git URL, updates song list
 
 ### 4.6 Frontend Routing (SPA)
 
+All routes are room-scoped using the admin's username as the room identifier:
+
 | Route | View | Notes |
 |-------|------|-------|
-| `/` | Search View | Viewer entry point |
-| `/admin` | Search View | Admin entry point (same view, login option visible) |
-| `/song/:id` | Presentation View | View single song |
-| `/playing-now` | Playing Now View | Live synchronized view |
-| `/queue` | Queue View | Admin only (redirects to `/admin` if not logged in) |
+| `/` | — | Redirects to `/:defaultRoom` |
+| `/admin` | — | Redirects to `/:defaultRoom/admin` |
+| `/:username` | Search View | Viewer entry point for room |
+| `/:username/admin` | Search View | Admin entry point for room (login option visible) |
+| `/:username/song/:id` | Presentation View | View single song in room context |
+| `/:username/playing-now` | Playing Now View | Live synchronized view for room |
+| `/:username/queue` | Queue View | Room owner only (redirects to `/:username/admin` if not owner) |
 
 **Behavior:**
-- `/` and `/admin` render the same Search View component
-- The difference is contextual: `/admin` shows login button, `/` doesn't
-- After admin login on `/admin`, all routes gain admin capabilities
-- Direct navigation to `/queue` by non-admin redirects to `/admin`
+- `/:username` and `/:username/admin` render the same Search View component
+- The difference is contextual: `/admin` routes show login button and enable admin mode
+- After admin login, room owner capabilities are granted only if username matches
+- Direct navigation to `/:username/queue` by non-owner redirects to `/:username/admin`
+- Navigating to an invalid room (non-existent username) shows "Room not found" error
+- Room context (display name, admin ID) is fetched on route mount
+
+**Admin Mode vs Viewer Mode:**
+- Entering via `/:username/admin` or `/:username/queue` sets "admin mode"
+- Entering via `/:username` sets "viewer mode"
+- Admin mode + room ownership = full admin controls visible
+- Navigating between modes preserves authentication but changes UI behavior
+
+**Room Validation:**
+- On entering any room route, frontend fetches `GET /api/rooms/:username`
+- If room exists and is active: room context is established, UI renders
+- If room doesn't exist or is inactive: "Room not found" error displayed immediately
+- Room context includes: `adminId`, `username`, `displayName`
 
 ---
 
@@ -432,48 +472,53 @@ D         C#7     F#m  A7
 - **In lyrics mode only:** All lines are trimmed (no leading/trailing whitespace)
 - In chords mode: Whitespace is preserved for proper chord alignment
 
-### 5.3 SQLite Schema
+### 5.3 SQLite Schema (Multi-Tenant)
+
+All state tables are scoped to a specific admin (room) via `admin_id` foreign key:
 
 ```sql
--- Admin users
+-- Admin users (each admin owns one room)
 CREATE TABLE admins (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
+  username TEXT UNIQUE NOT NULL,        -- Used in URLs: /:username/
   password_hash TEXT NOT NULL,
+  display_name TEXT,                    -- Friendly name shown in UI (e.g., "שרים עם אלון")
+  is_active BOOLEAN DEFAULT TRUE,       -- Soft delete: inactive rooms return 404
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Queue entries
-CREATE TABLE queue (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  song_id INTEGER NOT NULL,
-  requester_name TEXT NOT NULL,
-  session_id TEXT NOT NULL,
-  status TEXT DEFAULT 'pending',  -- 'pending' | 'played'
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  played_at DATETIME
-);
-
--- Playing state (singleton row - always id=1)
+-- Per-room playing state (one row per room)
 CREATE TABLE playing_state (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_id INTEGER NOT NULL UNIQUE REFERENCES admins(id) ON DELETE CASCADE,
   current_song_id INTEGER,              -- NULL if no song playing
   current_verse_index INTEGER DEFAULT 0,
   current_key_offset INTEGER DEFAULT 0, -- Semitones (can be negative)
   display_mode TEXT DEFAULT 'lyrics',   -- 'lyrics' | 'chords'
   verses_enabled INTEGER DEFAULT 1,     -- 1 = show verses, 0 = show full song
-  projector_width INTEGER,              -- First projector's resolution
+  projector_width INTEGER,              -- First projector's resolution for this room
   projector_height INTEGER,
   projector_lines_per_verse INTEGER,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Initialize singleton row
-INSERT INTO playing_state (id) VALUES (1);
+-- Per-room queue entries
+CREATE TABLE queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  song_id INTEGER NOT NULL,
+  requester_name TEXT NOT NULL,
+  session_id TEXT NOT NULL,             -- Unique per room visit
+  notes TEXT,
+  status TEXT DEFAULT 'pending',        -- 'pending' | 'played'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  played_at DATETIME
+);
 
--- Viewer sessions (for tracking requesters and projectors)
+-- Per-room viewer sessions (for tracking requesters and projectors)
 CREATE TABLE sessions (
-  session_id TEXT PRIMARY KEY,
+  session_id TEXT PRIMARY KEY,          -- Unique per room visit (not per user)
+  admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
   requester_name TEXT,
   is_projector BOOLEAN DEFAULT FALSE,
   resolution_width INTEGER,
@@ -483,11 +528,27 @@ CREATE TABLE sessions (
   last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes for efficient room-scoped queries
+CREATE INDEX idx_playing_state_admin ON playing_state(admin_id);
+CREATE INDEX idx_queue_admin ON queue(admin_id);
+CREATE INDEX idx_sessions_admin ON sessions(admin_id);
+CREATE INDEX idx_admins_active ON admins(is_active);
+
 -- Session cleanup: Sessions inactive for 3+ hours should be removed
 -- Run periodically: DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
 ```
 
+**Room Initialization:**
+- When an admin is created (via `ADMIN_USERS` env var), a corresponding `playing_state` row is automatically created
+- Each admin has exactly one `playing_state` row (enforced by UNIQUE constraint on `admin_id`)
+
 ### 5.4 Session Keep-Alive & Retention
+
+**Session Isolation:**
+- Each room visit generates a unique session ID
+- Opening the same room in two browser tabs creates two separate sessions
+- Opening different rooms creates separate sessions per room
+- Session IDs are stored in localStorage with room-specific keys
 
 **Keep-Alive Mechanism:**
 - Clients send periodic heartbeat via WebSocket (e.g., every 60 seconds)
@@ -507,7 +568,7 @@ DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
 ```
 
 **Impact of Session Deletion:**
-- Viewer loses their "identity" for queue grouping
+- Viewer loses their "identity" for queue grouping in that room
 - Their pending queue requests remain (orphaned but still valid)
 - Next visit creates a new session
 
@@ -519,41 +580,54 @@ DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
 
 The application uses a **REST + Broadcast** pattern:
 - **Client → Server requests**: Use REST API (provides immediate response, HTTP status codes, error handling)
-- **Server → Client broadcasts**: Use Socket.io (pushes updates to all relevant clients)
+- **Server → Client broadcasts**: Use Socket.io (pushes updates to all relevant clients in the same room)
 
 This pattern ensures:
 - Admin actions get immediate feedback (success/failure via HTTP response)
-- All clients receive real-time updates (via socket broadcasts)
+- All clients in the same room receive real-time updates (via socket broadcasts)
 - No duplicate logic between REST and socket handlers
+- Room isolation: events in one room don't affect other rooms
 
-### 6.2 Rooms/Namespaces
-- `playing-now` — All viewers watching the live song
-- `admin` — Admin clients (for receiving queue updates)
-- `projector` — Projector clients (for resolution sync)
+### 6.2 Rooms/Namespaces (Per-Room Scoping)
+
+Socket.io rooms are namespaced by admin ID for complete isolation:
+
+- `room:{adminId}:viewers` — All viewers watching this room's live song
+- `room:{adminId}:admin` — Admin client for this room (for receiving queue updates)
+- `room:{adminId}:projectors` — Projector clients for this room (for resolution sync)
+
+**Client Connection Flow:**
+1. Client connects to Socket.io server
+2. Client emits `join:room` with `{ roomUsername, adminId }`
+3. Server adds client to appropriate room namespace
+4. Client receives broadcasts only for their joined room
 
 ### 6.3 Events
 
 #### Server → Client (Broadcasts)
+All broadcasts are scoped to the specific room (sent to `room:{adminId}:*` namespaces):
+
 | Event | Payload | Description |
 |-------|---------|-------------|
-| `song:changed` | `{ songId, verseIndex, keyOffset, displayMode, versesEnabled }` | New song is now playing |
-| `song:cleared` | `{}` | No song playing (show splash) |
-| `verse:changed` | `{ verseIndex }` | Admin advanced/rewound verse |
-| `key:sync` | `{ keyOffset }` | Admin pushed key to all viewers (syncs viewer offset to admin's) |
-| `mode:changed` | `{ displayMode }` | Admin toggled lyrics-only/chords |
-| `verses:toggled` | `{ versesEnabled }` | Admin toggled verses mode on/off |
-| `queue:updated` | `{ queue }` | Queue state changed (for admin room) |
-| `songs:status-changed` | `{ currentSongId, pendingSongIds, playedSongIds }` | Song status changed (for search view coloring) |
-| `projector:resolution` | `{ width, height, linesPerVerse }` | First projector set resolution |
+| `song:changed` | `{ songId, verseIndex, keyOffset, displayMode, versesEnabled }` | New song is now playing in room |
+| `song:cleared` | `{}` | No song playing in room (show splash) |
+| `verse:changed` | `{ verseIndex }` | Room admin advanced/rewound verse |
+| `key:sync` | `{ keyOffset }` | Room admin pushed key to all viewers |
+| `mode:changed` | `{ displayMode }` | Room admin toggled lyrics-only/chords |
+| `verses:toggled` | `{ versesEnabled }` | Room admin toggled verses mode on/off |
+| `queue:updated` | `{ queue }` | Room's queue state changed |
+| `songs:status-changed` | `{ currentSongId, pendingSongIds, playedSongIds }` | Room's song status changed |
+| `projector:resolution` | `{ width, height, linesPerVerse }` | First projector in room set resolution |
 | `pong` | `{}` | Response to client ping (keep-alive) |
 
-#### Client → Server (Connection/Auth only)
+#### Client → Server (Connection/Auth)
 | Event | Payload | Description |
 |-------|---------|-------------|
+| `join:room` | `{ roomUsername, adminId }` | Join a specific room's broadcasts |
 | `ping` | `{}` | Keep-alive heartbeat (send every 60s) |
-| `auth:admin` | `{ sessionId }` | Admin joins admin room after authentication |
+| `auth:admin` | `{ sessionId, adminId }` | Admin joins their room's admin channel |
 
-**Note:** All mutations (song changes, queue operations, etc.) are performed via REST API. The REST endpoints then broadcast socket events to notify all clients. See Section 11.1 for REST API endpoints.
+**Note:** All mutations (song changes, queue operations, etc.) are performed via REST API. The REST endpoints then broadcast socket events to notify all clients in the affected room. See Section 11.1 for REST API endpoints.
 
 ---
 
@@ -662,7 +736,7 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 
 #### Sync Mechanism
 - Admin clicks `📡` sync button to push current key to all viewers
-- Admin's current local key is sent to server via REST: `POST /api/state/key/sync { keyOffset }`
+- Admin's current local key is sent to server via REST: `POST /api/rooms/:username/state/key/sync { keyOffset }`
 - Server broadcasts `key:sync` event with `{ keyOffset }` to all clients
 - Viewers adopt admin's key as their new local offset (can adjust independently afterward)
 
@@ -678,13 +752,14 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 > **Note:** Verse calculation is performed entirely in the frontend (`utils/verseCalculator.ts`). See `VERSES.md` for detailed implementation specification.
 
 ### 8.1 Algorithm
-1. **If projector is connected**:
-   - First projector to connect reports: `linesPerVerse` (calculated client-side based on actual rendered font size and viewport height)
-   - Server stores this and uses it for all clients
+1. **If projector is connected to the room**:
+   - First projector to connect to a room reports: `linesPerVerse` (calculated client-side based on actual rendered font size and viewport height)
+   - Server stores this in the room's `playing_state` record
    - Song is chunked into verses of N lyric lines each
    - Last verse may be shorter
+   - Each room has its own projector settings (different rooms can have different verse sizes)
    
-2. **If no projector connected**:
+2. **If no projector connected to the room**:
    - Default: `DEFAULT_LINES_PER_VERSE` (see `frontend/src/utils/verseCalculator.ts`)
 
 ### 8.2 Line Counting Rules for Verse Boundaries
@@ -823,50 +898,71 @@ Client receives pre-parsed data and only handles rendering.
 
 ### 11.1 REST API (Fastify)
 
-#### Authentication
+#### Global Endpoints (Not Room-Scoped)
+
+##### Authentication
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/auth/login` | — | Admin login (username, password) → sets cookie |
-| `POST` | `/api/auth/logout` | Admin | Admin logout → clears cookie |
 | `GET` | `/api/auth/me` | — | Check current auth status |
+| `POST` | `/api/auth/logout` | Admin | Admin logout → clears cookie |
 
-#### Songs
+##### Songs (Global Catalog)
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | `GET` | `/api/songs` | — | List all songs (excludes private for non-admin) |
 | `GET` | `/api/songs/:id` | — | Get single song metadata (includes composers, lyricists, translators) |
 | `GET` | `/api/songs/:id/lyrics` | — | Fetch, parse, cache, return structured lyrics |
-| `POST` | `/api/songs/reload` | Admin | Re-fetch songs.json from Git, update cache |
+| `POST` | `/api/songs/reload` | Admin | Re-fetch songs.json from Git, update cache (any admin) |
 
-#### Queue
+#### Room-Scoped Endpoints
+
+All room-scoped endpoints include `:username` parameter to identify the room.
+A middleware resolves the username to `admin_id` and attaches room context to the request.
+Invalid/inactive usernames return 404.
+
+##### Room Info
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/queue` | Admin | Get current queue (grouped, sorted) |
-| `GET` | `/api/queue/mine` | — | Get own queue entries |
-| `POST` | `/api/queue` | — | Add to queue (broadcasts `queue:updated` to admins) |
-| `DELETE` | `/api/queue/:id` | — | Remove own entry (broadcasts `queue:updated`) |
-| `POST` | `/api/queue/:id/present` | Admin | Present song from queue (broadcasts `song:changed` + `queue:updated`) |
-| `DELETE` | `/api/queue/:id/admin` | Admin | Delete any queue entry (broadcasts `queue:updated`) |
-| `DELETE` | `/api/queue/group` | Admin | Delete group by sessionId + requesterName (broadcasts `queue:updated`) |
-| `DELETE` | `/api/queue` | Admin | Truncate entire queue + clear current song (broadcasts `queue:updated` + `song:cleared`) |
+| `GET` | `/api/rooms/:username` | — | Get room info (adminId, displayName, username) |
 
-#### Playing State (Admin Controls)
+##### Room Authentication
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/state` | — | Get current playing state (songId, verse, key, mode, versesEnabled, pendingSongIds, playedSongIds) |
-| `POST` | `/api/state/song` | Admin | Set current song (broadcasts `song:changed`) |
-| `DELETE` | `/api/state/song` | Admin | Clear current song (broadcasts `song:cleared`) |
-| `POST` | `/api/state/verse` | Admin | Set specific verse (broadcasts `verse:changed`) |
-| `POST` | `/api/state/verse/next` | Admin | Advance to next verse (broadcasts `verse:changed`) |
-| `POST` | `/api/state/verse/prev` | Admin | Go to previous verse (broadcasts `verse:changed`) |
-| `POST` | `/api/state/key/sync` | Admin | Push admin's key to all viewers (broadcasts `key:sync`) |
-| `POST` | `/api/state/mode` | Admin | Set display mode (broadcasts `mode:changed`) |
-| `POST` | `/api/state/verses/toggle` | Admin | Toggle verses enabled (broadcasts `verses:toggled`) |
+| `POST` | `/api/rooms/:username/auth/login` | — | Login to specific room (validates username matches URL) |
 
-#### Projector
+##### Room Queue
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/projector/register` | — | Register projector resolution (broadcasts `projector:resolution` if first) |
+| `GET` | `/api/rooms/:username/queue` | Owner | Get room's queue (grouped, sorted) |
+| `GET` | `/api/rooms/:username/queue/mine` | — | Get own queue entries in room |
+| `POST` | `/api/rooms/:username/queue` | — | Add to room's queue (broadcasts `queue:updated`) |
+| `DELETE` | `/api/rooms/:username/queue/:id` | — | Remove own entry from room (broadcasts `queue:updated`) |
+| `POST` | `/api/rooms/:username/queue/:id/present` | Owner | Present song from room's queue (broadcasts `song:changed` + `queue:updated`) |
+| `DELETE` | `/api/rooms/:username/queue/:id/admin` | Owner | Delete any queue entry in room (broadcasts `queue:updated`) |
+| `DELETE` | `/api/rooms/:username/queue/group` | Owner | Delete group by sessionId + requesterName (broadcasts `queue:updated`) |
+| `DELETE` | `/api/rooms/:username/queue` | Owner | Truncate room's queue + clear song (broadcasts `queue:updated` + `song:cleared`) |
+
+##### Room Playing State
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/rooms/:username/state` | — | Get room's playing state (songId, verse, key, mode, versesEnabled, pendingSongIds, playedSongIds) |
+| `POST` | `/api/rooms/:username/state/song` | Owner | Set room's current song (broadcasts `song:changed`) |
+| `DELETE` | `/api/rooms/:username/state/song` | Owner | Clear room's current song (broadcasts `song:cleared`) |
+| `POST` | `/api/rooms/:username/state/verse` | Owner | Set room's specific verse (broadcasts `verse:changed`) |
+| `POST` | `/api/rooms/:username/state/verse/next` | Owner | Advance to next verse (broadcasts `verse:changed`) |
+| `POST` | `/api/rooms/:username/state/verse/prev` | Owner | Go to previous verse (broadcasts `verse:changed`) |
+| `POST` | `/api/rooms/:username/state/key/sync` | Owner | Push key to room's viewers (broadcasts `key:sync`) |
+| `POST` | `/api/rooms/:username/state/mode` | Owner | Set room's display mode (broadcasts `mode:changed`) |
+| `POST` | `/api/rooms/:username/state/verses/toggle` | Owner | Toggle room's verses enabled (broadcasts `verses:toggled`) |
+
+##### Room Projector
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/rooms/:username/projector/register` | — | Register projector resolution for room (broadcasts `projector:resolution` if first) |
+
+**Authorization:**
+- "Owner" = Authenticated admin whose username matches the `:username` parameter
+- Attempting to mutate another admin's room returns 403 Forbidden
 
 ### 11.2 WebSocket Events
 See Section 6.3 for complete event documentation.
@@ -950,9 +1046,10 @@ platform/
 │   │   │   ├── usePlayingNow.ts      # Playing now state subscription
 │   │   │   └── useKeyboardShortcuts.ts # Global keyboard handlers
 │   │   ├── context/
-│   │   │   ├── AuthContext.tsx       # Admin auth state
-│   │   │   ├── SocketContext.tsx     # Socket.io instance
-│   │   │   └── PlayingNowContext.tsx # Current song state
+│   │   │   ├── AuthContext.tsx       # Admin auth state + room ownership
+│   │   │   ├── SocketContext.tsx     # Socket.io instance (room-scoped)
+│   │   │   ├── RoomContext.tsx       # Current room context (adminId, displayName)
+│   │   │   └── PlayingNowContext.tsx # Current song state (room-scoped)
 │   │   ├── services/
 │   │   │   ├── api.ts                # REST API client
 │   │   │   ├── transpose.ts          # Client-side chord transposition
@@ -1028,7 +1125,7 @@ platform/
   - [x] Admin key changes are local-only (no server call)
   - [x] Listen for `key:sync` event to sync viewer to admin's key
 - [x] **Backend: Sync endpoint**
-  - [x] Add `POST /api/state/key/sync` endpoint (receives admin's key, broadcasts to viewers)
+  - [x] Add `POST /api/rooms/:username/state/key/sync` endpoint (receives admin's key, broadcasts to room viewers)
   - [x] Broadcasts `key:sync` event to all clients
 - [x] **Integration**
   - [x] Apply transposition to chord lines in PlayingNowView
@@ -1147,13 +1244,22 @@ COOKIE_SECRET=your-cookie-secret-here
 SONGS_JSON_URL=https://raw.githubusercontent.com/.../songs.json
 
 # Admin users - seeded on startup (format: user1:pass1,user2:pass2)
-ADMIN_USERS=admin:yourpassword,user2:theirpassword
+# Each user creates one room accessible at /:username/
+ADMIN_USERS=alon:password1,iris:password2
+
+# Multi-tenant settings
+DEFAULT_ROOM=alon  # Room to redirect to when accessing / or /admin
+
+# Database reset (use with caution)
+# RESET_DB=true     - Reset if DB is empty
+# RESET_DB=CONFIRM  - Force reset even if DB has data (DELETES ALL DATA)
 ```
 
 ### Frontend (.env)
 ```env
 VITE_API_URL=http://localhost:3001
 VITE_SOCKET_URL=http://localhost:3001
+VITE_DEFAULT_ROOM=alon  # Room to redirect to when accessing / or /admin
 ```
 
 ---
@@ -1161,27 +1267,37 @@ VITE_SOCKET_URL=http://localhost:3001
 ## 16. Testing Considerations
 
 ### Manual Testing Checklist
-- [ ] Admin can log in and see all songs (including private)
+- [ ] Room owner can log in to their room and see all songs (including private)
+- [ ] Login to wrong room (different username in URL) fails
 - [ ] Viewer cannot see private songs in search
 - [ ] Song lyrics display correctly with proper chord alignment
 - [ ] Hebrew songs display RTL correctly
 - [ ] Transposition works for all chord types (Am, G7, Cmaj7, F#dim, B°7, A/C#, etc.)
 - [ ] Diminished chords display with ° symbol (not lowercase o)
-- [ ] Admin sync button pushes key to all viewers
-- [ ] Viewer out-of-sync indicator appears when different from admin
-- [ ] Playing Now syncs across multiple browser tabs/devices
+- [ ] Room owner sync button pushes key to all viewers in that room
+- [ ] Viewer out-of-sync indicator appears when different from room owner
+- [ ] Playing Now syncs across multiple browser tabs/devices in same room
 - [x] Verse navigation works with keyboard shortcuts (↑/↓, PgUp/PgDn)
 - [ ] Queue grouping and fairness logic works correctly
 - [ ] Projector mode calculates verses based on screen size
 - [ ] Background images display properly in lyrics-only mode
-- [ ] Admin "Reload Songs" button refreshes song list from Git
+- [ ] Any admin's "Reload Songs" button refreshes song list from Git
+
+### Multi-Tenant Testing
+- [ ] Different rooms operate independently (song changes don't affect other rooms)
+- [ ] Navigating to invalid room shows "Room not found" immediately
+- [ ] Room display name shows correctly in header
+- [ ] Viewer mode vs admin mode switches correctly based on URL
+- [ ] Room-scoped session IDs (same viewer in different rooms = different sessions)
+- [ ] Queue is isolated per room
 
 ### Edge Cases to Test
 - Very long songs (font auto-shrinking)
 - Songs with unusual chord notations (°, o, +, sus, add, etc.)
 - Songs with only Hebrew or only English
 - Empty queue states
-- Multiple viewers with same name
+- Multiple viewers with same name in same room
+- Multiple viewers with same name in different rooms
 - Rapid verse navigation
 - Network disconnection and reconnection
 - Transposition at boundary values (-6, +6)
@@ -1192,16 +1308,18 @@ VITE_SOCKET_URL=http://localhost:3001
 
 ## 17. Future Considerations (Out of Scope for V1)
 
-1. **Multiple simultaneous events/rooms**: Support different venues/events at once
-2. **Song caching**: Pre-download all songs for offline resilience
-3. **Setlist feature**: Pre-plan song order for a show
-4. **Song editing UI**: Admin interface to edit lyrics (currently Git-only)
-5. **Analytics**: Track popular songs, frequent requesters
-6. **Mixed-language songs**: Hebrew lyrics with English words
-7. **Auto-scroll**: Automatically advance verses on a timer
-8. **Song categories/filtering**: Filter by category in search
-9. **Favorites**: Let viewers mark favorite songs
-10. **History**: Show recently played songs
+1. **Song caching**: Pre-download all songs for offline resilience
+2. **Setlist feature**: Pre-plan song order for a show
+3. **Song editing UI**: Admin interface to edit lyrics (currently Git-only)
+4. **Analytics**: Track popular songs, frequent requesters per room
+5. **Mixed-language songs**: Hebrew lyrics with English words
+6. **Auto-scroll**: Automatically advance verses on a timer
+7. **Song categories/filtering**: Filter by category in search
+8. **Favorites**: Let viewers mark favorite songs
+9. **History**: Show recently played songs per room
+10. **Custom domains**: Allow rooms to have custom subdomains (e.g., alon.singalong.com)
+11. **Per-room song catalogs**: Allow admins to curate their own song lists
+12. **Room display name editing UI**: Allow admins to change their room's display name
 
 ---
 
