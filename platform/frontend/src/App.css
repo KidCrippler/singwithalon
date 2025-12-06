@@ -43,7 +43,9 @@ body {
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--secondary-color);
   color: var(--text-primary);
+  /* Use dvh for mobile browsers (accounts for address bar), fallback to vh */
   height: 100vh;
+  height: 100dvh;
   /* Prevent body scroll - app container handles scrolling */
   overflow: hidden;
   max-width: 100vw;
@@ -53,8 +55,12 @@ body {
 .app {
   display: flex;
   flex-direction: column;
+  /* Use dvh for mobile browsers (accounts for address bar), fallback to vh */
   height: 100vh;
+  height: 100dvh;
   overflow-y: auto;
+  /* Support iOS safe area for bottom home bar */
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .app-main {
@@ -332,7 +338,11 @@ body {
   gap: 0.4rem;
   /* Cards stretch to fill width, minimum 250px for single column on mobile */
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  padding: 0 0.5rem 0.5rem;
+  padding: 0 0.5rem;
+  /* Extra bottom padding to ensure last card is visible on mobile browsers
+     that have bottom nav bars or address bars eating into viewport.
+     Note: safe-area-inset-bottom is handled by .app container, not here */
+  padding-bottom: 2rem;
   width: 100%;
 }
 
