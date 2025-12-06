@@ -1,0 +1,502 @@
+/* ============================================
+   SANDBOX VIEW - Chord Sheet Sketching Tool
+   ============================================ */
+
+/* Mobile blocker */
+.sandbox-mobile-blocker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height));
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.blocker-content {
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+}
+
+.blocker-icon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.blocker-content h2 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.blocker-content p {
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.blocker-english {
+  font-size: 0.9rem;
+  color: #999;
+  font-style: italic;
+}
+
+/* Main sandbox container */
+.sandbox-view {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.sandbox-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: white;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: var(--secondary-color);
+}
+
+.toolbar-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.expand-btn.active {
+  background: #e3f2fd;
+  border-color: #90caf9;
+  color: var(--text-primary);
+}
+
+/* Mode toggle in toolbar */
+.sandbox-toolbar .mode-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sandbox-toolbar .mode-toggle button {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s;
+}
+
+.sandbox-toolbar .mode-toggle button:first-child {
+  border-left: 1px solid var(--border-color);
+}
+
+.sandbox-toolbar .mode-toggle button.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.sandbox-toolbar .mode-toggle button:hover:not(.active) {
+  background: var(--secondary-color);
+}
+
+/* Direction toggle (RTL/LTR) */
+.sandbox-toolbar .direction-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sandbox-toolbar .direction-toggle button {
+  padding: 0.4rem 0.6rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.sandbox-toolbar .direction-toggle button:first-child {
+  border-left: 1px solid var(--border-color);
+}
+
+.sandbox-toolbar .direction-toggle button.active {
+  background: #8b5a00;
+  color: white;
+}
+
+.sandbox-toolbar .direction-toggle button:hover:not(.active) {
+  background: var(--secondary-color);
+}
+
+/* Split pane - force LTR so preview is always on LEFT, editor on RIGHT */
+.sandbox-split-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  direction: ltr; /* Override any global RTL to ensure correct panel order */
+  min-height: 0;
+  gap: 1px;
+  background: var(--border-color);
+}
+
+.sandbox-split-pane.expanded .sandbox-preview {
+  flex: 1;
+}
+
+.sandbox-split-pane.expanded .sandbox-editor {
+  display: none;
+}
+
+/* Preview panel */
+.sandbox-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sandbox-preview.expanded {
+  flex: 1;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 0.75rem;
+  min-height: 44px;
+}
+
+.preview-header.rtl {
+  direction: rtl;
+}
+
+.preview-header.ltr {
+  direction: ltr;
+}
+
+.preview-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+/* Metadata inline in header */
+.preview-metadata {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-metadata .metadata-title {
+  font-weight: 600;
+}
+
+.preview-metadata .metadata-artist {
+  color: var(--text-secondary);
+}
+
+.preview-metadata .metadata-credits {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.loading-indicator {
+  animation: pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Preview empty and error states */
+.preview-empty,
+.preview-error {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.preview-error {
+  color: var(--error-color);
+  background: #fff5f5;
+}
+
+/* Preview container - styled like main views */
+.sandbox-preview-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: white;
+}
+
+/* Lyrics mode background styling - pastoral backgrounds */
+.sandbox-preview-container:has(.lyrics-container.lyrics) {
+  background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #e8f0e3;
+}
+
+/* Overlay for lyrics mode - matches production */
+.sandbox-preview-container:has(.lyrics-container.lyrics)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 245, 0.55) 0%,
+    rgba(248, 246, 238, 0.45) 50%,
+    rgba(255, 253, 245, 0.55) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+.sandbox-preview-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Lyrics container fills space */
+.sandbox-preview-container .lyrics-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Lyrics mode: transparent background, content above overlay */
+.sandbox-preview-container .lyrics-container.lyrics {
+  background: transparent;
+}
+
+/* Lyrics mode text styling */
+.sandbox-preview-container .lyrics-container.lyrics .line-lyric .lyric {
+  color: #1a3a2a;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.8),
+    0 0 20px rgba(255, 255, 255, 0.4);
+}
+
+.sandbox-preview-container .lyrics-container.lyrics .line-cue .cue {
+  color: #8b4513;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.8),
+    0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+/* Line highlighting for sync */
+.sandbox-preview-container .line {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-radius: 2px;
+  padding: 0 4px;
+  margin: 0 -4px;
+}
+
+.sandbox-preview-container .line:hover {
+  background-color: rgba(74, 144, 217, 0.1);
+}
+
+.sandbox-preview-container .line.sandbox-highlighted {
+  background-color: rgba(74, 144, 217, 0.25) !important;
+}
+
+/* Editor panel */
+.sandbox-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fff5e6; /* Light orange background */
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sandbox-editor.hidden {
+  display: none;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #ffe4c4; /* Slightly darker orange for header */
+  border-bottom: 1px solid #ffcc99;
+  flex-shrink: 0;
+  gap: 0.75rem;
+  min-height: 44px;
+}
+
+.editor-header.rtl {
+  direction: rtl;
+}
+
+.editor-header.ltr {
+  direction: ltr;
+}
+
+.editor-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #8b5a00;
+  flex-shrink: 0;
+}
+
+/* Editor metadata inline */
+.editor-metadata {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editor-metadata .metadata-title {
+  font-weight: 600;
+}
+
+.editor-metadata .metadata-artist {
+  color: var(--text-secondary);
+}
+
+/* Editor content wrapper for overlay positioning */
+.editor-content-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Textarea */
+.sandbox-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: 'Cousine', 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: transparent;
+  color: var(--text-primary);
+  position: relative;
+  z-index: 2;
+  overflow-y: auto;
+}
+
+/* RTL mode - Text aligned right, direction handled by dir attribute */
+.sandbox-textarea.rtl {
+  text-align: right;
+}
+
+/* LTR mode - normal left-to-right editing */
+.sandbox-textarea.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.sandbox-textarea::placeholder {
+  color: #cc9966;
+}
+
+/* Line highlight overlay - adjusts for scroll position */
+.editor-line-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Line height = 1.5 * 0.9rem = 1.35rem, padding top = 1rem */
+  top: calc(1rem + var(--highlight-line, 0) * 1.35rem - var(--scroll-offset, 0px));
+  height: 1.35rem;
+  background: rgba(255, 165, 0, 0.4); /* Orange highlight */
+  pointer-events: none;
+  z-index: 1;
+  transition: top 0.05s ease-out;
+}
+
+/* Responsive - ensure panels work well at various sizes */
+@media (max-width: 1200px) {
+  .sandbox-split-pane {
+    flex-direction: column;
+  }
+  
+  .sandbox-preview,
+  .sandbox-editor {
+    flex: 1;
+    min-height: 40vh;
+  }
+}
+

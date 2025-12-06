@@ -12,6 +12,7 @@ import { SearchView } from './components/views/SearchView';
 import { SongView } from './components/views/SongView';
 import { PlayingNowView } from './components/views/PlayingNowView';
 import { QueueView } from './components/views/QueueView';
+import { SandboxView } from './components/views/SandboxView';
 import { preloadBackgrounds } from './utils/backgrounds';
 
 import './App.css';
@@ -62,6 +63,9 @@ function App() {
         <AuthProvider>
           <SongsProvider>
             <Routes>
+              {/* Tools - not room-scoped */}
+              <Route path="/tools/sandbox" element={<SandboxView />} />
+              
               {/* Redirect root paths to default room */}
               <Route path="/" element={<Navigate to={`/${DEFAULT_ROOM}`} replace />} />
               <Route path="/admin" element={<Navigate to={`/${DEFAULT_ROOM}/admin`} replace />} />

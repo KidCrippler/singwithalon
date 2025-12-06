@@ -7,6 +7,7 @@ import { authRoutes, authHook } from './routes/auth.js';
 import { songsRoutes } from './routes/songs.js';
 import { queueRoutes } from './routes/queue.js';
 import { stateRoutes } from './routes/state.js';
+import { toolsRoutes } from './routes/tools.js';
 import { initSocketIO } from './socket/index.js';
 
 async function main() {
@@ -44,6 +45,11 @@ async function main() {
     secret: config.auth.cookieSecret,
   });
 
+  // Add content-type parser for text/plain (used by sandbox tool)
+  fastify.addContentTypeParser('text/plain', { parseAs: 'string' }, (req, body, done) => {
+    done(null, body);
+  });
+
   // Add session ID extraction from cookie or generate new one
   fastify.decorateRequest('sessionId', '');
   fastify.addHook('preHandler', async (request, reply) => {
@@ -79,6 +85,7 @@ async function main() {
   await fastify.register(songsRoutes);
   await fastify.register(queueRoutes);
   await fastify.register(stateRoutes);
+  await fastify.register(toolsRoutes);
 
   // Start the server
   try {
