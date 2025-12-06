@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { transposeChordLine } from '../../services/transpose';
-import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
+import { LineDisplay } from '../common/LineDisplay';
+import { groupIntoSections } from '../../utils/songDisplay';
+import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { getRandomBackground, preloadBackgrounds } from '../../utils/backgrounds';
 import type { ParsedSong, ParsedLine } from '../../types';
 import './SandboxView.css';
@@ -44,125 +45,6 @@ function useDebouncedCallback<T extends (...args: Parameters<T>) => void>(
   }, []);
   
   return debouncedFn as T;
-}
-
-// Group lines into sections for display
-function groupIntoSections(lines: ParsedLine[], displayMode: 'lyrics' | 'chords'): ParsedLine[][] {
-  const sections: ParsedLine[][] = [];
-  let currentSection: ParsedLine[] = [];
-
-  for (const line of lines) {
-    // In lyrics mode, skip {} directives and chord-only lines
-    if (displayMode === 'lyrics') {
-      if (line.type === 'directive' || line.type === 'chords') continue;
-    }
-
-    // Empty line marks end of section
-    if (line.type === 'empty') {
-      if (currentSection.length > 0) {
-        sections.push(currentSection);
-        currentSection = [];
-      }
-      continue;
-    }
-
-    // Directive or cue starts a new section
-    if (line.type === 'directive' || line.type === 'cue') {
-      if (currentSection.length > 0) {
-        sections.push(currentSection);
-        currentSection = [];
-      }
-    }
-
-    currentSection.push(line);
-  }
-
-  if (currentSection.length > 0) {
-    sections.push(currentSection);
-  }
-
-  return sections;
-}
-
-// Dynamic font sizing hook - auto-shrink to fit content
-function useDynamicFontSize(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  deps: unknown[]
-) {
-  const calculateOptimalLayout = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    const availableHeight = container.clientHeight;
-    const availableWidth = container.clientWidth;
-    if (availableHeight === 0 || availableWidth === 0) return;
-    
-    const containerStyle = getComputedStyle(container);
-    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
-    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-    const columnGap = parseFloat(containerStyle.columnGap) || 16;
-    
-    let bestColumns = 1;
-    let bestFontSize = 6;
-    
-    for (let cols = 8; cols >= 1; cols--) {
-      container.style.columnCount = String(cols);
-      
-      const totalGaps = (cols - 1) * columnGap;
-      const columnWidth = (availableWidth - paddingLeft - paddingRight - totalGaps) / cols;
-      
-      let min = 6;
-      let max = 60;
-      let optimalForCols = 6;
-      
-      while (min <= max) {
-        const mid = Math.floor((min + max) / 2);
-        container.style.setProperty('--dynamic-font-size', `${mid}px`);
-        void container.offsetHeight;
-        
-        const fitsVertically = container.scrollHeight <= availableHeight + 5;
-        
-        const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
-        let fitsHorizontally = true;
-        for (const span of textSpans) {
-          const spanWidth = span.getBoundingClientRect().width;
-          if (spanWidth > columnWidth) {
-            fitsHorizontally = false;
-            break;
-          }
-        }
-        
-        if (fitsVertically && fitsHorizontally) {
-          optimalForCols = mid;
-          min = mid + 1;
-        } else {
-          max = mid - 1;
-        }
-      }
-      
-      if (optimalForCols > bestFontSize) {
-        bestFontSize = optimalForCols;
-        bestColumns = cols;
-      }
-    }
-    
-    container.style.columnCount = String(bestColumns);
-    container.style.setProperty('--dynamic-font-size', `${bestFontSize}px`);
-  }, [containerRef]);
-  
-  useEffect(() => {
-    const timeoutId = setTimeout(calculateOptimalLayout, 50);
-    
-    const handleResize = () => {
-      requestAnimationFrame(calculateOptimalLayout);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [calculateOptimalLayout, ...deps]);
 }
 
 // Map editor line number to parsed line index
@@ -389,7 +271,7 @@ export function SandboxView() {
   // Group lines for display
   const sections = useMemo(() => {
     if (!parsedSong) return [];
-    return groupIntoSections(parsedSong.lines, displayMode);
+    return groupIntoSections(parsedSong.lines, displayMode === 'chords');
   }, [parsedSong, displayMode]);
   
   // Dynamic font sizing
@@ -492,45 +374,18 @@ export function SandboxView() {
                   const flatEntry = flatLinesWithIndices.find(f => f.line === line);
                   const originalIndex = flatEntry?.originalIndex ?? -1;
                   const isHighlighted = highlightedLine === originalIndex;
-                  
-                  const getText = () => {
-                    if (displayMode === 'lyrics') {
-                      return line.text.trim().replace(/ {2,}/g, ' ');
-                    }
-                    return line.type === 'chords' ? (line.raw || line.text) : line.text;
-                  };
-
-                  const getChordSegments = () => {
-                    const chordText = line.raw || line.text;
-                    const transposedAndFormatted = formatChordLineForDisplay(
-                      transposeChordLine(chordText, keyOffset)
-                    );
-                    return segmentChordLine(transposedAndFormatted);
-                  };
 
                   return (
-                    <div 
-                      key={lineIndex} 
-                      className={`line line-${line.type} ${isHighlighted ? 'sandbox-highlighted' : ''}`}
-                      data-line-index={originalIndex}
-                      onClick={() => originalIndex >= 0 && handlePreviewLineClick(originalIndex)}
-                    >
-                      {line.type === 'directive' ? (
-                        <span className="directive">{line.text}</span>
-                      ) : line.type === 'cue' ? (
-                        <span className="cue">{line.text}</span>
-                      ) : line.type === 'chords' ? (
-                        getChordSegments().map((segment, i) => (
-                          segment.type === 'directive' ? (
-                            <span key={i} className="directive">{segment.text}</span>
-                          ) : (
-                            <span key={i} className="chords">{segment.text}</span>
-                          )
-                        ))
-                      ) : (
-                        <span className="lyric">{getText()}</span>
-                      )}
-                    </div>
+                    <LineDisplay
+                      key={lineIndex}
+                      line={line}
+                      showChords={displayMode === 'chords'}
+                      lineIndex={originalIndex}
+                      keyOffset={keyOffset}
+                      onClick={originalIndex >= 0 ? handlePreviewLineClick : undefined}
+                      isHighlighted={isHighlighted}
+                      highlightClassName="sandbox-highlighted"
+                    />
                   );
                 })}
               </div>

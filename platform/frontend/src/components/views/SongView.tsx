@@ -5,142 +5,16 @@ import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
 import { formatCredits } from '../../utils/formatCredits';
-import { transposeChordLine } from '../../services/transpose';
-import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
+import { groupIntoSections } from '../../utils/songDisplay';
+import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
-import type { Song, ParsedSong, ParsedLine } from '../../types';
-
-// Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
-function useDynamicFontSize(containerRef: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
-  const calculateOptimalLayout = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    const availableHeight = container.clientHeight;
-    const availableWidth = container.clientWidth;
-    if (availableHeight === 0 || availableWidth === 0) return;
-    
-    // Get container padding and gap for accurate width calculation
-    const containerStyle = getComputedStyle(container);
-    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
-    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-    const columnGap = parseFloat(containerStyle.columnGap) || 16;
-    
-    // Try each column count from 8 down to 1, find best font size for each
-    // More columns = narrower columns but potentially larger font if content fits
-    let bestColumns = 1;
-    let bestFontSize = 6;
-    
-    for (let cols = 8; cols >= 1; cols--) {
-      container.style.columnCount = String(cols);
-      
-      // Calculate actual column width accounting for gaps
-      const totalGaps = (cols - 1) * columnGap;
-      const columnWidth = (availableWidth - paddingLeft - paddingRight - totalGaps) / cols;
-      
-      // Binary search for optimal font size with this column count
-      let min = 6;
-      let max = 60;
-      let optimalForCols = 6;
-      
-      while (min <= max) {
-        const mid = Math.floor((min + max) / 2);
-        container.style.setProperty('--dynamic-font-size', `${mid}px`);
-        void container.offsetHeight;
-        
-        // Check vertical fit
-        const fitsVertically = container.scrollHeight <= availableHeight + 5;
-        
-        // Check horizontal fit - measure actual text span widths against column width
-        const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
-        let fitsHorizontally = true;
-        for (const span of textSpans) {
-          const spanWidth = span.getBoundingClientRect().width;
-          if (spanWidth > columnWidth) {
-            fitsHorizontally = false;
-            break;
-          }
-        }
-        
-        if (fitsVertically && fitsHorizontally) {
-          optimalForCols = mid;
-          min = mid + 1;
-        } else {
-          max = mid - 1;
-        }
-      }
-      
-      // If this column count gives a better (larger) font, use it
-      if (optimalForCols > bestFontSize) {
-        bestFontSize = optimalForCols;
-        bestColumns = cols;
-      }
-    }
-    
-    // Apply the best combination
-    container.style.columnCount = String(bestColumns);
-    container.style.setProperty('--dynamic-font-size', `${bestFontSize}px`);
-  }, [containerRef]);
-  
-  useEffect(() => {
-    const timeoutId = setTimeout(calculateOptimalLayout, 50);
-    
-    const handleResize = () => {
-      requestAnimationFrame(calculateOptimalLayout);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [calculateOptimalLayout, ...deps]);
-}
-
-// Group lines into sections (verses) separated by empty lines or directives/cues
-function groupIntoSections(lines: ParsedLine[], displayMode: 'lyrics' | 'chords'): ParsedLine[][] {
-  const sections: ParsedLine[][] = [];
-  let currentSection: ParsedLine[] = [];
-
-  for (const line of lines) {
-    // In lyrics mode, skip {} directives and chord-only lines
-    // But keep [] cues (they show in both modes)
-    if (displayMode === 'lyrics') {
-      if (line.type === 'directive' || line.type === 'chords') continue;
-    }
-
-    // Empty line marks end of section
-    if (line.type === 'empty') {
-      if (currentSection.length > 0) {
-        sections.push(currentSection);
-        currentSection = [];
-      }
-      continue;
-    }
-
-    // Directive or cue starts a new section
-    if (line.type === 'directive' || line.type === 'cue') {
-      if (currentSection.length > 0) {
-        sections.push(currentSection);
-        currentSection = [];
-      }
-    }
-
-    currentSection.push(line);
-  }
-
-  // Don't forget the last section
-  if (currentSection.length > 0) {
-    sections.push(currentSection);
-  }
-
-  return sections;
-}
+import { LineDisplay } from '../common/LineDisplay';
+import type { Song, ParsedSong } from '../../types';
 
 export function SongView() {
   const { id, username } = useParams<{ id: string; username: string }>();
@@ -217,7 +91,7 @@ export function SongView() {
   // Group lines into sections
   const sections = useMemo(() => {
     if (!lyrics) return [];
-    return groupIntoSections(lyrics.lines, displayMode);
+    return groupIntoSections(lyrics.lines, displayMode === 'chords');
   }, [lyrics, displayMode]);
 
   // Dynamic font sizing - ensures content fits without scrolling
@@ -360,22 +234,14 @@ export function SongView() {
           >
             {sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="lyrics-section">
-                {section.map((line, lineIndex) => {
-                  const getText = () => {
-                    // In lyrics mode: trim and collapse consecutive spaces to single space
-                    return line.text.trim().replace(/ {2,}/g, ' ');
-                  };
-
-                  return (
-                    <div key={lineIndex} className={`line line-${line.type}`}>
-                      {line.type === 'cue' ? (
-                        <span className="cue">{line.text}</span>
-                      ) : (
-                        <span className="lyric">{getText()}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                {section.map((line, lineIndex) => (
+                  <LineDisplay
+                    key={lineIndex}
+                    line={line}
+                    showChords={false}
+                    lineIndex={lineIndex}
+                  />
+                ))}
               </div>
             ))}
           </div>
@@ -406,38 +272,15 @@ export function SongView() {
           >
             {sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="lyrics-section">
-                {section.map((line, lineIndex) => {
-                  const getText = () => {
-                    return line.type === 'chords' ? (line.raw || line.text) : line.text;
-                  };
-
-                  const getChordSegments = () => {
-                    const chordText = line.raw || line.text;
-                    const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
-                    return segmentChordLine(transposedAndFormatted);
-                  };
-
-                  return (
-                    <div key={lineIndex} className={`line line-${line.type}`}>
-                      {line.type === 'directive' ? (
-                        <span className="directive">{line.text}</span>
-                      ) : line.type === 'cue' ? (
-                        <span className="cue">{line.text}</span>
-                      ) : line.type === 'chords' ? (
-                        // Render chord line with inline directives styled separately
-                        getChordSegments().map((segment, i) => (
-                          segment.type === 'directive' ? (
-                            <span key={i} className="directive">{segment.text}</span>
-                          ) : (
-                            <span key={i} className="chords">{segment.text}</span>
-                          )
-                        ))
-                      ) : (
-                        <span className="lyric">{getText()}</span>
-                      )}
-                    </div>
-                  );
-                })}
+                {section.map((line, lineIndex) => (
+                  <LineDisplay
+                    key={lineIndex}
+                    line={line}
+                    showChords={true}
+                    lineIndex={lineIndex}
+                    keyOffset={keyOffset}
+                  />
+                ))}
               </div>
             ))}
           </div>
