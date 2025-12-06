@@ -479,13 +479,17 @@ body {
   overflow: hidden; /* NO SCROLLING */
 }
 
-/* Song View Lyrics Wrapper - same pastoral styling as Playing Now */
-.song-view-lyrics-wrapper {
+/* Song View Fullscreen Container - wrapper for both lyrics and chords modes */
+.song-view-fullscreen-container {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
   position: relative;
+}
+
+/* Song View Lyrics mode - pastoral styling */
+.song-view-fullscreen-container.fullscreen-container {
   /* Background image - set dynamically via CSS variable */
   background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
   background-size: cover;
@@ -496,7 +500,7 @@ body {
 }
 
 /* Soft cream overlay for Song View lyrics */
-.song-view-lyrics-wrapper::before {
+.song-view-fullscreen-container.fullscreen-container::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -510,7 +514,7 @@ body {
 }
 
 /* Ensure lyrics container fills and is above overlay */
-.song-view-lyrics-wrapper .lyrics-container.lyrics {
+.song-view-fullscreen-container.fullscreen-container .lyrics-container.lyrics {
   flex: 1;
   position: relative;
   z-index: 1;
@@ -518,7 +522,7 @@ body {
 }
 
 /* Lyrics text styling for Song View - matches Playing Now */
-.song-view-lyrics-wrapper .lyrics-container.lyrics .line-lyric .lyric {
+.song-view-fullscreen-container.fullscreen-container .lyrics-container.lyrics .line-lyric .lyric {
   color: #1a3a2a;
   font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
@@ -529,7 +533,7 @@ body {
 }
 
 /* Cues styling for Song View - warm terracotta */
-.song-view-lyrics-wrapper .lyrics-container.lyrics .line-cue .cue {
+.song-view-fullscreen-container.fullscreen-container .lyrics-container.lyrics .line-cue .cue {
   color: #8b4513;
   font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 700;
@@ -539,8 +543,43 @@ body {
 }
 
 /* Column rules for Song View lyrics */
-.song-view-lyrics-wrapper .lyrics-container.lyrics {
+.song-view-fullscreen-container.fullscreen-container .lyrics-container.lyrics {
   column-rule: 1px solid rgba(139, 90, 43, 0.2);
+}
+
+/* Song View fullscreen - lyrics mode header and content spacing */
+.song-view-fullscreen-container.fullscreen-container.is-fullscreen .lyrics-container.lyrics {
+  padding-top: 0; /* Header is separate element */
+}
+
+/* Song View fullscreen button in action-buttons */
+.action-buttons .fullscreen-btn.song-view-fullscreen {
+  background: #2d8a6e;
+  color: white;
+  border: 1px solid #247a5f;
+  transition: background-color 0.2s ease;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-buttons .fullscreen-btn.song-view-fullscreen::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='15 3 21 3 21 9'/%3E%3Cpolyline points='9 21 3 21 3 15'/%3E%3Cpolyline points='21 15 21 21 15 21'/%3E%3Cpolyline points='3 9 3 3 9 3'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.action-buttons .fullscreen-btn.song-view-fullscreen:hover {
+  background: #236b55;
 }
 
 /* Compact top bar - minimal height */
@@ -845,7 +884,8 @@ body {
   -webkit-overflow-scrolling: touch;
   /* Prevent any horizontal shift on mobile */
   max-width: 100vw;
-  transform: translateZ(0); /* Create new stacking context for better mobile performance */
+  /* Use isolation instead of transform for stacking context - doesn't affect fixed positioning */
+  isolation: isolate;
 }
 
 /* Reuse song-top-bar styles for playing now */
@@ -1059,14 +1099,100 @@ body {
   pointer-events: none;
 }
 
-/* Ensure content is above overlay */
-.fullscreen-container.is-fullscreen > * {
+/* Ensure content is above overlay (but not the exit button) */
+.fullscreen-container.is-fullscreen > *:not(.fullscreen-exit-btn) {
   position: relative;
   z-index: 1;
 }
 
+/* === CHORDS FULLSCREEN CONTAINER (Admin + Viewer Chords Mode) === */
+.chords-fullscreen-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+  width: 100%;
+}
+
+/* When in fullscreen mode - clean white background */
+.chords-fullscreen-container.is-fullscreen {
+  background: #ffffff;
+}
+
+/* Inner lyrics container in fullscreen mode needs top padding for header */
+.chords-fullscreen-container.is-fullscreen .lyrics-container.in-fullscreen {
+  padding-top: 40px; /* Space for compact header */
+}
+
+/* Admin controls in fullscreen - subtle overlay */
+.admin-controls-fullscreen {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.admin-controls-fullscreen:hover {
+  opacity: 1;
+}
+
+.admin-controls-fullscreen button {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-controls-fullscreen button:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.admin-controls-fullscreen button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-controls-fullscreen button.active {
+  background: #e3f2fd;
+  border-color: #90caf9;
+}
+
+.admin-controls-fullscreen .verse-indicator {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0 4px;
+}
+
+.admin-controls-fullscreen .exit-fullscreen-btn {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.admin-controls-fullscreen .exit-fullscreen-btn:hover {
+  background: #f1b0b7;
+}
+
 /* Fullscreen button styling */
-.viewer-controls .fullscreen-btn {
+.viewer-controls .fullscreen-btn,
+.admin-controls .fullscreen-btn {
   background: #2d8a6e;
   color: white;
   border: 1px solid #247a5f;
@@ -1074,7 +1200,8 @@ body {
   padding: 0;
 }
 
-.viewer-controls .fullscreen-btn::before {
+.viewer-controls .fullscreen-btn::before,
+.admin-controls .fullscreen-btn::before {
   content: '';
   display: block;
   width: 18px;
@@ -1086,7 +1213,8 @@ body {
   background-position: center;
 }
 
-.viewer-controls .fullscreen-btn:hover {
+.viewer-controls .fullscreen-btn:hover,
+.admin-controls .fullscreen-btn:hover {
   background: #236b55;
   color: white;
   border-color: var(--primary-color);

@@ -9,6 +9,8 @@ import { transposeChordLine } from '../../services/transpose';
 import { formatChordLineForDisplay, segmentChordLine } from '../../services/chordDisplay';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
+import { FullscreenExitButton } from '../common/FullscreenExitButton';
+import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
 import type { ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -166,15 +168,6 @@ function useVerseFontSize(
       column-count: 1;
     `;
     
-    // Add a style element for line-specific styles
-    let styleEl = measureDiv.querySelector('style');
-    if (!styleEl) {
-      styleEl = document.createElement('style');
-      measureDiv.appendChild(styleEl);
-    }
-    // Lines must not wrap for horizontal overflow detection
-    styleEl.textContent = `.line { white-space: nowrap; }`;
-    
     return measureDiv;
   }, []);
 
@@ -192,10 +185,15 @@ function useVerseFontSize(
   const calculateOptimalSize = useCallback((content: Element, container: HTMLDivElement): number => {
     const measureContainer = getMeasureContainer(container);
     
-    // Copy content to measurement container (preserve the style element we added)
-    const styleEl = measureContainer.querySelector('style');
+    // Copy content to measurement container
     measureContainer.innerHTML = content.innerHTML;
-    if (styleEl) measureContainer.appendChild(styleEl);
+    
+    // Apply nowrap to lines for horizontal overflow detection
+    // (Using inline styles to avoid polluting global CSS)
+    const lines = measureContainer.querySelectorAll('.line');
+    lines.forEach(line => {
+      (line as HTMLElement).style.whiteSpace = 'nowrap';
+    });
     
     const availableHeight = container.clientHeight;
     const availableWidth = container.clientWidth;
@@ -461,15 +459,37 @@ export function PlayingNowView() {
   const [currentBackground, setCurrentBackground] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const adminContainerRef = useRef<HTMLDivElement>(null);
-  const viewerFullContainerRef = useRef<HTMLDivElement>(null);
+  const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
+  const viewerLyricsContainerRef = useRef<HTMLDivElement>(null);
   const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
   const fullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const adminFullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const viewerChordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
 
-  // Handle fullscreen mode
+  // Handle fullscreen mode - select appropriate container based on current mode
   const enterFullscreen = useCallback(() => {
-    const container = fullscreenContainerRef.current;
+    let container: HTMLDivElement | null = null;
+    
+    if (isRoomOwner) {
+      // Admin always sees chords
+      container = adminFullscreenContainerRef.current;
+    } else if (effectiveDisplayMode === 'chords') {
+      // Viewer in chords mode
+      container = viewerChordsFullscreenContainerRef.current;
+    } else {
+      // Viewer in lyrics mode (with or without verses)
+      container = fullscreenContainerRef.current;
+    }
+    
     if (container && container.requestFullscreen) {
       container.requestFullscreen().catch(console.error);
+    }
+  }, [isRoomOwner, effectiveDisplayMode]);
+
+  // Exit fullscreen
+  const exitFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
     }
   }, []);
 
@@ -571,13 +591,20 @@ export function PlayingNowView() {
   // Dynamic font sizing for admin view (always multi-column chords)
   useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex]);
 
-  // Dynamic font sizing for viewer full view (chords or full lyrics)
-  // Include viewerShowsSingleVerse to trigger recalc when switching from verse to full-lyrics mode
-  useDynamicFontSize(viewerFullContainerRef, [
-    viewerShowsChords ? adminSections : viewerLyricsSections, 
+  // Dynamic font sizing for viewer chords view
+  useDynamicFontSize(viewerChordsContainerRef, [
+    adminSections, 
     viewerShowsChords,
+    state.currentSongId,
+  ]);
+
+  // Dynamic font sizing for viewer lyrics full view
+  // Include viewerShowsSingleVerse to trigger recalc when switching from verse to full-lyrics mode
+  useDynamicFontSize(viewerLyricsContainerRef, [
+    viewerLyricsSections, 
+    !viewerShowsChords && !viewerShowsSingleVerse,
     viewerShowsSingleVerse,
-    state.currentSongId
+    state.currentSongId,
   ]);
 
   // Get current verse lines for display
@@ -780,6 +807,13 @@ export function PlayingNowView() {
               onOffsetChange={setKeyOffset}
               onSync={syncKeyToAll}
             />
+            {/* Fullscreen button for admin */}
+            <button
+              onClick={enterFullscreen}
+              title="מסך מלא"
+              className="fullscreen-btn"
+              aria-label="מסך מלא"
+            />
           </div>
         )}
 
@@ -822,15 +856,13 @@ export function PlayingNowView() {
             >
               {viewerModeLocked ? '🔒' : '🔓'}
             </button>
-            {/* Fullscreen button - only in lyrics mode */}
-            {effectiveDisplayMode === 'lyrics' && (
-              <button
-                onClick={enterFullscreen}
-                title="מסך מלא"
-                className="fullscreen-btn"
-                aria-label="מסך מלא"
-              />
-            )}
+            {/* Fullscreen button - available in all modes */}
+            <button
+              onClick={enterFullscreen}
+              title="מסך מלא"
+              className="fullscreen-btn"
+              aria-label="מסך מלא"
+            />
             {/* Transpose controls - only in chords mode */}
             {effectiveDisplayMode === 'chords' && (
               <TransposeControls
@@ -859,27 +891,101 @@ export function PlayingNowView() {
       {/* === ADMIN VIEW: Always shows chords with multi-column layout === */}
       {isRoomOwner && (
         <div 
-          ref={adminContainerRef}
-          className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''}`}
+          ref={adminFullscreenContainerRef}
+          className={`chords-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
         >
-          {adminSections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="lyrics-section">
-              {section.map((indexedLine) => {
-                const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(indexedLine.originalIndex);
-                return (
-                  <LineDisplay 
-                    key={indexedLine.originalIndex}
-                    line={indexedLine.line} 
-                    showChords={true}
-                    lineIndex={indexedLine.originalIndex}
-                    keyOffset={state.currentKeyOffset}
-                    onClick={showPurpleHighlight ? handleLineClick : undefined}
-                    isHighlighted={isHighlighted}
-                  />
-                );
-              })}
+          {/* Exit button - only visible in fullscreen */}
+          {isFullscreen && (
+            <FullscreenExitButton onExit={exitFullscreen} variant="dark" />
+          )}
+          
+          {/* Compact header - only visible in fullscreen */}
+          {isFullscreen && lyrics && (
+            <ChordsFullscreenHeader
+              title={lyrics.metadata.title}
+              artist={lyrics.metadata.artist}
+              song={state.song}
+              isRtl={isRtl}
+            />
+          )}
+          
+          {/* Admin controls overlay - visible in fullscreen, more subtle */}
+          {isFullscreen && (
+            <div className="admin-controls-fullscreen">
+              <button 
+                onClick={prevVerse} 
+                title="פסוק קודם"
+                disabled={!state.versesEnabled || isAtFirstVerse}
+                className={!state.versesEnabled || isAtFirstVerse ? 'disabled' : ''}
+              >
+                ◀
+              </button>
+              <button 
+                onClick={nextVerse} 
+                title="פסוק הבא"
+                disabled={!state.versesEnabled || isAtLastVerse}
+                className={!state.versesEnabled || isAtLastVerse ? 'disabled' : ''}
+              >
+                ▶
+              </button>
+              <button 
+                onClick={toggleVersesEnabled}
+                title={state.versesEnabled ? "בטל מצב פסוקים" : "הפעל מצב פסוקים"}
+                className={state.versesEnabled ? 'active' : ''}
+              >
+                📖
+              </button>
+              <button 
+                onClick={() => setDisplayMode(state.displayMode === 'lyrics' ? 'chords' : 'lyrics')}
+                title={state.displayMode === 'lyrics' ? "הצג אקורדים לצופים" : "הצג מילים לצופים"}
+              >
+                {state.displayMode === 'lyrics' ? '🎸' : '🎤'}
+              </button>
+              {state.versesEnabled && verses.length > 0 && (
+                <span className="verse-indicator">
+                  {currentVerseIndex + 1}/{verses.length}
+                </span>
+              )}
+              <TransposeControls
+                currentOffset={state.currentKeyOffset}
+                adminOffset={state.currentKeyOffset}
+                isAdmin={true}
+                onOffsetChange={setKeyOffset}
+                onSync={syncKeyToAll}
+              />
+              <button
+                onClick={exitFullscreen}
+                title="יציאה ממסך מלא"
+                className="exit-fullscreen-btn"
+              >
+                ⤡
+              </button>
             </div>
-          ))}
+          )}
+
+          <div 
+            ref={adminContainerRef}
+            className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''} ${isFullscreen ? 'in-fullscreen' : ''}`}
+          >
+            {adminSections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="lyrics-section">
+                {section.map((indexedLine) => {
+                  const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(indexedLine.originalIndex);
+                  return (
+                    <LineDisplay 
+                      key={indexedLine.originalIndex}
+                      line={indexedLine.line} 
+                      showChords={true}
+                      lineIndex={indexedLine.originalIndex}
+                      keyOffset={state.currentKeyOffset}
+                      onClick={showPurpleHighlight ? handleLineClick : undefined}
+                      isHighlighted={isHighlighted}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -889,22 +995,43 @@ export function PlayingNowView() {
           {/* Mode 1: Chords enabled - same as admin, multi-column, no highlight */}
           {viewerShowsChords && (
             <div 
-              ref={viewerFullContainerRef}
-              className="lyrics-container chords"
+              ref={viewerChordsFullscreenContainerRef}
+              className={`chords-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
             >
-              {adminSections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="lyrics-section">
-                  {section.map((indexedLine) => (
-                    <LineDisplay 
-                      key={indexedLine.originalIndex}
-                      line={indexedLine.line} 
-                      showChords={true}
-                      lineIndex={indexedLine.originalIndex}
-                      keyOffset={effectiveKeyOffset}
-                    />
-                  ))}
-                </div>
-              ))}
+              {/* Exit button - only visible in fullscreen */}
+              {isFullscreen && (
+                <FullscreenExitButton onExit={exitFullscreen} variant="dark" />
+              )}
+              
+              {/* Compact header - only visible in fullscreen */}
+              {isFullscreen && lyrics && (
+                <ChordsFullscreenHeader
+                  title={lyrics.metadata.title}
+                  artist={lyrics.metadata.artist}
+                  song={state.song}
+                  isRtl={isRtl}
+                />
+              )}
+
+              <div 
+                key={`chords-inner-${state.currentSongId}`}
+                ref={viewerChordsContainerRef}
+                className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
+              >
+                {adminSections.map((section, sectionIndex) => (
+                  <div key={sectionIndex} className="lyrics-section">
+                    {section.map((indexedLine) => (
+                      <LineDisplay 
+                        key={indexedLine.originalIndex}
+                        line={indexedLine.line} 
+                        showChords={true}
+                        lineIndex={indexedLine.originalIndex}
+                        keyOffset={effectiveKeyOffset}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -915,6 +1042,11 @@ export function PlayingNowView() {
               className={`fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
               style={currentBackground ? { '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties : undefined}
             >
+              {/* Exit button - only visible in fullscreen */}
+              {isFullscreen && (
+                <FullscreenExitButton onExit={exitFullscreen} variant="light" />
+              )}
+              
               {/* Song metadata header - only visible in fullscreen */}
               {isFullscreen && (
                 <div className={`fullscreen-song-header ${isRtl ? 'rtl' : 'ltr'}`}>
@@ -929,7 +1061,8 @@ export function PlayingNowView() {
               {/* Mode 2: Lyrics, verses off - full lyrics view */}
               {!viewerShowsSingleVerse && (
                 <div 
-                  ref={viewerFullContainerRef}
+                  key={`lyrics-inner-${state.currentSongId}`}
+                  ref={viewerLyricsContainerRef}
                   className="lyrics-container lyrics"
                 >
                   {viewerLyricsSections.map((section, sectionIndex) => (

@@ -11,6 +11,8 @@ import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
+import { FullscreenExitButton } from '../common/FullscreenExitButton';
+import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
 import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 // Hook for dynamic font sizing - finds optimal columns (1-5) + font size combination
@@ -155,9 +157,42 @@ export function SongView() {
   const [keyOffset, setKeyOffset] = useState(0);
   const [showQueueModal, setShowQueueModal] = useState(false);
   const [currentBackground, setCurrentBackground] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const { toasts, showToast, dismissToast } = useToast();
   
   const lyricsContainerRef = useRef<HTMLDivElement>(null);
+  const lyricsFullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const chordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle fullscreen mode - select appropriate container based on current mode
+  const enterFullscreen = useCallback(() => {
+    const container = displayMode === 'lyrics' 
+      ? lyricsFullscreenContainerRef.current 
+      : chordsFullscreenContainerRef.current;
+    
+    if (container && container.requestFullscreen) {
+      container.requestFullscreen().catch(console.error);
+    }
+  }, [displayMode]);
+
+  // Exit fullscreen
+  const exitFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(console.error);
+    }
+  }, []);
+
+  // Listen for fullscreen changes (including Escape key exit)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -276,6 +311,13 @@ export function SongView() {
         </div>
 
         <div className="action-buttons">
+          {/* Fullscreen button */}
+          <button
+            onClick={enterFullscreen}
+            title="מסך מלא"
+            className="fullscreen-btn song-view-fullscreen"
+            aria-label="מסך מלא"
+          />
           {isRoomOwner ? (
             <button onClick={handlePresentNow} className="present-btn">
               ▶ הצג
@@ -289,12 +331,29 @@ export function SongView() {
       </div>
 
       {/* Fullscreen lyrics - NO SCROLLING */}
-      {/* In lyrics mode, wrap with background container for pastoral styling */}
+      {/* In lyrics mode, wrap with fullscreen container for pastoral styling */}
       {displayMode === 'lyrics' ? (
         <div 
-          className="song-view-lyrics-wrapper"
+          ref={lyricsFullscreenContainerRef}
+          className={`fullscreen-container song-view-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
           style={currentBackground ? { '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties : undefined}
         >
+          {/* Exit button - only visible in fullscreen */}
+          {isFullscreen && (
+            <FullscreenExitButton onExit={exitFullscreen} variant="light" />
+          )}
+          
+          {/* Song metadata header - only visible in fullscreen */}
+          {isFullscreen && (
+            <div className={`fullscreen-song-header ${isRtl ? 'rtl' : 'ltr'}`}>
+              <h1 className="fullscreen-title">{lyrics.metadata.title}</h1>
+              <div className="fullscreen-artist">{lyrics.metadata.artist}</div>
+              {(song.composers?.length || song.lyricists?.length || song.translators?.length) && (
+                <div className="fullscreen-credits">{formatCredits(song, isRtl)}</div>
+              )}
+            </div>
+          )}
+
           <div 
             ref={lyricsContainerRef}
             className="lyrics-container lyrics"
@@ -323,45 +382,65 @@ export function SongView() {
         </div>
       ) : (
         <div 
-          ref={lyricsContainerRef}
-          className="lyrics-container chords"
+          ref={chordsFullscreenContainerRef}
+          className={`chords-fullscreen-container song-view-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
         >
-          {sections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="lyrics-section">
-              {section.map((line, lineIndex) => {
-                const getText = () => {
-                  return line.type === 'chords' ? (line.raw || line.text) : line.text;
-                };
+          {/* Exit button - only visible in fullscreen */}
+          {isFullscreen && (
+            <FullscreenExitButton onExit={exitFullscreen} variant="dark" />
+          )}
+          
+          {/* Compact header - only visible in fullscreen */}
+          {isFullscreen && (
+            <ChordsFullscreenHeader
+              title={lyrics.metadata.title}
+              artist={lyrics.metadata.artist}
+              song={song}
+              isRtl={isRtl}
+            />
+          )}
 
-                const getChordSegments = () => {
-                  const chordText = line.raw || line.text;
-                  const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
-                  return segmentChordLine(transposedAndFormatted);
-                };
+          <div 
+            ref={lyricsContainerRef}
+            className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
+          >
+            {sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="lyrics-section">
+                {section.map((line, lineIndex) => {
+                  const getText = () => {
+                    return line.type === 'chords' ? (line.raw || line.text) : line.text;
+                  };
 
-                return (
-                  <div key={lineIndex} className={`line line-${line.type}`}>
-                    {line.type === 'directive' ? (
-                      <span className="directive">{line.text}</span>
-                    ) : line.type === 'cue' ? (
-                      <span className="cue">{line.text}</span>
-                    ) : line.type === 'chords' ? (
-                      // Render chord line with inline directives styled separately
-                      getChordSegments().map((segment, i) => (
-                        segment.type === 'directive' ? (
-                          <span key={i} className="directive">{segment.text}</span>
-                        ) : (
-                          <span key={i} className="chords">{segment.text}</span>
-                        )
-                      ))
-                    ) : (
-                      <span className="lyric">{getText()}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+                  const getChordSegments = () => {
+                    const chordText = line.raw || line.text;
+                    const transposedAndFormatted = formatChordLineForDisplay(transposeChordLine(chordText, keyOffset));
+                    return segmentChordLine(transposedAndFormatted);
+                  };
+
+                  return (
+                    <div key={lineIndex} className={`line line-${line.type}`}>
+                      {line.type === 'directive' ? (
+                        <span className="directive">{line.text}</span>
+                      ) : line.type === 'cue' ? (
+                        <span className="cue">{line.text}</span>
+                      ) : line.type === 'chords' ? (
+                        // Render chord line with inline directives styled separately
+                        getChordSegments().map((segment, i) => (
+                          segment.type === 'directive' ? (
+                            <span key={i} className="directive">{segment.text}</span>
+                          ) : (
+                            <span key={i} className="chords">{segment.text}</span>
+                          )
+                        ))
+                      ) : (
+                        <span className="lyric">{getText()}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

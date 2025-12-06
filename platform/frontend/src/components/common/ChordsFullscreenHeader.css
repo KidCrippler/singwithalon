@@ -1,0 +1,64 @@
+/* Compact Chords Fullscreen Header */
+.chords-fullscreen-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 8px 60px; /* Extra padding on sides for exit button clearance */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(255, 255, 255, 0.85) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  text-align: center;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chords-fullscreen-header.rtl {
+  direction: rtl;
+}
+
+.chords-fullscreen-header.ltr {
+  direction: ltr;
+}
+
+.chords-fs-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.chords-fs-separator {
+  color: #999;
+  margin: 0 0.15em;
+}
+
+.chords-fs-artist {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #555;
+}
+
+.chords-fs-credits {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #777;
+}
+
+/* Responsive - hide credits on smaller screens */
+@media (max-width: 600px) {
+  .chords-fullscreen-header {
+    padding: 8px 50px;
+  }
+  
+  .chords-fs-credits,
+  .chords-fs-credits + .chords-fs-separator {
+    display: none;
+  }
+}
+

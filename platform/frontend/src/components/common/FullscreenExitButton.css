@@ -1,0 +1,76 @@
+/* Fullscreen Exit Button - Always visible, light red background, bottom-left corner */
+/* Using absolute positioning since fullscreen element becomes containing block for fixed children */
+.fullscreen-exit-btn {
+  position: absolute !important;
+  /* Bottom-left corner - physical positioning */
+  bottom: 16px !important;
+  /* Use both left and right to handle RTL - left wins when both are set in LTR mode */
+  left: 16px !important;
+  right: auto !important;
+  top: auto !important;
+  /* Force LTR direction on the button itself to ensure left is physical left */
+  direction: ltr !important;
+  /* Ensure no transforms affect positioning */
+  transform: none;
+  z-index: 9999;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  /* Light red background - more noticeable */
+  background: rgba(220, 53, 69, 0.7);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0.85;
+}
+
+.fullscreen-exit-btn:hover,
+.fullscreen-exit-btn:focus {
+  opacity: 1;
+  transform: scale(1.1);
+  background: rgba(220, 53, 69, 0.9);
+}
+
+/* Light variant - for use on dark/image backgrounds (lyrics mode) */
+.fullscreen-exit-btn.light {
+  background: rgba(220, 53, 69, 0.75);
+  color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.fullscreen-exit-btn.light:hover,
+.fullscreen-exit-btn.light:focus {
+  background: rgba(220, 53, 69, 0.95);
+}
+
+/* Dark variant - for use on light/white backgrounds (chords mode) */
+.fullscreen-exit-btn.dark {
+  background: rgba(220, 53, 69, 0.65);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fullscreen-exit-btn.dark:hover,
+.fullscreen-exit-btn.dark:focus {
+  background: rgba(220, 53, 69, 0.9);
+}
+
+/* Touch-friendly sizing for mobile */
+@media (max-width: 768px) {
+  .fullscreen-exit-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    bottom: 12px !important;
+    left: 12px !important;
+    right: auto !important;
+  }
+}
+
