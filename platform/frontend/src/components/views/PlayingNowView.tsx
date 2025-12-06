@@ -5,7 +5,7 @@ import { useRoom } from '../../context/RoomContext';
 import { songsApi } from '../../services/api';
 import { calculateVerses, calculateVersesForLyricsMode, getVerseLinesForDisplay, findVerseForLine, DEFAULT_LINES_PER_VERSE } from '../../utils/verseCalculator';
 import { formatCredits } from '../../utils/formatCredits';
-import { groupIntoSectionsWithIndices, type IndexedLine } from '../../utils/songDisplay';
+import { groupIntoSectionsWithIndices } from '../../utils/songDisplay';
 import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
