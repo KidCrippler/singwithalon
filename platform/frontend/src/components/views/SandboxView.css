@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - var(--header-height));
+  min-height: 100vh;
   padding: 2rem;
   text-align: center;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -44,10 +44,10 @@
   font-style: italic;
 }
 
-/* Main sandbox container */
+/* Main sandbox container - no header, uses full viewport */
 .sandbox-view {
   position: fixed;
-  top: var(--header-height);
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
