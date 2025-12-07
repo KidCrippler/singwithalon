@@ -27,7 +27,8 @@ export function SongView() {
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>('lyrics'); // Default to lyrics for viewers
+  // Admin defaults to chords mode, viewer defaults to lyrics mode
+  const [displayMode, setDisplayMode] = useState<'lyrics' | 'chords'>(isRoomOwner ? 'chords' : 'lyrics');
   const [keyOffset, setKeyOffset] = useState(0);
   const [showQueueModal, setShowQueueModal] = useState(false);
   const [currentBackground, setCurrentBackground] = useState('');
