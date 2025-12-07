@@ -487,16 +487,3 @@
   transition: top 0.05s ease-out;
 }
 
-/* Responsive - ensure panels work well at various sizes */
-@media (max-width: 1200px) {
-  .sandbox-split-pane {
-    flex-direction: column;
-  }
-  
-  .sandbox-preview,
-  .sandbox-editor {
-    flex: 1;
-    min-height: 40vh;
-  }
-}
-
