@@ -150,10 +150,23 @@ export function SandboxView() {
   const processTextForRtl = useCallback((text: string): string => {
     // Strip any existing RLM to avoid duplicates
     const stripped = text.replace(/\u200F/g, '');
-    // Insert RLM before each chord token (including optional / prefix for bass notes)
-    // The /? captures slash so it stays with the chord (e.g., /F# stays together)
-    // This forces each word to be a separate bidi run
-    return stripped.replace(/(^|[\s\n])(\/?)([A-Za-z\u0590-\u05FF])/gm, `$1${RLM}$2$3`);
+    // Handle different token types with appropriate RLM insertion:
+    // - Bracketed chords [Cm]: need RLM before [ AND before the letter inside
+    // - Slash chords /F#: need RLM before /
+    // - Regular words: need RLM before the first letter
+    return stripped.replace(/(^|[\s\n])(\[?)([\/]?)([A-Za-z\u0590-\u05FF])/gm, 
+      (_match, space, bracket, slash, letter) => {
+        if (bracket === '[') {
+          // Bracketed chord: RLM before [ AND RLM before the letter inside
+          return space + RLM + bracket + RLM + letter;
+        } else if (slash === '/') {
+          // Slash chord: RLM before the slash
+          return space + RLM + slash + letter;
+        } else {
+          // Regular word/chord: RLM before the letter
+          return space + RLM + letter;
+        }
+      });
   }, []);
   
   // Strip RLM characters for storage/parsing
@@ -536,4 +549,3 @@ export function SandboxView() {
     </div>
   );
 }
-
