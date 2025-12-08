@@ -161,6 +161,22 @@ export function SandboxView() {
     return text.replace(/\u200F/g, '');
   }, []);
   
+  // Handle copy - strip RLM characters so clipboard gets clean text
+  const handleCopy = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (editorDirection === 'rtl') {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = start !== end 
+        ? textarea.value.substring(start, end)
+        : textarea.value; // If nothing selected, copy all
+      const cleanText = stripRlm(selectedText);
+      e.clipboardData.setData('text/plain', cleanText);
+    }
+    // In LTR mode, let default copy behavior work
+  }, [editorDirection, stripRlm]);
+  
   // Handle text change
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
@@ -416,6 +432,7 @@ export function SandboxView() {
           value={rawText}
           onChange={handleTextChange}
           onPaste={handlePaste}
+          onCopy={handleCopy}
           onSelect={handleTextareaSelect}
           onKeyUp={handleTextareaSelect}
           onClick={handleTextareaSelect}
