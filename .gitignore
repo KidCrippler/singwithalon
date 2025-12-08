@@ -1,6 +1,9 @@
 # Claude Code configuration directory
 .claude/
 
+# Cursor configuration directory
+.cursor/
+
 # API Keys and sensitive configuration
 config.js
 
