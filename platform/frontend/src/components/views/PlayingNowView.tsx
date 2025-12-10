@@ -51,12 +51,21 @@ function useVerseFontSize(
   }, [songId, containerRef]);
   
   // Get or create hidden measurement container
-  const getMeasureContainer = useCallback((container: HTMLDivElement): HTMLDivElement => {
+  // CRITICAL: Append to container.parentElement (not document.body) to preserve CSS context
+  const getMeasureContainer = useCallback((container: HTMLDivElement): HTMLDivElement | null => {
     const containerStyle = getComputedStyle(container);
+    const parent = container.parentElement;
+    if (!parent) return null;
+    
+    // Remove old container if it exists in wrong parent
+    if (measureContainerRef.current && measureContainerRef.current.parentElement !== parent) {
+      measureContainerRef.current.remove();
+      measureContainerRef.current = null;
+    }
     
     if (!measureContainerRef.current) {
       const measureDiv = document.createElement('div');
-      document.body.appendChild(measureDiv);
+      parent.appendChild(measureDiv);
       measureContainerRef.current = measureDiv;
     }
     
@@ -71,7 +80,7 @@ function useVerseFontSize(
       top: 0;
       width: ${container.clientWidth}px;
       height: ${container.clientHeight}px;
-      overflow: auto;
+      overflow: visible;
       font-family: ${containerStyle.fontFamily};
       padding: ${containerStyle.padding};
       line-height: ${containerStyle.lineHeight};
@@ -85,7 +94,7 @@ function useVerseFontSize(
   useEffect(() => {
     return () => {
       if (measureContainerRef.current) {
-        document.body.removeChild(measureContainerRef.current);
+        measureContainerRef.current.remove();
         measureContainerRef.current = null;
       }
     };
@@ -94,6 +103,7 @@ function useVerseFontSize(
   // Calculate optimal font size using hidden measurement container
   const calculateOptimalSize = useCallback((content: Element, container: HTMLDivElement): number => {
     const measureContainer = getMeasureContainer(container);
+    if (!measureContainer) return 40; // Fallback if no parent
     
     // Copy content to measurement container
     measureContainer.innerHTML = content.innerHTML;
@@ -118,9 +128,20 @@ function useVerseFontSize(
       measureContainer.style.setProperty('--dynamic-font-size', `${mid}px`);
       void measureContainer.offsetHeight; // Force reflow
       
-      // With overflow: auto, scrollWidth/scrollHeight accurately reflect content size
+      // Check vertical fit using scrollHeight
       const fitsVertically = measureContainer.scrollHeight <= availableHeight + 2;
-      const fitsHorizontally = measureContainer.scrollWidth <= availableWidth + 2;
+      
+      // Check horizontal fit using getBoundingClientRect on text spans
+      // This is more reliable than scrollWidth for inline elements
+      let fitsHorizontally = true;
+      const textSpans = measureContainer.querySelectorAll('.lyric, .cue, .chords');
+      for (const span of textSpans) {
+        const spanWidth = span.getBoundingClientRect().width;
+        if (spanWidth > availableWidth) {
+          fitsHorizontally = false;
+          break;
+        }
+      }
       
       if (fitsVertically && fitsHorizontally) {
         optimalSize = mid;
