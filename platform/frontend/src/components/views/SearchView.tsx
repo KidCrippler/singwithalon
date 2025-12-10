@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { queueApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +16,7 @@ export function SearchView() {
   const { searchTerm, setSearchTerm, setFilteredCount } = useSearch();
   const [isReloading, setIsReloading] = useState(false);
   const [queueModalSong, setQueueModalSong] = useState<Song | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { username } = useParams<{ username: string }>();
   const { isRoomOwner } = useAuth();
@@ -79,6 +80,20 @@ export function SearchView() {
   useEffect(() => {
     setFilteredCount(filteredSongs.length);
   }, [filteredSongs.length, setFilteredCount]);
+
+  // Blur search input when user scrolls the song list (dismiss keyboard on tablets)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (document.activeElement === searchInputRef.current) {
+        searchInputRef.current?.blur();
+      }
+    };
+
+    const scrollContainer = document.querySelector('.songs-list');
+    scrollContainer?.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => scrollContainer?.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleViewSong = (songId: number) => {
     navigate(`/${username}/song/${songId}`);
@@ -168,10 +183,16 @@ export function SearchView() {
       <div className="search-header">
         <div className="search-controls">
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="חפש שיר או אמן..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              }
+            }}
             className="search-input"
           />
           <button 
