@@ -9,6 +9,7 @@ import { groupIntoSections } from '../../utils/songDisplay';
 import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
+import { requestFullscreen, exitFullscreen as exitFullscreenUtil, addFullscreenChangeListener, isInFullscreen } from '../../utils/fullscreen';
 import { QueueModal } from '../common/QueueModal';
 import { ToastContainer, useToast } from '../common/Toast';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
@@ -40,33 +41,28 @@ export function SongView() {
   const chordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle fullscreen mode - select appropriate container based on current mode
+  // Uses cross-browser utility for webkit/moz/ms vendor prefix support (older tablets)
   const enterFullscreen = useCallback(() => {
     const container = displayMode === 'lyrics' 
       ? lyricsFullscreenContainerRef.current 
       : chordsFullscreenContainerRef.current;
     
-    if (container && container.requestFullscreen) {
-      container.requestFullscreen().catch(console.error);
-    }
+    requestFullscreen(container);
   }, [displayMode]);
 
-  // Exit fullscreen
+  // Exit fullscreen - uses cross-browser utility
   const exitFullscreen = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(console.error);
-    }
+    exitFullscreenUtil();
   }, []);
 
   // Listen for fullscreen changes (including Escape key exit)
+  // Uses cross-browser utility for all vendor prefixes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(isInFullscreen());
     };
     
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return addFullscreenChangeListener(handleFullscreenChange);
   }, []);
 
   useEffect(() => {

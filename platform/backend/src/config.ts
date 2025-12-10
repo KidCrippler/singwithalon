@@ -28,6 +28,10 @@ export const config = {
   auth: {
     cookieSecret: process.env.COOKIE_SECRET || '',
     cookieName: 'singalong_session',
+    // Cross-origin cookies: set to 'true' if frontend and backend are on different domains
+    // When false (default), uses 'lax' sameSite which is more compatible with older browsers
+    // When true, uses 'none' sameSite + secure (requires HTTPS)
+    crossOriginCookies: process.env.CROSS_ORIGIN_COOKIES === 'true',
   },
   songs: {
     // Can be a URL or a local file path

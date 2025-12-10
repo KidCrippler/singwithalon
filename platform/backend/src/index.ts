@@ -66,12 +66,19 @@ async function main() {
     request.sessionId = sessionId;
     
     // Set/refresh the session cookie (expires in 30 days)
+    // Use 'lax' sameSite for better compatibility with older browsers
+    // Only use 'none' if explicitly configured for cross-origin deployment
     if (isNewSession) {
+      const isProduction = process.env.NODE_ENV === 'production';
+      const useCrossOrigin = config.auth.crossOriginCookies && isProduction;
+      
       reply.setCookie('singalong_viewer_session', sessionId, {
         path: '/',
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        // 'lax' is more compatible with older browsers
+        // 'none' required only for cross-origin (and needs secure: true)
+        sameSite: useCrossOrigin ? 'none' : 'lax',
+        secure: useCrossOrigin,
         maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
       });
     }

@@ -88,11 +88,18 @@ export async function authRoutes(fastify: FastifyInstance) {
         isAdmin: true,
       };
 
+      // Use 'lax' sameSite for better compatibility with older browsers
+      // Only use 'none' if explicitly configured for cross-origin deployment
+      const isProduction = process.env.NODE_ENV === 'production';
+      const useCrossOrigin = config.auth.crossOriginCookies && isProduction;
+      
       reply.setCookie(config.auth.cookieName, JSON.stringify(sessionData), {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        // 'lax' is more compatible with older browsers
+        // 'none' required only for cross-origin (and needs secure: true)
+        sameSite: useCrossOrigin ? 'none' : 'lax',
+        secure: useCrossOrigin,
         maxAge: 60 * 60 * 24 * 7, // 7 days
         signed: true,
       });

@@ -1250,6 +1250,12 @@ ADMIN_USERS=alon:password1,iris:password2
 # Multi-tenant settings
 DEFAULT_ROOM=alon  # Room to redirect to when accessing / or /admin
 
+# Cookie settings for browser compatibility
+# Set to 'true' only if frontend and backend are on different domains (cross-origin)
+# When false (default): Uses sameSite='lax' which is more compatible with older browsers
+# When true: Uses sameSite='none' + secure=true (requires HTTPS)
+# CROSS_ORIGIN_COOKIES=true
+
 # Database reset (use with caution)
 # RESET_DB=true     - Reset if DB is empty
 # RESET_DB=CONFIRM  - Force reset even if DB has data (DELETES ALL DATA)

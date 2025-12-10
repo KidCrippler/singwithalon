@@ -9,6 +9,7 @@ import { groupIntoSectionsWithIndices } from '../../utils/songDisplay';
 import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
+import { requestFullscreen, exitFullscreen as exitFullscreenUtil, addFullscreenChangeListener, isInFullscreen } from '../../utils/fullscreen';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
 import { LineDisplay } from '../common/LineDisplay';
@@ -278,6 +279,7 @@ export function PlayingNowView() {
   const viewerChordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle fullscreen mode - select appropriate container based on current mode
+  // Uses cross-browser utility for webkit/moz/ms vendor prefix support (older tablets)
   const enterFullscreen = useCallback(() => {
     let container: HTMLDivElement | null = null;
     
@@ -292,28 +294,22 @@ export function PlayingNowView() {
       container = fullscreenContainerRef.current;
     }
     
-    if (container && container.requestFullscreen) {
-      container.requestFullscreen().catch(console.error);
-    }
+    requestFullscreen(container);
   }, [isRoomOwner, effectiveDisplayMode]);
 
-  // Exit fullscreen
+  // Exit fullscreen - uses cross-browser utility
   const exitFullscreen = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(console.error);
-    }
+    exitFullscreenUtil();
   }, []);
 
   // Listen for fullscreen changes (including Escape key exit)
+  // Uses cross-browser utility for all vendor prefixes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(isInFullscreen());
     };
     
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return addFullscreenChangeListener(handleFullscreenChange);
   }, []);
 
   // Track previous song ID to detect song changes synchronously (before effects run)

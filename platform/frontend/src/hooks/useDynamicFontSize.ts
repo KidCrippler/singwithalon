@@ -1,6 +1,19 @@
 import { useCallback, useEffect } from 'react';
 
 /**
+ * Set column count with vendor prefixes for older browsers (Safari/iOS)
+ */
+function setColumnCount(element: HTMLElement, count: number): void {
+  const value = String(count);
+  // Standard
+  element.style.columnCount = value;
+  // Webkit (older Safari, iOS)
+  element.style.setProperty('-webkit-column-count', value);
+  // Mozilla (older Firefox)
+  element.style.setProperty('-moz-column-count', value);
+}
+
+/**
  * Hook for dynamic font sizing - finds optimal columns (1-8) + font size combination
  * to maximize readability while fitting content in the container.
  * 
@@ -23,7 +36,9 @@ export function useDynamicFontSize(
     const containerStyle = getComputedStyle(container);
     const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
     const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-    const columnGap = parseFloat(containerStyle.columnGap) || 16;
+    // Try both standard and webkit property for column gap
+    const columnGap = parseFloat(containerStyle.columnGap) || 
+                      parseFloat(containerStyle.getPropertyValue('-webkit-column-gap')) || 16;
     
     // Try each column count from 8 down to 1, find best font size for each
     // More columns = narrower columns but potentially larger font if content fits
@@ -31,7 +46,7 @@ export function useDynamicFontSize(
     let bestFontSize = 6;
     
     for (let cols = 8; cols >= 1; cols--) {
-      container.style.columnCount = String(cols);
+      setColumnCount(container, cols);
       
       // Calculate actual column width accounting for gaps
       const totalGaps = (cols - 1) * columnGap;
@@ -44,7 +59,9 @@ export function useDynamicFontSize(
       
       while (min <= max) {
         const mid = Math.floor((min + max) / 2);
+        // Set font size directly as well as CSS variable for older browser fallback
         container.style.setProperty('--dynamic-font-size', `${mid}px`);
+        container.style.fontSize = `${mid}px`;
         void container.offsetHeight;
         
         // Check vertical fit
@@ -76,9 +93,10 @@ export function useDynamicFontSize(
       }
     }
     
-    // Apply the best combination
-    container.style.columnCount = String(bestColumns);
+    // Apply the best combination with vendor prefixes
+    setColumnCount(container, bestColumns);
     container.style.setProperty('--dynamic-font-size', `${bestFontSize}px`);
+    container.style.fontSize = `${bestFontSize}px`;
   }, [containerRef]);
   
   useEffect(() => {

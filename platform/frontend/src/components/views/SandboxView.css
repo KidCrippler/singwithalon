@@ -309,7 +309,11 @@
 .sandbox-preview-container:has(.lyrics-container.lyrics)::before {
   content: '';
   position: absolute;
-  inset: 0;
+  /* Fallback for older browsers that don't support inset */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: linear-gradient(
     180deg,
     rgba(255, 253, 245, 0.55) 0%,
