@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
 import { config } from '../config.js';
-import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue } from '../types/index.js';
+import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue, Song } from '../types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,6 +28,7 @@ async function databaseHasData(): Promise<boolean> {
 async function dropAllTables(): Promise<void> {
   console.log('Dropping all tables...');
   // Order matters due to foreign keys
+  await db.execute('DROP TABLE IF EXISTS songs');
   await db.execute('DROP TABLE IF EXISTS song_analytics');
   await db.execute('DROP TABLE IF EXISTS sessions');
   await db.execute('DROP TABLE IF EXISTS queue');
@@ -69,6 +70,36 @@ async function migrateSongAnalytics(): Promise<void> {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_song ON song_analytics(song_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_created ON song_analytics(created_at)');
     console.log('song_analytics table created successfully.');
+  }
+}
+
+// Migration: Create songs table if it doesn't exist
+// TODO: Remove this after deployment - the schema.sql handles this for new installs
+async function migrateSongsTable(): Promise<void> {
+  const exists = await tableExists('songs');
+  if (!exists) {
+    console.log('Creating songs table (migration)...');
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS songs (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        artist TEXT NOT NULL,
+        composers TEXT,
+        lyricists TEXT,
+        translators TEXT,
+        category_ids TEXT,
+        is_private INTEGER DEFAULT 0,
+        markup_url TEXT,
+        direction TEXT,
+        date_created INTEGER,
+        date_modified INTEGER,
+        synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_name ON songs(name)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist)');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_is_private ON songs(is_private)');
+    console.log('songs table created successfully.');
   }
 }
 
@@ -170,6 +201,7 @@ export async function initDatabase(): Promise<Client> {
 
   // Run migrations for existing databases
   await migrateSongAnalytics();
+  await migrateSongsTable();
 
   // Sync admins from env var
   await syncAdminsFromEnv();
@@ -551,3 +583,56 @@ export const sessionQueries = {
     return result.rows[0] ? rowToObject<Session>(result.rows[0] as Record<string, unknown>) : undefined;
   },
 };
+
+// Sync songs from in-memory index to database (non-blocking)
+// Called after loading songs.json on startup and on admin refresh
+export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
+  try {
+    const startTime = Date.now();
+    
+    // Delete all existing songs (table always mirrors JSON exactly)
+    await getDb().execute('DELETE FROM songs');
+    
+    // Batch insert all songs
+    let syncedCount = 0;
+    let skippedCount = 0;
+    
+    for (const song of songs) {
+      // Skip songs without required fields (id, name, singer)
+      if (!song.id || !song.name || !song.singer) {
+        skippedCount++;
+        continue;
+      }
+      
+      await getDb().execute({
+        sql: `INSERT INTO songs (id, name, artist, composers, lyricists, translators, 
+              category_ids, is_private, markup_url, direction, date_created, date_modified) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          song.id,
+          song.name,
+          song.singer,  // Maps to 'artist' column
+          JSON.stringify(song.composers ?? []),
+          JSON.stringify(song.lyricists ?? []),
+          JSON.stringify(song.translators ?? []),
+          JSON.stringify(song.categoryIds ?? []),
+          song.isPrivate ? 1 : 0,
+          song.lyrics?.markupUrl ?? null,
+          song.direction ?? null,
+          song.dateCreated ?? null,
+          song.dateModified ?? null,
+        ],
+      });
+      syncedCount++;
+    }
+    
+    const duration = Date.now() - startTime;
+    if (skippedCount > 0) {
+      console.log(`Synced ${syncedCount} songs to database in ${duration}ms (skipped ${skippedCount} invalid)`);
+    } else {
+      console.log(`Synced ${syncedCount} songs to database in ${duration}ms`);
+    }
+  } catch (error) {
+    console.error('Failed to sync songs to database:', error);
+  }
+}

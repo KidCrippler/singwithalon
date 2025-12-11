@@ -528,11 +528,32 @@ CREATE TABLE sessions (
   last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Song index cache (mirrors songs.json for offline querying)
+-- Refreshed on server startup and when admin clicks "Reload Songs"
+CREATE TABLE songs (
+  id INTEGER PRIMARY KEY,               -- External song ID from songs.json
+  name TEXT NOT NULL,
+  artist TEXT NOT NULL,                 -- Called "singer" in JSON
+  composers TEXT,                       -- JSON array: '["Person A", "Person B"]'
+  lyricists TEXT,                       -- JSON array
+  translators TEXT,                     -- JSON array
+  category_ids TEXT,                    -- JSON array: '["1", "5"]'
+  is_private INTEGER DEFAULT 0,         -- Boolean: 0 or 1
+  markup_url TEXT,                      -- NULL if song has no lyrics file
+  direction TEXT,                       -- 'ltr' | 'rtl' | NULL (auto-detect)
+  date_created INTEGER,                 -- Unix timestamp in ms (from JSON)
+  date_modified INTEGER,                -- Unix timestamp in ms
+  synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for efficient room-scoped queries
 CREATE INDEX idx_playing_state_admin ON playing_state(admin_id);
 CREATE INDEX idx_queue_admin ON queue(admin_id);
 CREATE INDEX idx_sessions_admin ON sessions(admin_id);
 CREATE INDEX idx_admins_active ON admins(is_active);
+CREATE INDEX idx_songs_name ON songs(name);
+CREATE INDEX idx_songs_artist ON songs(artist);
+CREATE INDEX idx_songs_is_private ON songs(is_private);
 
 -- Session cleanup: Sessions inactive for 3+ hours should be removed
 -- Run periodically: DELETE FROM sessions WHERE last_seen < datetime('now', '-3 hours');
@@ -541,6 +562,14 @@ CREATE INDEX idx_admins_active ON admins(is_active);
 **Room Initialization:**
 - When an admin is created (via `ADMIN_USERS` env var), a corresponding `playing_state` row is automatically created
 - Each admin has exactly one `playing_state` row (enforced by UNIQUE constraint on `admin_id`)
+
+**Songs Table Sync:**
+- The `songs` table mirrors the external `songs.json` index for offline querying (analytics, queue debugging)
+- Synced automatically on server startup and when any admin clicks "Reload Songs"
+- Sync is non-blocking (fire-and-forget) — clients don't wait for it to complete
+- Table is fully replaced on each sync (DELETE all + INSERT all)
+- Multi-value fields (composers, lyricists, translators, category_ids) stored as JSON arrays
+- No FK constraints to queue/analytics — song_id is a "soft reference"
 
 ### 5.4 Session Keep-Alive & Retention
 

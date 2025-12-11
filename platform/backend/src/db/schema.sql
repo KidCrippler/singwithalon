@@ -78,3 +78,25 @@ CREATE INDEX IF NOT EXISTS idx_analytics_room ON song_analytics(room_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_event ON song_analytics(event_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_song ON song_analytics(song_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_created ON song_analytics(created_at);
+
+-- Song index cache (mirrors songs.json for offline querying)
+-- Refreshed on server startup and when admin clicks "Reload Songs"
+CREATE TABLE IF NOT EXISTS songs (
+  id INTEGER PRIMARY KEY,               -- External song ID from songs.json
+  name TEXT NOT NULL,
+  artist TEXT NOT NULL,                 -- Called "singer" in JSON
+  composers TEXT,                       -- JSON array: '["Person A", "Person B"]'
+  lyricists TEXT,                       -- JSON array
+  translators TEXT,                     -- JSON array
+  category_ids TEXT,                    -- JSON array: '["1", "5"]'
+  is_private INTEGER DEFAULT 0,         -- Boolean: 0 or 1
+  markup_url TEXT,                      -- NULL if song has no lyrics file
+  direction TEXT,                       -- 'ltr' | 'rtl' | NULL (auto-detect)
+  date_created INTEGER,                 -- Unix timestamp in ms (from JSON)
+  date_modified INTEGER,                -- Unix timestamp in ms
+  synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_songs_name ON songs(name);
+CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist);
+CREATE INDEX IF NOT EXISTS idx_songs_is_private ON songs(is_private);

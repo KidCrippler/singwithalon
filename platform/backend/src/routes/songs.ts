@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { readFileSync, existsSync } from 'fs';
 import { requireAdmin } from './auth.js';
+import { syncSongsToDatabase } from '../db/index.js';
 import type { Song, ParsedSong } from '../types/index.js';
 import { config } from '../config.js';
 
@@ -20,6 +21,8 @@ interface SongsJsonResponse {
 }
 
 export async function loadSongsIndex(): Promise<void> {
+  let loadedFromLocal = false;
+  
   // Try local file first if configured
   if (config.songs.localPath) {
     try {
@@ -29,7 +32,7 @@ export async function loadSongsIndex(): Promise<void> {
         const data = JSON.parse(content) as SongsJsonResponse;
         songsIndex = data.songs || [];
         console.log(`Loaded ${songsIndex.length} songs from local file`);
-        return;
+        loadedFromLocal = true;
       } else {
         console.warn(`Local songs file not found: ${config.songs.localPath}`);
       }
@@ -38,25 +41,46 @@ export async function loadSongsIndex(): Promise<void> {
     }
   }
 
-  // Fall back to URL
-  if (!config.songs.jsonUrl) {
-    console.log('No SONGS_JSON_URL configured, starting with empty song list');
-    return;
+  // Fall back to URL if not loaded from local
+  if (!loadedFromLocal) {
+    if (!config.songs.jsonUrl) {
+      console.log('No SONGS_JSON_URL configured, starting with empty song list');
+      return;
+    }
+
+    // Retry logic for transient network issues
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Fetching songs from ${config.songs.jsonUrl}${attempt > 1 ? ` (attempt ${attempt})` : ''}`);
+        const response = await fetch(config.songs.jsonUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json() as SongsJsonResponse;
+        // The JSON has songs in a "songs" property
+        songsIndex = data.songs || [];
+        console.log(`Loaded ${songsIndex.length} songs from URL`);
+        break; // Success, exit retry loop
+      } catch (error) {
+        if (attempt === maxRetries) {
+          console.error('Failed to load songs index after all retries:', error);
+          // Keep existing songs if reload fails
+        } else {
+          console.warn(`Fetch attempt ${attempt} failed, retrying in ${retryDelay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
   }
 
-  try {
-    console.log(`Fetching songs from ${config.songs.jsonUrl}`);
-    const response = await fetch(config.songs.jsonUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
-    }
-    const data = await response.json() as SongsJsonResponse;
-    // The JSON has songs in a "songs" property
-    songsIndex = data.songs || [];
-    console.log(`Loaded ${songsIndex.length} songs from URL`);
-  } catch (error) {
-    console.error('Failed to load songs index:', error);
-    // Keep existing songs if reload fails
+  // Sync songs to database in background (non-blocking)
+  if (songsIndex.length > 0) {
+    syncSongsToDatabase(songsIndex).catch(err => {
+      console.error('Background songs sync failed:', err);
+    });
   }
 }
 
