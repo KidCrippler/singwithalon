@@ -76,6 +76,7 @@ export async function stateRoutes(fastify: FastifyInstance) {
       return {
         roomUsername: request.room!.username,
         roomDisplayName: request.room!.displayName,
+        roomAdminId: adminId,
         currentSongId: state.current_song_id,
         currentVerseIndex: state.current_verse_index,
         currentKeyOffset: state.current_key_offset,

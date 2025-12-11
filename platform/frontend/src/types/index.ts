@@ -103,5 +103,6 @@ export interface Room {
 export interface PlayingStateWithRoom extends PlayingState {
   roomUsername: string;
   roomDisplayName: string | null;
+  roomAdminId: number;
 }
 

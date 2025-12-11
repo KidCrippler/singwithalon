@@ -62,7 +62,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         setRoom({
           username: state.roomUsername,
           displayName: state.roomDisplayName,
-          adminId: 0, // We don't expose admin ID to frontend, not needed
+          adminId: state.roomAdminId,
         });
         setSessionId(getSessionId());
         setRoomError(null);

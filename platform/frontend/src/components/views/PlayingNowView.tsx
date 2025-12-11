@@ -9,6 +9,7 @@ import { groupIntoSectionsWithIndices } from '../../utils/songDisplay';
 import { useDynamicFontSize } from '../../hooks/useDynamicFontSize';
 import { TransposeControls } from '../TransposeControls';
 import { getSongBackground } from '../../utils/backgrounds';
+import { getRoomSplash } from '../../utils/splash';
 import { requestFullscreen, exitFullscreen as exitFullscreenUtil, addFullscreenChangeListener, isInFullscreen } from '../../utils/fullscreen';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
@@ -290,6 +291,7 @@ export function PlayingNowView() {
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
   const [scrollPercent, setScrollPercent] = useState(100); // Percentage to scroll (100% = full, less = overlap visible)
   const [currentBackground, setCurrentBackground] = useState('');
+  const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
@@ -298,6 +300,12 @@ export function PlayingNowView() {
   const fullscreenContainerRef = useRef<HTMLDivElement>(null);
   const adminFullscreenContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
+  const splashFullscreenContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle fullscreen mode for splash screen
+  const enterSplashFullscreen = useCallback(() => {
+    requestFullscreen(splashFullscreenContainerRef.current);
+  }, []);
 
   // Handle fullscreen mode - select appropriate container based on current mode
   // Uses cross-browser utility for webkit/moz/ms vendor prefix support (older tablets)
@@ -369,6 +377,13 @@ export function PlayingNowView() {
       setLyricsSongId(null);
     }
   }, [state.currentSongId]);
+
+  // Load splash screen for room when no song is playing
+  useEffect(() => {
+    if (!state.currentSongId && room?.adminId) {
+      getRoomSplash(room.adminId).then(setSplashUrl);
+    }
+  }, [state.currentSongId, room?.adminId]);
   
   // Check if lyrics are valid for current song
   const lyricsAreValid = lyrics !== null && lyricsSongId === state.currentSongId;
@@ -559,14 +574,37 @@ export function PlayingNowView() {
   // No song playing - show splash screen
   if (!state.currentSongId) {
     return (
-      <div className="playing-now-splash">
-        <div className="splash-content">
-          <h1>🎤 {room?.displayName || 'שרים עם אלון'}</h1>
-          <p>ממתין לשיר...</p>
-          <div className="qr-placeholder">
-            <span>QR Code</span>
+      <div className="playing-now-splash" ref={splashFullscreenContainerRef}>
+        {splashUrl ? (
+          <img 
+            src={splashUrl} 
+            alt={room?.displayName || 'ממתין לשיר'} 
+            className="splash-image"
+          />
+        ) : (
+          <div className="splash-fallback">
+            <div className="splash-icon">🎤</div>
+            <h1>{room?.displayName || 'שרים ביחד'}</h1>
+            <p>ממתין לשיר...</p>
           </div>
-        </div>
+        )}
+        
+        {/* Fullscreen button */}
+        {!isFullscreen && (
+          <button
+            onClick={enterSplashFullscreen}
+            className="splash-fullscreen-btn"
+            title="מסך מלא"
+            aria-label="מסך מלא"
+          >
+            ⛶
+          </button>
+        )}
+        
+        {/* Exit fullscreen button */}
+        {isFullscreen && (
+          <FullscreenExitButton onExit={exitFullscreen} variant="light" />
+        )}
       </div>
     );
   }
