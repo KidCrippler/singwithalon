@@ -37,72 +37,6 @@ async function dropAllTables(): Promise<void> {
   console.log('All tables dropped.');
 }
 
-// Check if a table exists
-async function tableExists(tableName: string): Promise<boolean> {
-  const result = await db.execute({
-    sql: "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-    args: [tableName],
-  });
-  return result.rows.length > 0;
-}
-
-// Migration: Create song_analytics table if it doesn't exist
-// TODO: Remove this after deployment - the schema.sql handles this for new installs
-async function migrateSongAnalytics(): Promise<void> {
-  const exists = await tableExists('song_analytics');
-  if (!exists) {
-    console.log('Creating song_analytics table (migration)...');
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS song_analytics (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        room_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
-        song_id INTEGER NOT NULL,
-        viewer_name TEXT,
-        session_id TEXT,
-        action TEXT NOT NULL,
-        trigger TEXT NOT NULL,
-        event_id TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_room ON song_analytics(room_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_event ON song_analytics(event_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_song ON song_analytics(song_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_analytics_created ON song_analytics(created_at)');
-    console.log('song_analytics table created successfully.');
-  }
-}
-
-// Migration: Create songs table if it doesn't exist
-// TODO: Remove this after deployment - the schema.sql handles this for new installs
-async function migrateSongsTable(): Promise<void> {
-  const exists = await tableExists('songs');
-  if (!exists) {
-    console.log('Creating songs table (migration)...');
-    await db.execute(`
-      CREATE TABLE IF NOT EXISTS songs (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        artist TEXT NOT NULL,
-        composers TEXT,
-        lyricists TEXT,
-        translators TEXT,
-        category_ids TEXT,
-        is_private INTEGER DEFAULT 0,
-        markup_url TEXT,
-        direction TEXT,
-        date_created INTEGER,
-        date_modified INTEGER,
-        synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_name ON songs(name)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_songs_is_private ON songs(is_private)');
-    console.log('songs table created successfully.');
-  }
-}
-
 // Sync admins from ADMIN_USERS env var
 async function syncAdminsFromEnv(): Promise<void> {
   if (!config.adminUsers) {
@@ -198,10 +132,6 @@ export async function initDatabase(): Promise<Client> {
   }
 
   console.log('Database schema initialized');
-
-  // Run migrations for existing databases
-  await migrateSongAnalytics();
-  await migrateSongsTable();
 
   // Sync admins from env var
   await syncAdminsFromEnv();
