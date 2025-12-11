@@ -28,8 +28,7 @@ async function isImageUrl(url: string): Promise<boolean> {
 /**
  * Get splash screen URL for a specific room.
  * Tries multiple extensions and returns the first that exists.
- * Falls back to default splash if room-specific doesn't exist.
- * Returns null if no splash image is found (show text fallback).
+ * Returns null if no room-specific splash is found (show text fallback).
  * 
  * @param adminId - The room's admin ID
  * @returns Promise resolving to the splash URL or null
@@ -38,14 +37,6 @@ export async function getRoomSplash(adminId: number): Promise<string | null> {
   // Try room-specific splash with each extension
   for (const ext of SPLASH_EXTENSIONS) {
     const url = `/splash/${adminId}.${ext}`;
-    if (await isImageUrl(url)) {
-      return url;
-    }
-  }
-
-  // Try default splash with each extension
-  for (const ext of SPLASH_EXTENSIONS) {
-    const url = `/splash/default.${ext}`;
     if (await isImageUrl(url)) {
       return url;
     }
