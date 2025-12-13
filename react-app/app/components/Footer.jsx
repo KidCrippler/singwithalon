@@ -17,17 +17,17 @@ function Footer() {
         {/* Footer content - responsive grid */}
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-10 mb-10 text-center md:text-right">
           {/* Logo section */}
-          <div>
-            <picture>
+          <div className="flex flex-col items-center">
+            <picture className="mb-5">
               <source srcSet={logoAvif} type="image/avif" />
               <source srcSet={logoWebp} type="image/webp" />
               <img
                 src={logoWebp}
                 alt="שרים עם אלון כהן"
-                width="68"
-                height="60"
+                width="2048"
+                height="2080"
                 loading="lazy"
-                className="h-[60px] mb-5 rounded-lg mx-auto md:mx-0"
+                className="w-[100px] h-[100px] md:w-[140px] md:h-[140px] object-contain rounded-lg"
               />
             </picture>
             <p className="text-[#bdc3c7] leading-relaxed">

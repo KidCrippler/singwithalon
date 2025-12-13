@@ -10,8 +10,8 @@ import { getAssetPath } from '../utils/assets';
  */
 
 function Navigation() {
-  const logoAvif = getAssetPath('logo_png.avif');
-  const logoWebp = getAssetPath('logo_png.webp');
+  const logoAvif = getAssetPath('logo.avif');
+  const logoWebp = getAssetPath('logo.webp');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -105,8 +105,8 @@ function Navigation() {
               src={logoWebp}
               alt="שרים עם אלון כהן"
               className="h-[55px] w-auto"
-              width="600"
-              height="527"
+              width="2048"
+              height="2080"
             />
           </picture>
         </div>
