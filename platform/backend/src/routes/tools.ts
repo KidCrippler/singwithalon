@@ -163,8 +163,9 @@ function extractDirectiveText(line: string): string {
 }
 
 // Chord detection patterns
-const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|°|º|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
-const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|sus[24]?|add|o|°|º|\+)?[0-9]*(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
+// Suspension modifiers (sus, sus2, sus4) come after extension numbers to support chords like B7sus4, Asus4
+const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
+const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
 const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
 const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
 const ARROW_REGEX = /^(-{2,3}>|<-{2,3})$/;

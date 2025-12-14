@@ -30,6 +30,11 @@ const testCases: TestCase[] = [
   { input: 'Caug', expected: true, description: 'Augmented chord' },
   { input: 'Dsus4', expected: true, description: 'Suspended 4th chord' },
   { input: 'Dsus2', expected: true, description: 'Suspended 2nd chord' },
+  { input: 'Asus4', expected: true, description: 'A suspended 4th chord' },
+  { input: 'B7sus4', expected: true, description: 'B dominant 7 suspended 4th' },
+  { input: 'A9sus4', expected: true, description: 'A dominant 9 suspended 4th' },
+  { input: 'Cm7sus4', expected: true, description: 'C minor 7 suspended 4th' },
+  { input: 'G7sus2', expected: true, description: 'G dominant 7 suspended 2nd' },
   { input: 'Eadd9', expected: true, description: 'Add9 chord' },
   { input: 'Fo7', expected: true, description: 'Diminished 7th (o notation)' },
   { input: 'F°7', expected: true, description: 'Diminished 7th (° notation)' },
@@ -88,6 +93,8 @@ const testCases: TestCase[] = [
   { input: '[Bb]', expected: true, description: 'Bracketed flat chord' },
   { input: '[E]', expected: true, description: 'Bracketed simple chord' },
   { input: '[BbMaj7]', expected: true, description: 'Bracketed major 7 with capital Maj' },
+  { input: '[B7sus4]', expected: true, description: 'Bracketed B7sus4' },
+  { input: '[Asus4]', expected: true, description: 'Bracketed Asus4' },
   
   // === Bracketed Bass-Only Notation ===
   { input: '[/A]', expected: true, description: 'Bracketed bass-only' },
