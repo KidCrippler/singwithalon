@@ -293,6 +293,7 @@ export function PlayingNowView() {
   const [currentBackground, setCurrentBackground] = useState('');
   const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const shouldReenterFullscreenRef = useRef(false); // Track if we need to re-enter fullscreen after song change
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
   const viewerLyricsContainerRef = useRef<HTMLDivElement>(null);
@@ -353,6 +354,10 @@ export function PlayingNowView() {
       setLyrics(null);
       setLyricsSongId(null);
     }
+    // If we're currently in fullscreen, remember to re-enter after new song loads
+    if (isInFullscreen()) {
+      shouldReenterFullscreenRef.current = true;
+    }
   }
   
   // Fetch lyrics when song changes
@@ -387,6 +392,20 @@ export function PlayingNowView() {
   
   // Check if lyrics are valid for current song
   const lyricsAreValid = lyrics !== null && lyricsSongId === state.currentSongId;
+
+  // Re-enter fullscreen after song change (if we were in fullscreen before)
+  useEffect(() => {
+    if (shouldReenterFullscreenRef.current && lyricsAreValid && !isLoading) {
+      // Give DOM a moment to render new content before re-entering fullscreen
+      const timer = setTimeout(() => {
+        if (shouldReenterFullscreenRef.current) {
+          enterFullscreen();
+          shouldReenterFullscreenRef.current = false;
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [lyricsAreValid, isLoading, enterFullscreen]);
 
   // Calculate verses
   // Use lyrics-mode verse calculation when displayMode is 'lyrics' for consistent behavior
