@@ -569,14 +569,16 @@ body {
   background: transparent;
 }
 
-/* Lyrics text styling for Song View - matches Playing Now */
+/* Lyrics text styling for Song View - matches Playing Now with text stroke */
 .song-view-fullscreen-container.fullscreen-container .lyrics-container.lyrics .line-lyric .lyric {
   color: #1a3a2a;
   font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.85);
+  paint-order: stroke fill;
   text-shadow: 
-    0 1px 2px rgba(255, 255, 255, 0.8),
-    0 0 20px rgba(255, 255, 255, 0.4);
+    0 2px 4px rgba(255, 255, 255, 0.95),
+    0 0 25px rgba(255, 255, 255, 0.5);
   letter-spacing: 0.01em;
 }
 
@@ -816,14 +818,16 @@ body {
   z-index: 1;
 }
 
-/* Lyrics text - deep forest green, clean and elegant */
+/* Lyrics text - deep forest green, clean and elegant with text stroke for better contrast */
 .playing-now-view .lyrics-container.lyrics .line-lyric .lyric {
   color: #1a3a2a;
   font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 600;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.85);
+  paint-order: stroke fill;
   text-shadow: 
-    0 1px 2px rgba(255, 255, 255, 0.8),
-    0 0 20px rgba(255, 255, 255, 0.4);
+    0 2px 4px rgba(255, 255, 255, 0.95),
+    0 0 25px rgba(255, 255, 255, 0.5);
   letter-spacing: 0.01em;
 }
 
@@ -861,12 +865,14 @@ body {
   );
 }
 
-/* Larger, more prominent text for single verse */
+/* Larger, more prominent text for single verse with enhanced stroke */
 .playing-now-view .lyrics-container.lyrics.verse-single .line-lyric .lyric {
   font-size: 1.15em;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.9);
+  paint-order: stroke fill;
   text-shadow: 
-    0 1px 3px rgba(255, 255, 255, 0.9),
-    0 0 25px rgba(255, 255, 255, 0.5);
+    0 2px 4px rgba(255, 255, 255, 1),
+    0 0 30px rgba(255, 255, 255, 0.6);
 }
 
 /* Verse transitions - ensure content stays above overlay */
