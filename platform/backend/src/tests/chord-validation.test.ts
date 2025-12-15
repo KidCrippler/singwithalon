@@ -42,6 +42,11 @@ const testCases: TestCase[] = [
   { input: '°B7', expected: false, description: 'Invalid: ° before note letter is not valid notation' },
   { input: 'C+', expected: true, description: 'Augmented chord (+ notation)' },
   { input: 'G+', expected: true, description: 'Augmented chord G+ (+ notation)' },
+  { input: 'D7+', expected: true, description: 'Augmented seventh (D7+)' },
+  { input: 'A7+', expected: true, description: 'Augmented seventh (A7+)' },
+  { input: 'C9+', expected: true, description: 'Augmented ninth (C9+)' },
+  { input: 'F#7+', expected: true, description: 'Sharp augmented seventh (F#7+)' },
+  { input: 'Bb9+', expected: true, description: 'Flat augmented ninth (Bb9+)' },
   
   // === Diminished with ordinal indicator (º U+00BA) ===
   { input: 'C#º7', expected: true, description: 'Diminished 7th with ordinal indicator (º)' },
@@ -95,6 +100,8 @@ const testCases: TestCase[] = [
   { input: '[BbMaj7]', expected: true, description: 'Bracketed major 7 with capital Maj' },
   { input: '[B7sus4]', expected: true, description: 'Bracketed B7sus4' },
   { input: '[Asus4]', expected: true, description: 'Bracketed Asus4' },
+  { input: '[D7+]', expected: true, description: 'Bracketed augmented seventh [D7+]' },
+  { input: '[A7+]', expected: true, description: 'Bracketed augmented seventh [A7+]' },
   
   // === Bracketed Bass-Only Notation ===
   { input: '[/A]', expected: true, description: 'Bracketed bass-only' },
@@ -115,6 +122,11 @@ const testCases: TestCase[] = [
   { input: '2', expected: true, description: 'Repeat count' },
   { input: '3', expected: true, description: 'Repeat count' },
   { input: '4', expected: true, description: 'Repeat count' },
+  { input: 'x2', expected: true, description: 'Repeat marker with count (x2)' },
+  { input: 'x3', expected: true, description: 'Repeat marker with count (x3)' },
+  { input: 'x4', expected: true, description: 'Repeat marker with count (x4)' },
+  { input: 'X2', expected: true, description: 'Repeat marker with count (uppercase X2)' },
+  { input: 'X10', expected: true, description: 'Repeat marker with multi-digit count (X10)' },
   
   // === Parenthesized (partial tokens) ===
   { input: '(Cm', expected: true, description: 'Opening paren chord' },

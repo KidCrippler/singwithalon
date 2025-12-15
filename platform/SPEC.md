@@ -407,9 +407,10 @@ D         C#7     F#m  A7
 
 **2. Chord Line Detection (content-based with regex):**
 - A line is a chord line IF AND ONLY IF **all whitespace-separated tokens** match the chord pattern
-- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?`
-- Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
+- Chord regex pattern: `[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?`
+- Bracketed chord pattern: `\[[A-G][#b]?(m|min|Min|M|maj|Maj|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?`
 - **Note:** Suspension modifiers (`sus`, `sus2`, `sus4`) appear after extension numbers to support chords like `B7sus4`, `A9sus4`, `Cm7sus4`
+- **Note:** Augmented indicator (`+`) can appear before or after extension numbers: `C+`, `C7+`, `C+7` all supported
 - Bass-only pattern: `\/[A-G][#b]?` (just a note, e.g., `/F`, `/Bb`, `/A`, `/F#`)
 - Bracketed bass-only pattern: `\[\/[A-G][#b]?\]` (e.g., `[/A]`, `[/F#]`)
 - Empty brackets: `[]` (valid placeholder token in chord lines)
@@ -422,8 +423,8 @@ D         C#7     F#m  A7
   - Bracketed chords: `[Em]`, `[Am7]` (optional/alternative)
   - Single hyphen: `-` (separator between chords)
   - Bass-only notation: `/F`, `/Bb`, `/A` (valid), but NOT `/C7`, `/Fm7`, `/F#o7` (invalid - qualities not allowed)
-  - Repeat markers: `x` followed by digit (e.g., `x 2`, `x 3`)
-  - Parenthesized progressions: `(Cm Ab Eb Bb) x 2`
+  - Repeat markers: `x` followed by digit, either separate (e.g., `x 2`, `x 3`) or combined (e.g., `x2`, `x3`, `x10`)
+  - Parenthesized progressions: `(Cm Ab Eb Bb) x 2` or `(Cm Ab Eb Bb) x2`
   - **Inline directives:** `{...}` (e.g., `{אקפלה}`, `{Intro}`) - band instructions within chord lines
 - Edge cases like single-letter tokens: `A` alone is a valid chord
 - Example of valid chord line: `Am   Dm - E - [Am]   [/A]   [] Am!`
@@ -721,7 +722,7 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 - **Bass notes**: /C, /E, /G#, etc.
 
 **Examples of valid chords**:
-`Am`, `G7`, `Cmaj7`, `Bm7b5`, `F#dim`, `Dsus4`, `B7sus4`, `A9sus4`, `Cm7sus4`, `Eadd9`, `A/C#`, `Fo7`, `B°7`
+`Am`, `G7`, `Cmaj7`, `Bm7b5`, `F#dim`, `Dsus4`, `B7sus4`, `A9sus4`, `Cm7sus4`, `Eadd9`, `A/C#`, `Fo7`, `B°7`, `C+`, `D7+`, `A9+`
 
 ### 7.6 Diminished Notation
 - Three characters are recognized as diminished notation during parsing:

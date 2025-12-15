@@ -327,14 +327,15 @@ function extractDirectiveText(line: string): string {
 }
 
 // Chord detection regex - matches common chord patterns
-// Supports: Am, G7, Cmaj7, BbMaj7, CM7, Bm7b5, F#dim, Dsus4, B7sus4, Asus4, Eadd9, A/C#, Fo7, B°7, Am!, [Em], G+, etc.
+// Supports: Am, G7, Cmaj7, BbMaj7, CM7, Bm7b5, F#dim, Dsus4, B7sus4, Asus4, Eadd9, A/C#, Fo7, B°7, Am!, [Em], G+, D7+, etc.
 // Quality can be: m (minor), M/Maj/maj (major), min, dim, aug, add, o/°/º (dim), + (aug)
+// Augmented indicator (+) can appear before or after extension: C+ or C7+ or C+7
 // Suspension modifiers (sus, sus2, sus4) come after extension numbers to support chords like B7sus4
 // Note: Both ° (U+00B0 degree sign) and º (U+00BA masculine ordinal) are accepted for diminished
-const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
+const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
 
-// Matches chords wrapped in square brackets like [Em] or [Am7] or [BbMaj7] or [B7sus4]
-const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
+// Matches chords wrapped in square brackets like [Em] or [Am7] or [BbMaj7] or [B7sus4] or [D7+]
+const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
 
 // Matches bass-only notation like /F, /Bb, /A, /F# (just a slash followed by a note)
 const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
@@ -361,8 +362,8 @@ export function isValidChordToken(token: string): boolean {
   if (token === '-') return true;
   // Handle empty brackets (placeholder/rest marker)
   if (token === '[]') return true;
-  // Handle repeat notation: 'x' and digits like '2', '3', '4'
-  if (token === 'x' || /^\d+$/.test(token)) return true;
+  // Handle repeat notation: 'x', digits like '2', '3', '4', and combined 'x2', 'x3', etc.
+  if (token === 'x' || /^\d+$/.test(token) || /^x\d+$/i.test(token)) return true;
   // Handle parenthesized tokens (opening or closing parens in chord progressions)
   if (token.startsWith('(') || token.endsWith(')')) return true;
   // Handle inline directives like {אקפלה} or {Intro}

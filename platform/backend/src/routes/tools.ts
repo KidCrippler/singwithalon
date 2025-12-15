@@ -164,8 +164,9 @@ function extractDirectiveText(line: string): string {
 
 // Chord detection patterns
 // Suspension modifiers (sus, sus2, sus4) come after extension numbers to support chords like B7sus4, Asus4
-const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
-const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
+// Augmented indicator (+) can appear before or after extension: C+ or C7+ or C+7
+const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
+const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
 const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
 const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
 const ARROW_REGEX = /^(-{2,3}>|<-{2,3})$/;
@@ -175,7 +176,7 @@ function isValidChordToken(token: string): boolean {
   if (ARROW_REGEX.test(token)) return true;
   if (token === '-') return true;
   if (token === '[]') return true;
-  if (token === 'x' || /^\d+$/.test(token)) return true;
+  if (token === 'x' || /^\d+$/.test(token) || /^x\d+$/i.test(token)) return true;
   if (token.startsWith('(') || token.endsWith(')')) return true;
   if (INLINE_DIRECTIVE_REGEX.test(token)) return true;
   if (BRACKETED_CHORD_REGEX.test(token)) return true;
