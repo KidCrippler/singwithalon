@@ -293,7 +293,6 @@ export function PlayingNowView() {
   const [currentBackground, setCurrentBackground] = useState('');
   const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenRecalcTrigger, setFullscreenRecalcTrigger] = useState(0); // Incremented to force recalc after fullscreen re-entry
   const shouldReenterFullscreenRef = useRef(false); // Track if we need to re-enter fullscreen after song change
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
@@ -397,19 +396,27 @@ export function PlayingNowView() {
   // Re-enter fullscreen after song change (if we were in fullscreen before)
   useEffect(() => {
     if (shouldReenterFullscreenRef.current && lyricsAreValid && !isLoading) {
+      let timeoutIds: ReturnType<typeof setTimeout>[] = [];
+      
       // Give DOM a moment to render new content before re-entering fullscreen
-      const timer = setTimeout(async () => {
+      const timer1 = setTimeout(async () => {
         if (shouldReenterFullscreenRef.current) {
           await enterFullscreen();
           shouldReenterFullscreenRef.current = false;
+          
           // Force font recalculation after fullscreen is re-entered
-          // (incrementing this state triggers deps in font sizing hooks)
-          setTimeout(() => {
-            setFullscreenRecalcTrigger(prev => prev + 1);
-          }, 150); // Small delay to ensure fullscreen transition completes
+          // Dispatch a resize event to trigger font sizing hooks
+          const timer2 = setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 200); // Small delay to ensure fullscreen transition completes
+          timeoutIds.push(timer2);
         }
       }, 100);
-      return () => clearTimeout(timer);
+      timeoutIds.push(timer1);
+      
+      return () => {
+        timeoutIds.forEach(id => clearTimeout(id));
+      };
     }
   }, [lyricsAreValid, isLoading, enterFullscreen]);
 
@@ -457,29 +464,27 @@ export function PlayingNowView() {
   const showPurpleHighlight = state.displayMode === 'lyrics' && state.versesEnabled;
 
   // Dynamic font sizing for admin view (always multi-column chords)
-  // Include isFullscreen and fullscreenRecalcTrigger to recalculate when entering/exiting fullscreen
-  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex, isFullscreen, fullscreenRecalcTrigger]);
+  // Include isFullscreen to recalculate when entering/exiting fullscreen
+  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex, isFullscreen]);
 
   // Dynamic font sizing for viewer chords view
-  // Include isFullscreen and fullscreenRecalcTrigger to recalculate when entering/exiting fullscreen
+  // Include isFullscreen to recalculate when entering/exiting fullscreen
   useDynamicFontSize(viewerChordsContainerRef, [
     adminSections, 
     viewerShowsChords,
     state.currentSongId,
     isFullscreen,
-    fullscreenRecalcTrigger,
   ]);
 
   // Dynamic font sizing for viewer lyrics full view
   // Include viewerShowsSingleVerse to trigger recalc when switching from verse to full-lyrics mode
-  // Include isFullscreen and fullscreenRecalcTrigger to recalculate when entering/exiting fullscreen
+  // Include isFullscreen to recalculate when entering/exiting fullscreen
   useDynamicFontSize(viewerLyricsContainerRef, [
     viewerLyricsSections, 
     !viewerShowsChords && !viewerShowsSingleVerse,
     viewerShowsSingleVerse,
     state.currentSongId,
     isFullscreen,
-    fullscreenRecalcTrigger,
   ]);
 
   // Get current verse lines for display
@@ -492,10 +497,10 @@ export function PlayingNowView() {
   // During transition: measures incoming verse and animates font size alongside slide
   // Pass songId to detect song changes and reset font size
   // Pass isLoading to skip calculations while new lyrics are loading
-  // Include isFullscreen and fullscreenRecalcTrigger to recalculate when entering/exiting fullscreen
+  // Include isFullscreen to recalculate when entering/exiting fullscreen
   useVerseFontSize(
     viewerVerseContainerRef, 
-    [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length, lyricsAreValid, isFullscreen, fullscreenRecalcTrigger], 
+    [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length, lyricsAreValid, isFullscreen], 
     isTransitioning, 
     false, // isPartialScroll - no longer needed with overlap approach
     state.currentSongId,
