@@ -224,8 +224,8 @@ export function SearchView() {
               <div className="song-info" onClick={() => handleViewSong(song.id)}>
                 <span className="song-name">{song.name}</span>
                 <span className="song-artist">{song.singer}</span>
-                {song.isPrivate && <span className="private-badge">🔒</span>}
               </div>
+              {song.isPrivate && <span className="private-badge">🔒</span>}
               <div className="song-actions">
                 {isRoomOwner ? (
                   <button 
