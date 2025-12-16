@@ -42,6 +42,13 @@ export function SearchView() {
     return '';
   }, [state.currentSongId, state.pendingSongIds, state.playedSongIds]);
 
+  // Check if a song is new (created in last 3 months)
+  const isNewSong = useCallback((dateCreated?: number): boolean => {
+    if (!dateCreated) return false;
+    const threeMonthsAgo = Date.now() - (90 * 24 * 60 * 60 * 1000); // 90 days in ms
+    return dateCreated > threeMonthsAgo;
+  }, []);
+
   // Check if a string starts with a Hebrew character
   const startsWithHebrew = (str: string): boolean => {
     const firstChar = str.trim().charAt(0);
@@ -225,7 +232,10 @@ export function SearchView() {
                 <span className="song-name">{song.name}</span>
                 <span className="song-artist">{song.singer}</span>
               </div>
-              {song.isPrivate && <span className="private-badge">🔒</span>}
+              <div className="song-badges">
+                {isNewSong(song.dateCreated) && <span className="new-badge">חדש</span>}
+                {song.isPrivate && <span className="private-badge">🔒</span>}
+              </div>
               <div className="song-actions">
                 {isRoomOwner ? (
                   <button 

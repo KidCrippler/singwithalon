@@ -103,6 +103,8 @@ export async function songsRoutes(fastify: FastifyInstance) {
         categoryIds: song.categoryIds,
         isPrivate: song.isPrivate,
         direction: song.direction,
+        dateCreated: song.dateCreated,
+        dateModified: song.dateModified,
       }));
 
     return songs;
@@ -133,6 +135,8 @@ export async function songsRoutes(fastify: FastifyInstance) {
       isPrivate: song.isPrivate,
       direction: song.direction,
       playback: song.playback,
+      dateCreated: song.dateCreated,
+      dateModified: song.dateModified,
     };
   });
 

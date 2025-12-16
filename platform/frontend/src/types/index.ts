@@ -9,6 +9,8 @@ export interface Song {
   isPrivate?: boolean;
   categoryIds?: string[];
   direction?: 'ltr' | 'rtl';
+  dateCreated?: number; // Unix timestamp in ms
+  dateModified?: number; // Unix timestamp in ms
 }
 
 // Parsed song line types
