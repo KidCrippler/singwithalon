@@ -430,6 +430,15 @@ export const playingStateQueries = {
       current_key_offset: 0,
     });
   },
+
+  async isSongCurrentlyPlaying(songId: number): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'SELECT COUNT(*) as count FROM playing_state WHERE current_song_id = ?',
+      args: [songId],
+    });
+    const count = (result.rows[0] as Record<string, unknown>)?.count as number ?? 0;
+    return count > 0;
+  },
 };
 
 // Session queries (room-scoped)

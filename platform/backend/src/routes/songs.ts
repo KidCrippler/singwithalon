@@ -146,8 +146,17 @@ export async function songsRoutes(fastify: FastifyInstance) {
     }
 
     const isAdmin = request.user?.isAdmin ?? false;
+    
+    // For private songs, allow access if:
+    // 1. User is admin, OR
+    // 2. Song is currently being played in any room (admin is presenting it)
     if (song.isPrivate && !isAdmin) {
-      return reply.status(404).send({ error: 'Song not found' });
+      const { playingStateQueries } = await import('../db/index.js');
+      const isCurrentlyPlaying = await playingStateQueries.isSongCurrentlyPlaying(songId);
+      
+      if (!isCurrentlyPlaying) {
+        return reply.status(404).send({ error: 'Song not found' });
+      }
     }
 
     // Check cache
