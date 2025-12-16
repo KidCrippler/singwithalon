@@ -293,39 +293,19 @@ export function PlayingNowView() {
   const [currentBackground, setCurrentBackground] = useState('');
   const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const shouldReenterFullscreenRef = useRef(false); // Track if we need to re-enter fullscreen after song change
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
   const viewerLyricsContainerRef = useRef<HTMLDivElement>(null);
   const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
-  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
-  const adminFullscreenContainerRef = useRef<HTMLDivElement>(null);
-  const viewerChordsFullscreenContainerRef = useRef<HTMLDivElement>(null);
-  const splashFullscreenContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Single persistent fullscreen container that never unmounts
+  const persistentFullscreenContainerRef = useRef<HTMLDivElement>(null);
 
-  // Handle fullscreen mode for splash screen
-  const enterSplashFullscreen = useCallback(() => {
-    requestFullscreen(splashFullscreenContainerRef.current);
-  }, []);
-
-  // Handle fullscreen mode - select appropriate container based on current mode
+  // Handle fullscreen mode - always use the persistent container
   // Uses cross-browser utility for webkit/moz/ms vendor prefix support (older tablets)
   const enterFullscreen = useCallback(() => {
-    let container: HTMLDivElement | null = null;
-    
-    if (isRoomOwner) {
-      // Admin always sees chords
-      container = adminFullscreenContainerRef.current;
-    } else if (effectiveDisplayMode === 'chords') {
-      // Viewer in chords mode
-      container = viewerChordsFullscreenContainerRef.current;
-    } else {
-      // Viewer in lyrics mode (with or without verses)
-      container = fullscreenContainerRef.current;
-    }
-    
-    requestFullscreen(container);
-  }, [isRoomOwner, effectiveDisplayMode]);
+    requestFullscreen(persistentFullscreenContainerRef.current);
+  }, []);
 
   // Exit fullscreen - uses cross-browser utility
   const exitFullscreen = useCallback(() => {
@@ -353,10 +333,6 @@ export function PlayingNowView() {
     if (lyrics !== null) {
       setLyrics(null);
       setLyricsSongId(null);
-    }
-    // If we're currently in fullscreen, remember to re-enter after new song loads
-    if (isInFullscreen()) {
-      shouldReenterFullscreenRef.current = true;
     }
   }
   
@@ -392,33 +368,6 @@ export function PlayingNowView() {
   
   // Check if lyrics are valid for current song
   const lyricsAreValid = lyrics !== null && lyricsSongId === state.currentSongId;
-
-  // Re-enter fullscreen after song change (if we were in fullscreen before)
-  useEffect(() => {
-    if (shouldReenterFullscreenRef.current && lyricsAreValid && !isLoading) {
-      let timeoutIds: ReturnType<typeof setTimeout>[] = [];
-      
-      // Give DOM a moment to render new content before re-entering fullscreen
-      const timer1 = setTimeout(async () => {
-        if (shouldReenterFullscreenRef.current) {
-          await enterFullscreen();
-          shouldReenterFullscreenRef.current = false;
-          
-          // Force font recalculation after fullscreen is re-entered
-          // Dispatch a resize event to trigger font sizing hooks
-          const timer2 = setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-          }, 200); // Small delay to ensure fullscreen transition completes
-          timeoutIds.push(timer2);
-        }
-      }, 100);
-      timeoutIds.push(timer1);
-      
-      return () => {
-        timeoutIds.forEach(id => clearTimeout(id));
-      };
-    }
-  }, [lyricsAreValid, isLoading, enterFullscreen]);
 
   // Calculate verses
   // Use lyrics-mode verse calculation when displayMode is 'lyrics' for consistent behavior
@@ -609,62 +558,66 @@ export function PlayingNowView() {
     return lineIndex >= currentVerse.highlightStartIndex && lineIndex <= currentVerse.endIndex;
   }, [currentVerse]);
 
-  // No song playing - show splash screen
-  if (!state.currentSongId) {
-    return (
-      <div className="playing-now-splash" ref={splashFullscreenContainerRef}>
-        {splashUrl ? (
-          <img 
-            src={splashUrl} 
-            alt={room?.displayName || 'ממתין לשיר'} 
-            className="splash-image"
-          />
-        ) : (
-          <div className="splash-fallback">
-            <div className="splash-icon">🎤</div>
-            <h1>{room?.displayName || 'שרים ביחד'}</h1>
-            <p>ממתין לשיר...</p>
-          </div>
-        )}
-        
-        {/* Fullscreen button */}
-        {!isFullscreen && (
-          <button
-            onClick={enterSplashFullscreen}
-            className="splash-fullscreen-btn"
-            title="מסך מלא"
-            aria-label="מסך מלא"
-          >
-            ⛶
-          </button>
-        )}
-        
-        {/* Exit fullscreen button */}
-        {isFullscreen && (
-          <FullscreenExitButton onExit={exitFullscreen} variant="light" />
-        )}
-      </div>
-    );
-  }
-
-  if (isLoading || !lyricsAreValid) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner" />
-        <p>טוען שיר...</p>
-      </div>
-    );
-  }
-
-  // At this point, lyrics is guaranteed to be valid and match the current song
-  const isRtl = lyrics!.metadata.direction === 'rtl';
+  // Calculate RTL and verse state (used by both splash and song views)
+  const isRtl = lyrics?.metadata.direction === 'rtl';
   const isAtFirstVerse = currentVerseIndex === 0;
   const isAtLastVerse = currentVerseIndex >= verses.length - 1;
 
   return (
-    <div className={`playing-now-view ${isRtl ? 'rtl' : 'ltr'}`}>
-      {/* Compact top bar with song info and admin controls */}
-      <div className="song-top-bar">
+    <div 
+      ref={persistentFullscreenContainerRef}
+      className={`playing-now-persistent-fullscreen ${isFullscreen ? 'is-fullscreen' : ''}`}
+    >
+      {/* No song playing - show splash screen */}
+      {!state.currentSongId && (
+        <div className="playing-now-splash">
+          {splashUrl ? (
+            <img 
+              src={splashUrl} 
+              alt={room?.displayName || 'ממתין לשיר'} 
+              className="splash-image"
+            />
+          ) : (
+            <div className="splash-fallback">
+              <div className="splash-icon">🎤</div>
+              <h1>{room?.displayName || 'שרים ביחד'}</h1>
+              <p>ממתין לשיר...</p>
+            </div>
+          )}
+          
+          {/* Fullscreen button */}
+          {!isFullscreen && (
+            <button
+              onClick={enterFullscreen}
+              className="splash-fullscreen-btn"
+              title="מסך מלא"
+              aria-label="מסך מלא"
+            >
+              ⛶
+            </button>
+          )}
+          
+          {/* Exit fullscreen button */}
+          {isFullscreen && (
+            <FullscreenExitButton onExit={exitFullscreen} variant="light" />
+          )}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {state.currentSongId && (isLoading || !lyricsAreValid) && (
+        <div className="loading-container">
+          <div className="loading-spinner" />
+          <p>טוען שיר...</p>
+        </div>
+      )}
+
+      {/* Song content - only render when lyrics are valid */}
+      {state.currentSongId && lyricsAreValid && (
+        <div className={`playing-now-view ${isRtl ? 'rtl' : 'ltr'}`}>
+      {/* Compact top bar with song info and admin controls - hidden in fullscreen */}
+      {!isFullscreen && (
+        <div className="song-top-bar">
         {/* Admin controls inline */}
         {isRoomOwner && (
           <div className="admin-controls">
@@ -791,13 +744,11 @@ export function PlayingNowView() {
           )}
         </div>
       </div>
+      )}
 
       {/* === ADMIN VIEW: Always shows chords with multi-column layout === */}
       {isRoomOwner && (
-        <div 
-          ref={adminFullscreenContainerRef}
-          className={`chords-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
-        >
+        <>
           {/* Exit button - only visible in fullscreen */}
           {isFullscreen && (
             <FullscreenExitButton onExit={exitFullscreen} variant="dark" />
@@ -890,7 +841,7 @@ export function PlayingNowView() {
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
 
       {/* === VIEWER VIEW: 3 modes === */}
@@ -898,10 +849,7 @@ export function PlayingNowView() {
         <>
           {/* Mode 1: Chords enabled - same as admin, multi-column, no highlight */}
           {viewerShowsChords && (
-            <div 
-              ref={viewerChordsFullscreenContainerRef}
-              className={`chords-fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
-            >
+            <>
               {/* Exit button - only visible in fullscreen */}
               {isFullscreen && (
                 <FullscreenExitButton onExit={exitFullscreen} variant="dark" />
@@ -936,14 +884,13 @@ export function PlayingNowView() {
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
 
-          {/* Fullscreen container for lyrics modes */}
+          {/* Lyrics modes */}
           {!viewerShowsChords && (
             <div 
-              ref={fullscreenContainerRef}
-              className={`fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
+              className="fullscreen-container"
               style={currentBackground ? { '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties : undefined}
             >
               {/* Exit button - only visible in fullscreen */}
@@ -1034,6 +981,8 @@ export function PlayingNowView() {
             </div>
           )}
         </>
+      )}
+        </div>
       )}
     </div>
   );

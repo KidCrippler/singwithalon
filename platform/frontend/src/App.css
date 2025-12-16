@@ -225,6 +225,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex: 1;
+  width: 100%;
+  height: 100%;
   min-height: 200px;
   gap: 1rem;
 }
@@ -937,13 +940,9 @@ body {
 
 /* Playing Now View - FULLSCREEN */
 .playing-now-view {
-  position: fixed;
-  top: var(--header-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
+  flex: 1;
   background: white;
   overflow: hidden; /* NO SCROLLING */
   /* Mobile viewport fixes */
@@ -951,6 +950,8 @@ body {
   -webkit-overflow-scrolling: touch;
   /* Prevent any horizontal shift on mobile */
   max-width: 100vw;
+  width: 100%;
+  height: 100%;
   /* Use isolation instead of transform for stacking context - doesn't affect fixed positioning */
   isolation: isolate;
 }
@@ -1154,6 +1155,30 @@ body {
    ============================================ */
 
 /* Fullscreen container wraps lyrics and metadata header */
+/* === PERSISTENT FULLSCREEN WRAPPER (Never unmounts) === */
+.playing-now-persistent-fullscreen {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* When in fullscreen mode, fill viewport completely */
+.playing-now-persistent-fullscreen.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  overflow: auto;
+}
+
 .fullscreen-container {
   display: flex;
   flex-direction: column;
