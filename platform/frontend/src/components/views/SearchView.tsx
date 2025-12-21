@@ -12,9 +12,8 @@ import { LoginView } from './LoginView';
 import type { Song } from '../../types';
 
 export function SearchView() {
-  const { songs, isLoading, error, reloadSongs } = useSongs();
+  const { songs, isLoading, error } = useSongs();
   const { searchTerm, setSearchTerm, setFilteredCount } = useSearch();
-  const [isReloading, setIsReloading] = useState(false);
   const [queueModalSong, setQueueModalSong] = useState<Song | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -130,16 +129,6 @@ export function SearchView() {
     }
   };
 
-  const handleReloadSongs = async () => {
-    setIsReloading(true);
-    try {
-      await reloadSongs();
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : 'שגיאה בטעינת שירים', 'error');
-    } finally {
-      setIsReloading(false);
-    }
-  };
 
   // First check room loading/error state before showing anything
   if (isRoomLoading) {
@@ -209,16 +198,6 @@ export function SearchView() {
           >
             נקה <span className="clear-icon">✕</span>
           </button>
-          {isRoomOwner && (
-            <button 
-              onClick={handleReloadSongs} 
-              className="reload-btn" 
-              title="רענן רשימת שירים"
-              disabled={isReloading}
-            >
-              {isReloading ? '...' : '🔄'}
-            </button>
-          )}
         </div>
       </div>
 

@@ -6,6 +6,8 @@ import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useSearch } from '../../context/SearchContext';
 import { useQueue } from '../../context/QueueContext';
 import { useRoom } from '../../context/RoomContext';
+import { useSongs } from '../../context/SongsContext';
+import { ToastContainer, useToast } from '../common/Toast';
 
 export function Header() {
   const { user, isRoomOwner, logout } = useAuth();
@@ -14,10 +16,13 @@ export function Header() {
   const { filteredCount } = useSearch();
   const { queueCount } = useQueue();
   const { room } = useRoom();
+  const { reloadSongs } = useSongs();
   const location = useLocation();
   const { username } = useParams<{ username: string }>();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { toasts, showToast, dismissToast } = useToast();
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -42,6 +47,19 @@ export function Header() {
     setMenuOpen(false);
   };
 
+  const handleReloadSongs = async () => {
+    setIsReloading(true);
+    try {
+      await reloadSongs();
+      showToast('רשימת השירים עודכנה בהצלחה', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'שגיאה בטעינת שירים', 'error');
+    } finally {
+      setIsReloading(false);
+      setMenuOpen(false);
+    }
+  };
+
   // Build room-scoped URLs
   const roomBase = username ? `/${username}` : '';
   const isAdminRoute = location.pathname.endsWith('/admin') || 
@@ -51,8 +69,10 @@ export function Header() {
   const displayName = room?.displayName || 'שרים עם אלון';
 
   return (
-    <header className="app-header">
-      <div className="header-left">
+    <>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <header className="app-header">
+        <div className="header-left">
         <Link to={isRoomOwner ? `${roomBase}/admin` : roomBase || '/'} className="logo">
           🎤 {displayName}
         </Link>
@@ -116,6 +136,13 @@ export function Header() {
             {menuOpen && (
               <div className="admin-menu-dropdown">
                 <button 
+                  onClick={handleReloadSongs}
+                  disabled={isReloading}
+                  className="menu-item"
+                >
+                  {isReloading ? '...' : '🔄'} רענן רשימת שירים
+                </button>
+                <button 
                   onClick={handleClearSong}
                   disabled={!state.currentSongId}
                   className="menu-item"
@@ -133,5 +160,6 @@ export function Header() {
         ) : null}
       </div>
     </header>
+    </>
   );
 }
