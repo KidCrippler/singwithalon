@@ -5,7 +5,7 @@ import { getSongsIndex } from './songs.js';
 import { broadcastToRoom } from '../socket/index.js';
 import { analytics } from '../services/analytics.js';
 
-const MAX_QUEUE_PER_SESSION = 25;
+const MAX_QUEUE_PER_SESSION = 50;
 
 interface RoomParams {
   username: string;

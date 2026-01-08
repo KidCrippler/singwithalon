@@ -250,7 +250,7 @@ All URLs are scoped to a specific room identified by the admin's username:
   - Queue entry marked as "played" (grayed, moves to bottom of its group)
   - **Entire group moves to bottom of the overall queue** (fairness mechanism to prevent starvation)
 - **Limits**:
-  - Max 25 songs per viewer in queue
+  - Max 50 songs per viewer in queue
 
 ### 4.5 Admin Navigation
 - **Header** displays room's display name (e.g., "שרים עם אלון") as the logo/title
@@ -1009,7 +1009,7 @@ See Section 6.3 for complete event documentation.
 | Invalid song JSON entry | Log warning, skip invalid entry, continue loading valid songs |
 | WebSocket disconnect | Auto-reconnect (Socket.io built-in), show connection indicator in UI |
 | Admin session expired | Redirect to login page |
-| Queue limit reached (25 per viewer) | Show error message, prevent adding |
+| Queue limit reached (50 per viewer) | Show error message, prevent adding |
 | Invalid chord in transposition | Keep original text unchanged, log warning |
 
 ---
