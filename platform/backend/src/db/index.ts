@@ -535,18 +535,25 @@ export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
     // Delete all existing songs (table always mirrors JSON exactly)
     await getDb().execute('DELETE FROM songs');
     
-    // Batch insert all songs
-    let syncedCount = 0;
-    let skippedCount = 0;
+    // Filter valid songs first
+    const validSongs = songs.filter(song => song.id && song.name && song.singer);
+    const skippedCount = songs.length - validSongs.length;
     
-    for (const song of songs) {
-      // Skip songs without required fields (id, name, singer)
-      if (!song.id || !song.name || !song.singer) {
-        skippedCount++;
-        continue;
-      }
+    if (validSongs.length === 0) {
+      console.log(`No valid songs to sync (skipped ${skippedCount} invalid)`);
+      return;
+    }
+    
+    // Batch size for inserts (300 rows per batch)
+    const BATCH_SIZE = 300;
+    let syncedCount = 0;
+    
+    // Process songs in batches
+    for (let i = 0; i < validSongs.length; i += BATCH_SIZE) {
+      const batch = validSongs.slice(i, i + BATCH_SIZE);
       
-      await getDb().execute({
+      // Prepare batch statements
+      const statements = batch.map(song => ({
         sql: `INSERT INTO songs (id, name, artist, composers, lyricists, translators, 
               category_ids, is_private, markup_url, direction, date_created, date_modified) 
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -563,9 +570,12 @@ export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
           song.direction ?? null,
           song.dateCreated ?? null,
           song.dateModified ?? null,
-        ],
-      });
-      syncedCount++;
+        ] as InValue[],
+      }));
+      
+      // Execute batch insert
+      await getDb().batch(statements);
+      syncedCount += batch.length;
     }
     
     const duration = Date.now() - startTime;
