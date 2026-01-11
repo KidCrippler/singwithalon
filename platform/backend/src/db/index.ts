@@ -451,7 +451,7 @@ export const sessionQueries = {
     const existing = existingResult.rows[0] as Record<string, unknown> | undefined;
     
     if (existing) {
-      const fields: string[] = ['last_seen = CURRENT_TIMESTAMP'];
+      const fields: string[] = [];
       const values: InValue[] = [];
 
       if (updates?.requester_name !== undefined) {
@@ -475,11 +475,14 @@ export const sessionQueries = {
         values.push(updates.lines_per_verse);
       }
 
-      values.push(sessionId);
-      await getDb().execute({
-        sql: `UPDATE sessions SET ${fields.join(', ')} WHERE session_id = ?`,
-        args: values,
-      });
+      // Only update if there are fields to update
+      if (fields.length > 0) {
+        values.push(sessionId);
+        await getDb().execute({
+          sql: `UPDATE sessions SET ${fields.join(', ')} WHERE session_id = ?`,
+          args: values,
+        });
+      }
     } else {
       await getDb().execute({
         sql: 'INSERT INTO sessions (session_id, admin_id, requester_name, is_projector, resolution_width, resolution_height, lines_per_verse) VALUES (?, ?, ?, ?, ?, ?, ?)',
