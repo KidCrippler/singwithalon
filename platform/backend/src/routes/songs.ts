@@ -9,6 +9,14 @@ import { config } from '../config.js';
 let songsIndex: Song[] = [];
 const lyricsCache = new Map<number, { data: ParsedSong; dateModified: number }>();
 
+// Guard to prevent concurrent syncSongsToDatabase calls
+let syncPromise: Promise<void> | null = null;
+let lastSyncHash: string | null = null;
+
+// Guard to prevent multiple onReady hook registrations per Fastify instance
+// Use WeakSet so instances can be garbage collected
+const fastifyInstancesWithHook = new WeakSet<FastifyInstance>();
+
 export function getSongsIndex(): Song[] {
   return songsIndex;
 }
@@ -78,17 +86,46 @@ export async function loadSongsIndex(): Promise<void> {
 
   // Sync songs to database in background (non-blocking)
   if (songsIndex.length > 0) {
-    syncSongsToDatabase(songsIndex).catch(err => {
-      console.error('Background songs sync failed:', err);
-    });
+    // Create a simple hash of the songs to detect if they've changed
+    const songsHash = JSON.stringify(songsIndex.map(s => ({ id: s.id, name: s.name, singer: s.singer, dateModified: s.dateModified })));
+    
+    // Skip sync if already syncing (use Promise to prevent race conditions)
+    if (syncPromise) {
+      return;
+    }
+    
+    // Skip sync if songs haven't changed
+    if (lastSyncHash === songsHash) {
+      return;
+    }
+    
+    // Create the sync promise immediately to prevent race conditions
+    syncPromise = syncSongsToDatabase(songsIndex)
+      .then(() => {
+        lastSyncHash = songsHash;
+      })
+      .catch(err => {
+        console.error('Background songs sync failed:', err);
+      })
+      .finally(() => {
+        syncPromise = null;
+      });
   }
 }
 
 export async function songsRoutes(fastify: FastifyInstance) {
-  // Load songs on startup
-  fastify.addHook('onReady', async () => {
-    await loadSongsIndex();
-  });
+  // Prevent multiple onReady hook registrations per Fastify instance
+  // This handles cases where the plugin is registered multiple times (e.g., hot-reload)
+  if (fastifyInstancesWithHook.has(fastify)) {
+    // Still need to register routes, just skip the hook
+  } else {
+    fastifyInstancesWithHook.add(fastify);
+    
+    // Load songs on startup
+    fastify.addHook('onReady', async () => {
+      await loadSongsIndex();
+    });
+  }
 
   // List all songs (filters private for non-admin)
   fastify.get('/api/songs', async (request: FastifyRequest, reply: FastifyReply) => {
