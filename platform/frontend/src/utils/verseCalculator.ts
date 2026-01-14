@@ -146,19 +146,12 @@ export function calculateVerses(lines: ParsedLine[], linesPerVerse: number = DEF
 }
 
 /**
- * Calculate verse ranges for lyrics-only mode with content-aware overlap.
- * 
- * Algorithm (overlap approach):
- * - Each verse (except the first) starts with the last CONTENT line of the previous verse
- * - If the last content line is followed by empty lines, those are included in the overlap too
- * - This ensures the overlap is always visually meaningful (not just whitespace)
- * - The last verse is anchored at the end (shows final N lines)
- * 
- * Highlighting rules:
- * - A line is highlighted only in the verse where it "first appears"
- * - For verse 0: all lines are highlighted
- * - For other verses: only lines after the overlap are highlighted
- * 
+ * Calculate verse ranges for lyrics-only mode without overlap.
+ *
+ * Algorithm:
+ * - Each verse shows N lines with no overlap between verses
+ * - The last verse is anchored at the end (shows final N lines or remaining lines)
+ *
  * @param lines - Parsed song lines
  * @param linesPerVerse - Number of lyrics-visible lines per verse (default DEFAULT_LINES_PER_VERSE)
  * @returns Array of verse ranges
@@ -169,41 +162,39 @@ export function calculateVersesForLyricsMode(lines: ParsedLine[], linesPerVerse:
   }
 
   // Step 1: Build list of visible line info (after filtering)
-  // Track both the original index and whether it's empty
   interface VisibleLine {
     originalIndex: number;
-    isEmpty: boolean;
   }
   const visibleLines: VisibleLine[] = [];
   let prevWasEmpty = false;
   let seenNonEmpty = false;
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    
+
     if (!isLyricsVisible(line)) continue;
-    
+
     if (line.type === 'empty') {
       if (prevWasEmpty) continue; // Skip consecutive empties
       if (!seenNonEmpty) continue; // Skip leading empties
       prevWasEmpty = true;
-      visibleLines.push({ originalIndex: i, isEmpty: true });
+      visibleLines.push({ originalIndex: i });
     } else {
       prevWasEmpty = false;
       seenNonEmpty = true;
-      visibleLines.push({ originalIndex: i, isEmpty: false });
+      visibleLines.push({ originalIndex: i });
     }
   }
-  
+
   const totalVisible = visibleLines.length;
-  
+
   // Step 2: Handle trivial cases
   if (totalVisible === 0) {
     return [];
   }
-  
+
   if (totalVisible <= linesPerVerse) {
-    // Single verse - no overlap needed
+    // Single verse
     return [{
       startIndex: visibleLines[0].originalIndex,
       endIndex: visibleLines[totalVisible - 1].originalIndex,
@@ -211,67 +202,27 @@ export function calculateVersesForLyricsMode(lines: ParsedLine[], linesPerVerse:
       highlightStartIndex: visibleLines[0].originalIndex,
     }];
   }
-  
-  // Step 3: Calculate verse boundaries with content-aware overlap
-  // - First verse starts at 0, shows N lines
-  // - Each subsequent verse starts at previous verse's last CONTENT line
-  // - If last content line is followed by empties, include those in overlap
-  // - Last verse is anchored at the end (shows final N lines)
-  
+
+  // Step 3: Calculate verse boundaries without overlap
   const N = linesPerVerse;
   const verses: VerseRange[] = [];
-  
-  // Track the highest line index shown so far (for highlight calculation)
-  let maxShownVisibleIndex = -1;
-  
+
   let currentVisibleStart = 0;
-  
+
   while (currentVisibleStart < totalVisible) {
-    const currentVisibleEnd = currentVisibleStart + N - 1;
-    
-    // Check if this verse would extend past the end
-    if (currentVisibleEnd >= totalVisible - 1) {
-      // This is the last verse - anchor it at the end
-      const anchoredStart = Math.max(0, totalVisible - N);
-      const anchoredEnd = totalVisible - 1;
-      
-      // Highlight starts after what was shown in previous verses
-      const highlightStart = maxShownVisibleIndex + 1;
-      
-      verses.push({
-        startIndex: visibleLines[anchoredStart].originalIndex,
-        endIndex: visibleLines[anchoredEnd].originalIndex,
-        visibleLineCount: anchoredEnd - anchoredStart + 1,
-        highlightStartIndex: visibleLines[Math.max(anchoredStart, highlightStart)].originalIndex,
-      });
-      break;
-    }
-    
-    // Normal verse - full N lines
-    const highlightStart = maxShownVisibleIndex + 1;
-    
+    const currentVisibleEnd = Math.min(currentVisibleStart + N - 1, totalVisible - 1);
+
     verses.push({
       startIndex: visibleLines[currentVisibleStart].originalIndex,
       endIndex: visibleLines[currentVisibleEnd].originalIndex,
-      visibleLineCount: N,
-      highlightStartIndex: visibleLines[Math.max(currentVisibleStart, highlightStart)].originalIndex,
+      visibleLineCount: currentVisibleEnd - currentVisibleStart + 1,
+      highlightStartIndex: visibleLines[currentVisibleStart].originalIndex, // No overlap, all lines are highlighted
     });
-    
-    // Update max shown index
-    maxShownVisibleIndex = currentVisibleEnd;
-    
-    // Find the overlap point for the next verse
-    // We want to start at the last CONTENT (non-empty) line of this verse
-    // This ensures the overlap is always visually meaningful
-    let overlapStart = currentVisibleEnd;
-    while (overlapStart > currentVisibleStart && visibleLines[overlapStart].isEmpty) {
-      overlapStart--;
-    }
-    
-    // Advance to next verse starting from the last content line
-    currentVisibleStart = overlapStart;
+
+    // Advance to next verse - no overlap
+    currentVisibleStart = currentVisibleEnd + 1;
   }
-  
+
   return verses;
 }
 
