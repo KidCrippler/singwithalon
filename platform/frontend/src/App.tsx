@@ -10,7 +10,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { Header } from './components/layout/Header';
 import { SearchView } from './components/views/SearchView';
 import { SongView } from './components/views/SongView';
-import { PlayingNowView } from './components/views/PlayingNowView';
+import { PlayingNowView } from './components/views/PlayingNow';
 import { QueueView } from './components/views/QueueView';
 import { SandboxView } from './components/views/SandboxView';
 import { preloadBackgrounds } from './utils/backgrounds';
