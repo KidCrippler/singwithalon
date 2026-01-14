@@ -1541,6 +1541,14 @@ body {
   box-sizing: border-box;
 }
 
+/* Hide overlap lines in outgoing verse to prevent duplication.
+   Uses visibility:hidden to preserve layout space.
+   The incoming verse's overlap lines scroll into this position,
+   creating a seamless transition where matching lines appear stationary. */
+.verse-transition-wrapper .verse-content.outgoing .overlap-line-wrapper {
+  visibility: hidden;
+}
+
 /* Scroll UP animation (going to NEXT verse) */
 /* Uses --scroll-percent CSS variable to control scroll amount (default 100%) */
 /* For overlap: set --scroll-percent to less than 100% so overlapping lines stay visible */

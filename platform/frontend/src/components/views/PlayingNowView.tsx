@@ -290,6 +290,7 @@ export function PlayingNowView() {
   const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
   const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
   const [scrollPercent, setScrollPercent] = useState(100); // Percentage to scroll (100% = full, less = overlap visible)
+  const [overlapCount, setOverlapCount] = useState(0); // Number of overlapping lines between verses
   const [currentBackground, setCurrentBackground] = useState('');
   const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -486,9 +487,9 @@ export function PlayingNowView() {
       
       // Calculate overlap: how many lines at the end of outgoing match the start of incoming (forward)
       // or how many at the start of outgoing match the end of incoming (backward)
-      let overlapCount = 0;
+      let detectedOverlap = 0;
       const minLen = Math.min(outgoing.length, incoming.length);
-      
+
       if (goingForward) {
         // Forward: check if last N lines of outgoing match first N lines of incoming
         for (let i = 1; i <= minLen; i++) {
@@ -501,7 +502,7 @@ export function PlayingNowView() {
               break;
             }
           }
-          if (matches) overlapCount = i;
+          if (matches) detectedOverlap = i;
         }
       } else {
         // Backward: check if first N lines of outgoing match last N lines of incoming
@@ -515,24 +516,31 @@ export function PlayingNowView() {
               break;
             }
           }
-          if (matches) overlapCount = i;
+          if (matches) detectedOverlap = i;
         }
       }
-      
+
+      // Log when overlap is detected
+      if (detectedOverlap > 0) {
+        console.log('matched!');
+      }
+
       // Calculate scroll percentage: scroll by (N - overlap) / N * 100%
       // This leaves the overlapping lines visible during transition
       const lineCount = outgoing.length;
-      const scrollPct = lineCount > 0 ? ((lineCount - overlapCount) / lineCount) * 100 : 100;
-      
+      const scrollPct = lineCount > 0 ? ((lineCount - detectedOverlap) / lineCount) * 100 : 100;
+
       setOutgoingLines(outgoing);
       setScrollPercent(scrollPct);
+      setOverlapCount(detectedOverlap);
       setTransitionDirection(goingForward ? 'up' : 'down');
       setIsTransitioning(true);
-      
+
       // End transition after animation completes
       const timer = setTimeout(() => {
         setIsTransitioning(false);
         setOutgoingLines([]);
+        setOverlapCount(0);
       }, 1000);
       
       prevVerseIndexRef.current = state.currentVerseIndex;
@@ -945,14 +953,26 @@ export function PlayingNowView() {
                       style={{ '--scroll-percent': `${scrollPercent}%` } as React.CSSProperties}
                     >
                       <div className="verse-content outgoing">
-                        {outgoingLines.map((line, lineIndex) => (
-                          <LineDisplay 
-                            key={`out-${lineIndex}`}
-                            line={line} 
-                            showChords={false}
-                            lineIndex={lineIndex}
-                          />
-                        ))}
+                        {outgoingLines.map((line, lineIndex) => {
+                          // Forward (up): last N lines are overlap
+                          // Backward (down): first N lines are overlap
+                          const isOverlapLine = transitionDirection === 'up'
+                            ? lineIndex >= outgoingLines.length - overlapCount
+                            : lineIndex < overlapCount;
+
+                          return (
+                            <div
+                              key={`out-${lineIndex}`}
+                              className={isOverlapLine ? 'overlap-line-wrapper' : ''}
+                            >
+                              <LineDisplay
+                                line={line}
+                                showChords={false}
+                                lineIndex={lineIndex}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="verse-content incoming">
                         {currentVerseLines.map((line, lineIndex) => (
