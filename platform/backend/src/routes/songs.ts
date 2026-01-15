@@ -1,7 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { readFileSync, existsSync } from 'fs';
+import { createHash } from 'crypto';
 import { requireAdmin } from './auth.js';
-import { syncSongsToDatabase } from '../db/index.js';
+import { syncSongsToDatabase, syncMetadataQueries } from '../db/index.js';
 import type { Song, ParsedSong } from '../types/index.js';
 import { config } from '../config.js';
 
@@ -11,7 +12,6 @@ const lyricsCache = new Map<number, { data: ParsedSong; dateModified: number }>(
 
 // Guard to prevent concurrent syncSongsToDatabase calls
 let syncPromise: Promise<void> | null = null;
-let lastSyncHash: string | null = null;
 
 // Guard to prevent multiple onReady hook registrations per Fastify instance
 // Use WeakSet so instances can be garbage collected
@@ -29,15 +29,16 @@ interface SongsJsonResponse {
 }
 
 export async function loadSongsIndex(): Promise<void> {
+  let rawContent: string | null = null;
   let loadedFromLocal = false;
-  
+
   // Try local file first if configured
   if (config.songs.localPath) {
     try {
       if (existsSync(config.songs.localPath)) {
         console.log(`Loading songs from local file: ${config.songs.localPath}`);
-        const content = readFileSync(config.songs.localPath, 'utf-8');
-        const data = JSON.parse(content) as SongsJsonResponse;
+        rawContent = readFileSync(config.songs.localPath, 'utf-8');
+        const data = JSON.parse(rawContent) as SongsJsonResponse;
         songsIndex = data.songs || [];
         console.log(`Loaded ${songsIndex.length} songs from local file`);
         loadedFromLocal = true;
@@ -59,7 +60,7 @@ export async function loadSongsIndex(): Promise<void> {
     // Retry logic for transient network issues
     const maxRetries = 3;
     const retryDelay = 1000; // 1 second
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Fetching songs from ${config.songs.jsonUrl}${attempt > 1 ? ` (attempt ${attempt})` : ''}`);
@@ -67,7 +68,9 @@ export async function loadSongsIndex(): Promise<void> {
         if (!response.ok) {
           throw new Error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json() as SongsJsonResponse;
+        // Get raw text content for hashing
+        rawContent = await response.text();
+        const data = JSON.parse(rawContent) as SongsJsonResponse;
         // The JSON has songs in a "songs" property
         songsIndex = data.songs || [];
         console.log(`Loaded ${songsIndex.length} songs from URL`);
@@ -84,25 +87,34 @@ export async function loadSongsIndex(): Promise<void> {
     }
   }
 
-  // Sync songs to database in background (non-blocking)
-  if (songsIndex.length > 0) {
-    // Create a simple hash of the songs to detect if they've changed
-    const songsHash = JSON.stringify(songsIndex.map(s => ({ id: s.id, name: s.name, singer: s.singer, dateModified: s.dateModified })));
-    
+  // Sync songs to database if they've changed (hash-based comparison)
+  if (songsIndex.length > 0 && rawContent) {
     // Skip sync if already syncing (use Promise to prevent race conditions)
     if (syncPromise) {
+      console.log('Sync already in progress, skipping');
       return;
     }
-    
+
+    // Hash the entire raw content (SHA-256)
+    const currentHash = createHash('sha256').update(rawContent).digest('hex');
+
+    // Get stored hash from database
+    const storedHash = await syncMetadataQueries.get('songs_json_hash');
+
     // Skip sync if songs haven't changed
-    if (lastSyncHash === songsHash) {
+    if (storedHash === currentHash) {
+      console.log('Songs unchanged (hash match), skipping database sync');
       return;
     }
-    
+
+    console.log('Songs changed detected, syncing to database...');
+
     // Create the sync promise immediately to prevent race conditions
     syncPromise = syncSongsToDatabase(songsIndex)
-      .then(() => {
-        lastSyncHash = songsHash;
+      .then(async () => {
+        // Store new hash after successful sync
+        await syncMetadataQueries.set('songs_json_hash', currentHash);
+        console.log('Songs sync complete, hash updated');
       })
       .catch(err => {
         console.error('Background songs sync failed:', err);

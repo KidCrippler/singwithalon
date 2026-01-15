@@ -526,6 +526,24 @@ export const sessionQueries = {
   },
 };
 
+// Sync metadata queries (for tracking songs.json hash)
+export const syncMetadataQueries = {
+  async get(key: string): Promise<string | null> {
+    const result = await getDb().execute({
+      sql: 'SELECT value FROM sync_metadata WHERE key = ?',
+      args: [key],
+    });
+    return result.rows[0] ? (result.rows[0] as Record<string, unknown>).value as string : null;
+  },
+
+  async set(key: string, value: string): Promise<void> {
+    await getDb().execute({
+      sql: 'INSERT OR REPLACE INTO sync_metadata (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+      args: [key, value],
+    });
+  },
+};
+
 // Sync songs from in-memory index to database (non-blocking)
 // Called after loading songs.json on startup and on admin refresh
 export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
