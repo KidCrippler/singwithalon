@@ -444,64 +444,50 @@ export const playingStateQueries = {
 // Session queries (room-scoped)
 export const sessionQueries = {
   async upsert(adminId: number, sessionId: string, updates?: Partial<Omit<Session, 'session_id' | 'admin_id'>>): Promise<Session> {
-    const existingResult = await getDb().execute({
-      sql: 'SELECT * FROM sessions WHERE session_id = ?',
-      args: [sessionId],
-    });
-    const existing = existingResult.rows[0] as Record<string, unknown> | undefined;
-    
-    if (existing) {
-      const fields: string[] = [];
-      const values: InValue[] = [];
+    // Build values, defaulting to NULL/false for optional fields
+    const requesterName = updates?.requester_name !== undefined
+      ? updates.requester_name
+      : null;
+    const isProjector = updates?.is_projector !== undefined
+      ? updates.is_projector
+      : false;
+    const resolutionWidth = updates?.resolution_width ?? null;
+    const resolutionHeight = updates?.resolution_height ?? null;
+    const linesPerVerse = updates?.lines_per_verse ?? null;
 
-      if (updates?.requester_name !== undefined) {
-        fields.push('requester_name = ?');
-        values.push(updates.requester_name);
-      }
-      if (updates?.is_projector !== undefined) {
-        fields.push('is_projector = ?');
-        values.push(updates.is_projector ? 1 : 0);
-      }
-      if (updates?.resolution_width !== undefined) {
-        fields.push('resolution_width = ?');
-        values.push(updates.resolution_width);
-      }
-      if (updates?.resolution_height !== undefined) {
-        fields.push('resolution_height = ?');
-        values.push(updates.resolution_height);
-      }
-      if (updates?.lines_per_verse !== undefined) {
-        fields.push('lines_per_verse = ?');
-        values.push(updates.lines_per_verse);
-      }
-
-      // Only update if there are fields to update
-      if (fields.length > 0) {
-        values.push(sessionId);
-        await getDb().execute({
-          sql: `UPDATE sessions SET ${fields.join(', ')} WHERE session_id = ?`,
-          args: values,
-        });
-      }
-    } else {
-      await getDb().execute({
-        sql: 'INSERT INTO sessions (session_id, admin_id, requester_name, is_projector, resolution_width, resolution_height, lines_per_verse) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        args: [
-          sessionId,
-          adminId,
-          updates?.requester_name ?? null,
-          updates?.is_projector ? 1 : 0,
-          updates?.resolution_width ?? null,
-          updates?.resolution_height ?? null,
-          updates?.lines_per_verse ?? null,
-        ],
-      });
-    }
-
+    // Atomic upsert using INSERT ... ON CONFLICT to prevent race conditions
     const result = await getDb().execute({
-      sql: 'SELECT * FROM sessions WHERE session_id = ?',
-      args: [sessionId],
+      sql: `
+        INSERT INTO sessions (
+          session_id,
+          admin_id,
+          requester_name,
+          is_projector,
+          resolution_width,
+          resolution_height,
+          lines_per_verse,
+          last_seen
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(session_id) DO UPDATE SET
+          requester_name = COALESCE(excluded.requester_name, sessions.requester_name),
+          is_projector = excluded.is_projector,
+          resolution_width = COALESCE(excluded.resolution_width, sessions.resolution_width),
+          resolution_height = COALESCE(excluded.resolution_height, sessions.resolution_height),
+          lines_per_verse = COALESCE(excluded.lines_per_verse, sessions.lines_per_verse),
+          last_seen = CURRENT_TIMESTAMP
+        RETURNING *
+      `,
+      args: [
+        sessionId,
+        adminId,
+        requesterName,
+        isProjector ? 1 : 0,
+        resolutionWidth,
+        resolutionHeight,
+        linesPerVerse,
+      ],
     });
+
     return rowToObject<Session>(result.rows[0] as Record<string, unknown>);
   },
 
