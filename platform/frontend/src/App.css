@@ -1554,11 +1554,11 @@ body {
 
 @keyframes slideOutUp {
   from { transform: translateY(0); }
-  to { transform: translateY(calc(-1 * var(--scroll-percent, 100%))); }
+  to { transform: translateY(calc(-1 * var(--scroll-distance, 100%))); }
 }
 
 @keyframes slideInFromBelow {
-  from { transform: translateY(var(--scroll-percent, 100%)); }
+  from { transform: translateY(var(--scroll-distance, 100%)); }
   to { transform: translateY(0); }
 }
 
@@ -1574,11 +1574,11 @@ body {
 
 @keyframes slideOutDown {
   from { transform: translateY(0); }
-  to { transform: translateY(var(--scroll-percent, 100%)); }
+  to { transform: translateY(var(--scroll-distance, 100%)); }
 }
 
 @keyframes slideInFromAbove {
-  from { transform: translateY(calc(-1 * var(--scroll-percent, 100%))); }
+  from { transform: translateY(calc(-1 * var(--scroll-distance, 100%))); }
   to { transform: translateY(0); }
 }
 

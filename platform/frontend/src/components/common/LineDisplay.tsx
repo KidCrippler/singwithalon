@@ -17,20 +17,23 @@ export interface LineDisplayProps {
   isHighlighted?: boolean;
   /** CSS class name for the highlight state */
   highlightClassName?: string;
+  /** Optional inline styles */
+  style?: React.CSSProperties;
 }
 
 /**
  * Renders a single line of a song (directive, cue, chords, or lyrics).
  * Handles transposition, chord segmentation, and lyrics-mode space collapsing.
  */
-export function LineDisplay({ 
-  line, 
-  showChords, 
-  lineIndex, 
-  keyOffset = 0, 
-  onClick, 
+export function LineDisplay({
+  line,
+  showChords,
+  lineIndex,
+  keyOffset = 0,
+  onClick,
   isHighlighted,
-  highlightClassName = 'verse-highlighted'
+  highlightClassName = 'verse-highlighted',
+  style
 }: LineDisplayProps) {
   const getText = () => {
     if (!showChords) {
@@ -52,10 +55,11 @@ export function LineDisplay({
   const handleClick = onClick ? () => onClick(lineIndex) : undefined;
 
   return (
-    <div 
+    <div
       className={`line line-${line.type} ${isHighlighted ? highlightClassName : ''}`}
       onClick={handleClick}
       data-line-index={lineIndex}
+      style={style}
     >
       {line.type === 'directive' ? (
         <span className="directive">{line.text}</span>
