@@ -47,3 +47,6 @@ pnpm-debug.log*
 # Playwright MCP screenshots
 .playwright-mcp/
 .vercel
+
+# Screenshots folder (anywhere in the tree)
+.screenshots/
