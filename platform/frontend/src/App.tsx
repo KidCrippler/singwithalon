@@ -13,6 +13,7 @@ import { SongView } from './components/views/SongView';
 import { PlayingNowView } from './components/views/PlayingNowView';
 import { QueueView } from './components/views/QueueView';
 import { SandboxView } from './components/views/SandboxView';
+import { ScrollDemoView } from './components/views/ScrollDemoView';
 import { preloadBackgrounds } from './utils/backgrounds';
 
 import './App.css';
@@ -65,6 +66,7 @@ function App() {
             <Routes>
               {/* Tools - not room-scoped */}
               <Route path="/tools/sandbox" element={<SandboxView />} />
+              <Route path="/tools/scroll-demo" element={<ScrollDemoView />} />
               
               {/* Redirect root paths to default room */}
               <Route path="/" element={<Navigate to={`/${DEFAULT_ROOM}`} replace />} />

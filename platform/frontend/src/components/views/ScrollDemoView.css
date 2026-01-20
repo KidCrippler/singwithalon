@@ -1,0 +1,219 @@
+.scroll-demo-view {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+.scroll-demo-header {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem;
+  background: white;
+  border-bottom: 2px solid #e0e0e0;
+  position: relative;
+  z-index: 10;
+}
+
+.scroll-demo-header h1 {
+  margin: 0;
+  color: #1a1a1a;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.scroll-demo-controls {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  position: relative;
+  z-index: 10;
+}
+
+.demo-nav-btn {
+  padding: 0.5rem 1rem;
+  background: #4a90d9;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.demo-nav-btn:hover:not(:disabled) {
+  background: #357abd;
+  transform: scale(1.05);
+}
+
+.demo-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.verse-indicator {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  padding: 0.5rem 1rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+/* Main scroll container - THIS IS THE KEY */
+.scroll-demo-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* scroll-behavior handled by Lenis */
+  /* scroll-snap disabled to allow Lenis animation to be visible */
+  padding: 0;
+  /* Pastoral background similar to Playing Now */
+  background-image: url('/backgrounds/bg1.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #e8f0e3;
+  position: relative;
+}
+
+/* Soft cream overlay - fixed to viewport */
+.scroll-demo-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 253, 245, 0.55) 0%,
+    rgba(248, 246, 238, 0.45) 50%,
+    rgba(255, 253, 245, 0.55) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Continuous lines container */
+.continuous-lines-container {
+  position: relative;
+  z-index: 1;
+  direction: rtl;
+  text-align: center;
+  line-height: 1.35;
+  /* Lines will have varying font sizes set inline */
+}
+
+/* Verse wrapper - each verse occupies at least full viewport height */
+.verse-wrapper {
+  position: relative;
+  width: 100%;
+  /* minHeight set inline per verse */
+  /* fontSize set inline per verse */
+}
+
+.verse-label {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 0.65rem;
+  color: #666;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  z-index: 10;
+  opacity: 0.7;
+}
+
+
+.demo-line {
+  margin: 0.1rem 0;
+  color: #1a3a2a;
+  font-family: 'Rubik', 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 600;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.85);
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 4px rgba(255, 255, 255, 0.95),
+    0 0 25px rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.01em;
+  position: relative;
+  line-height: 1.35;
+}
+
+/* Empty lines - maintain spacing */
+.demo-line.line-empty {
+  min-height: 1em;
+  opacity: 0.3;
+}
+
+/* Highlight shared/overlapping lines - DEBUG MODE */
+.demo-line.shared-line {
+  background: rgba(255, 193, 7, 0.5) !important; /* Bright yellow for high visibility */
+  border-right: 4px solid #ff9800 !important; /* Thick orange border on right */
+  border-left: 4px solid #ff9800 !important; /* Thick orange border on left */
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
+  margin-right: -0.5rem;
+  margin-left: -0.5rem;
+  box-shadow:
+    0 0 10px rgba(255, 193, 7, 0.6),
+    inset 0 0 20px rgba(255, 193, 7, 0.3); /* Glowing effect */
+}
+
+.shared-indicator {
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: #d84315; /* Bright red-orange for high visibility */
+  background: rgba(255, 235, 59, 0.8);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.7em;
+  font-weight: 900;
+  border: 1px solid #ff6f00;
+}
+
+/* Keyboard shortcuts hint */
+.scroll-demo-view::after {
+  content: 'Tip: Navigate with ↑↓ arrow keys';
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .scroll-demo-header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .scroll-demo-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .demo-verse {
+    padding: 1rem;
+  }
+
+  .verse-label {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.3rem;
+  }
+}
