@@ -215,8 +215,8 @@ All URLs are scoped to a specific room identified by the admin's username:
   - Press Escape to exit fullscreen (browser native behavior)
   - On exit, original headers are restored
 - **Room Owner Controls** (small overlay, top-left corner, non-intrusive, visible only to room owner):
-  - Previous verse button (◀)
-  - Next verse button (▶)
+  - Previous verse button (↑)
+  - Next verse button (↓)
   - Toggle verses enabled (📖)
   - Toggle display mode (🎸/🎤)
   - Transpose controls: `[ ⬇ ] N [ ⬆ ] [ 📡 ]` (always visible since owner always sees chords)
@@ -849,8 +849,8 @@ The projector client should:
 - Position: Top-left corner
 - Size: Compact, non-intrusive
 - Controls (in order):
-  - ◀ Previous verse (disabled when verses off or at first verse)
-  - ▶ Next verse (disabled when verses off or at last verse)
+  - ↑ Previous verse (disabled when verses off or at first verse)
+  - ↓ Next verse (disabled when verses off or at last verse)
   - 📖 Toggle verses enabled
   - 🎸/🎤 Toggle lyrics/chords mode for viewers
   - Verse indicator: `N/M` (only when verses enabled)

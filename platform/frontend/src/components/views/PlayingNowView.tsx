@@ -648,21 +648,21 @@ export function PlayingNowView() {
         {/* Admin controls inline */}
         {isRoomOwner && (
           <div className="admin-controls">
-            <button 
-              onClick={prevVerse} 
+            <button
+              onClick={prevVerse}
               title="פסוק קודם"
               disabled={!state.versesEnabled || isAtFirstVerse}
               className={!state.versesEnabled || isAtFirstVerse ? 'disabled' : ''}
             >
-              ◀
+              ↑
             </button>
-            <button 
-              onClick={nextVerse} 
+            <button
+              onClick={nextVerse}
               title="פסוק הבא"
               disabled={!state.versesEnabled || isAtLastVerse}
               className={!state.versesEnabled || isAtLastVerse ? 'disabled' : ''}
             >
-              ▶
+              ↓
             </button>
             <button 
               onClick={toggleVersesEnabled}
@@ -794,21 +794,21 @@ export function PlayingNowView() {
           {/* Admin controls overlay - visible in fullscreen, more subtle */}
           {isFullscreen && (
             <div className="admin-controls-fullscreen">
-              <button 
-                onClick={prevVerse} 
+              <button
+                onClick={prevVerse}
                 title="פסוק קודם"
                 disabled={!state.versesEnabled || isAtFirstVerse}
                 className={!state.versesEnabled || isAtFirstVerse ? 'disabled' : ''}
               >
-                ◀
+                ↑
               </button>
-              <button 
-                onClick={nextVerse} 
+              <button
+                onClick={nextVerse}
                 title="פסוק הבא"
                 disabled={!state.versesEnabled || isAtLastVerse}
                 className={!state.versesEnabled || isAtLastVerse ? 'disabled' : ''}
               >
-                ▶
+                ↓
               </button>
               <button 
                 onClick={toggleVersesEnabled}
