@@ -900,6 +900,11 @@ body {
   );
 }
 
+/* Tight line-height for verse mode to maximize text size while fitting in viewport */
+.playing-now-view .lyrics-container.lyrics.verse-single {
+  line-height: 1.2 !important;
+}
+
 /* Larger, more prominent text for single verse with enhanced stroke */
 .playing-now-view .lyrics-container.lyrics.verse-single .line-lyric .lyric {
   font-size: 1.15em;

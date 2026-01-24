@@ -71,8 +71,15 @@ function useVerseFontSize(
     }
     
     const measureDiv = measureContainerRef.current;
-    // Copy all relevant styles from the real container
-    measureDiv.className = container.className + ' measuring';
+    // Apply minimal styles needed for measurement - don't copy className to avoid flexbox/centering
+    measureDiv.className = 'measuring';
+
+    // Copy padding values individually to avoid parsing issues
+    const paddingTop = parseFloat(containerStyle.paddingTop) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+    const paddingBottom = parseFloat(containerStyle.paddingBottom) || 0;
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+
     measureDiv.style.cssText = `
       position: absolute;
       visibility: hidden;
@@ -80,14 +87,14 @@ function useVerseFontSize(
       left: -9999px;
       top: 0;
       width: ${container.clientWidth}px;
-      height: ${container.clientHeight}px;
       overflow: visible;
       font-family: ${containerStyle.fontFamily};
-      padding: ${containerStyle.padding};
+      padding: ${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px;
       line-height: ${containerStyle.lineHeight};
       column-count: 1;
+      display: block;
     `;
-    
+
     return measureDiv;
   }, []);
 
@@ -108,42 +115,66 @@ function useVerseFontSize(
     
     // Copy content to measurement container
     measureContainer.innerHTML = content.innerHTML;
-    
-    // Apply nowrap to lines for horizontal overflow detection
-    // (Using inline styles to avoid polluting global CSS)
+
     const lines = measureContainer.querySelectorAll('.line');
+
+    // Reset all child element margins, padding, and line-height to prevent spacing inflation
+    const allChildren = measureContainer.querySelectorAll('*');
+    allChildren.forEach(child => {
+      const el = child as HTMLElement;
+      el.style.margin = '0';
+      el.style.padding = '0';
+      el.style.lineHeight = '1.2';
+      el.style.display = 'block';
+    });
+
+    measureContainer.style.lineHeight = '1.2';
+
+    // Apply nowrap to lines for horizontal overflow detection
     lines.forEach(line => {
       (line as HTMLElement).style.whiteSpace = 'nowrap';
     });
-    
-    const availableHeight = container.clientHeight;
+
+    // Use immediate parent's height with safety margin to prevent overflow
+    const parentContainer = container.parentElement;
+    const SAFETY_MARGIN = 40;
+    const availableHeight = parentContainer
+      ? parentContainer.clientHeight - SAFETY_MARGIN
+      : container.clientHeight - SAFETY_MARGIN;
     const availableWidth = container.clientWidth;
-    
-    // Binary search for optimal font size
-    let min = 16;
+
+    const containerStyle = getComputedStyle(container);
+    const paddingTop = parseFloat(containerStyle.paddingTop) || 0;
+    const paddingBottom = parseFloat(containerStyle.paddingBottom) || 0;
+    const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
+    const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
+
+    const effectiveHeight = availableHeight - paddingTop - paddingBottom;
+    const effectiveWidth = availableWidth - paddingLeft - paddingRight;
+
+    // Binary search for optimal font size (10px - 80px range)
+    let min = 10;
     let max = 80;
-    let optimalSize = 40; // Start with reasonable default
-    
+    let optimalSize = 40;
+
     while (min <= max) {
       const mid = Math.floor((min + max) / 2);
-      measureContainer.style.setProperty('--dynamic-font-size', `${mid}px`);
-      void measureContainer.offsetHeight; // Force reflow
-      
-      // Check vertical fit using scrollHeight
-      const fitsVertically = measureContainer.scrollHeight <= availableHeight + 2;
-      
-      // Check horizontal fit using getBoundingClientRect on text spans
-      // This is more reliable than scrollWidth for inline elements
+      measureContainer.style.fontSize = `${mid}px`;
+      void measureContainer.offsetHeight;
+
+      // Use 10px safety margin for sub-pixel rendering differences
+      const fitsVertically = measureContainer.scrollHeight <= availableHeight - 10;
+
       let fitsHorizontally = true;
       const textSpans = measureContainer.querySelectorAll('.lyric, .cue, .chords');
       for (const span of textSpans) {
         const spanWidth = span.getBoundingClientRect().width;
-        if (spanWidth > availableWidth) {
+        if (spanWidth > effectiveWidth) {
           fitsHorizontally = false;
           break;
         }
       }
-      
+
       if (fitsVertically && fitsHorizontally) {
         optimalSize = mid;
         min = mid + 1;
@@ -151,9 +182,11 @@ function useVerseFontSize(
         max = mid - 1;
       }
     }
-    
-    // Ensure we never return a tiny font (minimum 20px for readability)
-    return Math.max(optimalSize, 20);
+
+    // Minimum 14px for readability
+    const finalSize = Math.max(optimalSize, 14);
+
+    return finalSize;
   }, [getMeasureContainer]);
 
   const calculateFontSize = useCallback((measureIncoming: boolean = false): boolean => {
@@ -164,7 +197,7 @@ function useVerseFontSize(
     if (container.clientHeight < 100 || container.clientWidth < 100) return false;
     
     container.style.columnCount = '1';
-    
+
     // Determine what content to measure
     let contentToMeasure: Element | null = null;
     if (measureIncoming) {
@@ -173,31 +206,25 @@ function useVerseFontSize(
     if (!contentToMeasure) {
       contentToMeasure = container;
     }
-    
-    // Check if there's content to measure - look for .line elements
+
     const lineElements = contentToMeasure.querySelectorAll('.line');
-    if (lineElements.length === 0) return false; // No content yet
-    
-    // Also verify there's actual text content
+    if (lineElements.length === 0) return false;
+
     const textSpans = contentToMeasure.querySelectorAll('.lyric, .cue');
     if (textSpans.length === 0) return false;
-    
-    // Calculate optimal size using hidden container (doesn't affect visible display)
+
     const optimalSize = calculateOptimalSize(contentToMeasure, container);
-    
-    // If this is for a transition, animate from current to optimal
+
     if (measureIncoming && optimalSize !== currentFontSizeRef.current) {
-      // Set the target size - CSS transition will animate from current to target
       container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
       currentFontSizeRef.current = optimalSize;
     } else if (!measureIncoming) {
-      // Direct set (no animation needed)
-      container.classList.add('measuring'); // Disable transition
+      container.classList.add('measuring');
       container.style.setProperty('--dynamic-font-size', `${optimalSize}px`);
       container.classList.remove('measuring');
       currentFontSizeRef.current = optimalSize;
     }
-    
+
     return true;
   }, [containerRef, calculateOptimalSize]);
   
