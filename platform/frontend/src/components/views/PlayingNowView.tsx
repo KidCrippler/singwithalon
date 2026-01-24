@@ -144,12 +144,8 @@ function useVerseFontSize(
     const availableWidth = container.clientWidth;
 
     const containerStyle = getComputedStyle(container);
-    const paddingTop = parseFloat(containerStyle.paddingTop) || 0;
-    const paddingBottom = parseFloat(containerStyle.paddingBottom) || 0;
     const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
     const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-
-    const effectiveHeight = availableHeight - paddingTop - paddingBottom;
     const effectiveWidth = availableWidth - paddingLeft - paddingRight;
 
     // Binary search for optimal font size (10px - 80px range)
