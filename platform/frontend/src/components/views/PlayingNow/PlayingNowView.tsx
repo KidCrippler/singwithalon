@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { usePlayingNow } from '../../../context/PlayingNowContext';
 import { useAuth } from '../../../context/AuthContext';
 import { useRoom } from '../../../context/RoomContext';
@@ -6,7 +6,6 @@ import { songsApi } from '../../../services/api';
 import {
   calculateVerses,
   calculateVersesForLyricsMode,
-  getVerseLinesForDisplay,
   findVerseForLine,
   DEFAULT_LINES_PER_VERSE,
 } from '../../../utils/verseCalculator';
@@ -22,15 +21,14 @@ import {
 } from '../../../utils/fullscreen';
 import { FullscreenExitButton } from '../../common/FullscreenExitButton';
 import { formatCredits } from '../../../utils/formatCredits';
-import { useVerseFontSize } from './hooks/useVerseFontSize';
 import { SplashScreen } from './common/SplashScreen';
 import { LoadingState } from './common/LoadingState';
 import { TopBar } from './common/TopBar';
 import { AdminChordsDisplay } from './admin/AdminChordsDisplay';
 import { ViewerChordsDisplay } from './viewers/ViewerChordsDisplay';
 import { ViewerFullLyricsDisplay } from './viewers/ViewerFullLyricsDisplay';
-import { ViewerSingleVerseDisplay } from './viewers/ViewerSingleVerseDisplay';
-import type { ParsedSong, ParsedLine } from '../../../types';
+import { ViewerZoomableVerseDisplay } from './viewers/ViewerZoomableVerseDisplay';
+import type { ParsedSong } from '../../../types';
 
 export function PlayingNowView() {
   const {
@@ -46,10 +44,6 @@ export function PlayingNowView() {
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [lyricsSongId, setLyricsSongId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [outgoingLines, setOutgoingLines] = useState<ParsedLine[]>([]);
-  const [transitionDirection, setTransitionDirection] = useState<'up' | 'down'>('up');
-  const [scrollPercent, setScrollPercent] = useState(100);
   const [currentBackground, setCurrentBackground] = useState('');
   const [splashUrl, setSplashUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -57,7 +51,6 @@ export function PlayingNowView() {
   const adminContainerRef = useRef<HTMLDivElement>(null);
   const viewerChordsContainerRef = useRef<HTMLDivElement>(null);
   const viewerLyricsContainerRef = useRef<HTMLDivElement>(null);
-  const viewerVerseContainerRef = useRef<HTMLDivElement>(null);
   const persistentFullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle fullscreen mode
@@ -177,95 +170,6 @@ export function PlayingNowView() {
     state.currentSongId,
     isFullscreen,
   ]);
-
-  // Get current verse lines for display
-  const currentVerseLines = useMemo(() => {
-    if (!lyrics || verses.length === 0) return [];
-    return getVerseLinesForDisplay(lyrics.lines, verses, currentVerseIndex, linesPerVerse);
-  }, [lyrics, verses, currentVerseIndex, linesPerVerse]);
-
-  // Verse font sizing for viewer single-verse mode
-  useVerseFontSize(
-    viewerVerseContainerRef,
-    [state.currentSongId, currentVerse, viewerShowsSingleVerse, isTransitioning, currentVerseLines.length, lyricsAreValid, isFullscreen],
-    isTransitioning,
-    false,
-    state.currentSongId,
-    !lyricsAreValid
-  );
-
-  // Handle verse transition animation
-  const prevVerseIndexRef = useRef(state.currentVerseIndex);
-  useLayoutEffect(() => {
-    if (prevVerseIndexRef.current !== state.currentVerseIndex && lyrics && verses.length > 0) {
-      const fromIndex = prevVerseIndexRef.current;
-      const toIndex = state.currentVerseIndex;
-
-      const maxVerseIndex = verses.length - 1;
-      if (fromIndex < 0 || fromIndex > maxVerseIndex || toIndex < 0 || toIndex > maxVerseIndex) {
-        prevVerseIndexRef.current = state.currentVerseIndex;
-        return;
-      }
-
-      if (fromIndex === toIndex) {
-        prevVerseIndexRef.current = state.currentVerseIndex;
-        return;
-      }
-
-      const goingForward = toIndex > fromIndex;
-
-      const outgoing = getVerseLinesForDisplay(lyrics.lines, verses, fromIndex, linesPerVerse);
-      const incoming = getVerseLinesForDisplay(lyrics.lines, verses, toIndex, linesPerVerse);
-
-      let overlapCount = 0;
-      const minLen = Math.min(outgoing.length, incoming.length);
-
-      if (goingForward) {
-        for (let i = 1; i <= minLen; i++) {
-          let matches = true;
-          for (let j = 0; j < i; j++) {
-            const outLine = outgoing[outgoing.length - i + j];
-            const inLine = incoming[j];
-            if (outLine.text !== inLine.text || outLine.type !== inLine.type) {
-              matches = false;
-              break;
-            }
-          }
-          if (matches) overlapCount = i;
-        }
-      } else {
-        for (let i = 1; i <= minLen; i++) {
-          let matches = true;
-          for (let j = 0; j < i; j++) {
-            const outLine = outgoing[j];
-            const inLine = incoming[incoming.length - i + j];
-            if (outLine.text !== inLine.text || outLine.type !== inLine.type) {
-              matches = false;
-              break;
-            }
-          }
-          if (matches) overlapCount = i;
-        }
-      }
-
-      const lineCount = outgoing.length;
-      const scrollPct = lineCount > 0 ? ((lineCount - overlapCount) / lineCount) * 100 : 100;
-
-      setOutgoingLines(outgoing);
-      setScrollPercent(scrollPct);
-      setTransitionDirection(goingForward ? 'up' : 'down');
-      setIsTransitioning(true);
-
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-        setOutgoingLines([]);
-      }, 1000);
-
-      prevVerseIndexRef.current = state.currentVerseIndex;
-      return () => clearTimeout(timer);
-    }
-    prevVerseIndexRef.current = state.currentVerseIndex;
-  }, [state.currentVerseIndex, lyrics, verses, linesPerVerse]);
 
   // Handle click on line to navigate to verse (room owner only)
   const handleLineClick = useCallback(
@@ -401,15 +305,13 @@ export function PlayingNowView() {
                     />
                   )}
 
-                  {/* Mode 3: Lyrics, verses on - single verse, centered */}
+                  {/* Mode 3: Lyrics, verses on - zoomable verse display */}
                   {viewerShowsSingleVerse && (
-                    <ViewerSingleVerseDisplay
-                      currentVerseLines={currentVerseLines}
-                      outgoingLines={outgoingLines}
-                      isTransitioning={isTransitioning}
-                      transitionDirection={transitionDirection}
-                      scrollPercent={scrollPercent}
-                      containerRef={viewerVerseContainerRef}
+                    <ViewerZoomableVerseDisplay
+                      lyrics={lyrics}
+                      verses={verses}
+                      currentVerseIndex={currentVerseIndex}
+                      isRtl={isRtl}
                     />
                   )}
                 </div>
