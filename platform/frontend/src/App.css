@@ -1221,10 +1221,6 @@ body {
   overflow: hidden;
   max-width: 100%;
   width: 100%;
-}
-
-/* When in fullscreen mode */
-.fullscreen-container.is-fullscreen {
   background-image: var(--viewer-bg, url('/backgrounds/bg1.webp'));
   background-size: cover;
   background-position: center;
@@ -1286,15 +1282,14 @@ body {
   line-height: 1.4;
 }
 
-/* In fullscreen, lyrics container should fill remaining space */
-.fullscreen-container.is-fullscreen .lyrics-container.lyrics {
-  /* Background already on parent, make container transparent */
+/* Lyrics container - background already on parent, make container transparent */
+.fullscreen-container .lyrics-container.lyrics {
   background-image: none;
   background-color: transparent;
 }
 
-/* Adjust overlay for fullscreen - applied to the parent container */
-.fullscreen-container.is-fullscreen::before {
+/* Cream overlay - applied to the parent container */
+.fullscreen-container::before {
   content: '';
   position: absolute;
   /* Fallback for older browsers that don't support inset */
@@ -1313,7 +1308,7 @@ body {
 }
 
 /* Ensure content is above overlay (but not the exit button) */
-.fullscreen-container.is-fullscreen > *:not(.fullscreen-exit-btn) {
+.fullscreen-container > *:not(.fullscreen-exit-btn) {
   position: relative;
   z-index: 1;
 }
@@ -1673,22 +1668,17 @@ body {
 
 /* Other verses - opacity on individual lines so context lines can override */
 .verse-block.verse-other .line-display {
-  opacity: 0.2;
+  opacity: 0.3;
 }
 
-/* Context line in previous verse: fades from 1.0 to 0.6 */
+/* Context line in adjacent verse block: fades from 1.0 to 0.6 */
 .verse-block.verse-other .line-display.context-line {
   animation: context-fade 0.6s ease-out forwards;
 }
 
-/* Overlap line (first line when adjacent to previous verse) - more subtle */
-.verse-block.verse-current .line-display.overlap-line {
-  opacity: 0.5;
-}
-
 @keyframes context-fade {
   from { opacity: 1; }
-  to { opacity: 0.6; }
+  to { opacity: 0.9; }
 }
 
 .verse-block .line-display {
