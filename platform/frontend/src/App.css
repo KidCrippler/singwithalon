@@ -1666,19 +1666,29 @@ body {
   transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Current verse - full opacity */
-.verse-block.verse-current {
+/* Current verse - full opacity on lines */
+.verse-block.verse-current .line-display {
   opacity: 1;
 }
 
-/* Other verses - 20% transparent (80% opacity) */
-.verse-block.verse-other {
+/* Other verses - opacity on individual lines so context lines can override */
+.verse-block.verse-other .line-display {
   opacity: 0.2;
+}
+
+/* Context line in previous verse: fades from 1.0 to 0.6 */
+.verse-block.verse-other .line-display.context-line {
+  animation: context-fade 0.6s ease-out forwards;
 }
 
 /* Overlap line (first line when adjacent to previous verse) - more subtle */
 .verse-block.verse-current .line-display.overlap-line {
   opacity: 0.5;
+}
+
+@keyframes context-fade {
+  from { opacity: 1; }
+  to { opacity: 0.6; }
 }
 
 .verse-block .line-display {

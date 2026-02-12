@@ -272,7 +272,7 @@ export function PlayingNowView() {
               {/* Lyrics modes */}
               {!viewerShowsChords && (
                 <div
-                  className="fullscreen-container"
+                  className={`fullscreen-container ${isFullscreen ? 'is-fullscreen' : ''}`}
                   style={
                     currentBackground
                       ? ({ '--viewer-bg': `url('${currentBackground}')` } as React.CSSProperties)

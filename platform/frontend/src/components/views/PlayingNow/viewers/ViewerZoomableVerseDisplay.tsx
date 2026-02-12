@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect, useCallback, useEffect } from 'react';
+import { useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { LineDisplay } from '../../../common/LineDisplay';
 import { filterForLyricsMode } from '../../../../utils/verseCalculator';
 import type { ParsedSong, ParsedLine } from '../../../../types';
@@ -20,24 +20,52 @@ interface VerseMeasurement {
 interface VerseLineInfo {
   line: ParsedLine;
   originalIndex: number;
+  isContextLine?: boolean;
 }
 
 /**
  * Get lines for a verse, filtered for lyrics mode.
+ * When this verse is immediately before the current verse, marks the last
+ * line(s) as context lines (they stay in this block but render at 0.4 opacity
+ * to provide continuity for the next verse).
  */
 function getVerseDisplayLines(
   lines: ParsedLine[],
   verses: VerseRange[],
-  verseIndex: number
+  verseIndex: number,
+  currentVerseIndex: number
 ): VerseLineInfo[] {
   const verse = verses[verseIndex];
   const verseLines = lines.slice(verse.startIndex, verse.endIndex + 1);
   const filtered = filterForLyricsMode(verseLines, false);
 
+  // Determine how many trailing lines to mark as context
+  // (only when this verse is immediately before the current one)
+  const MIN_VISIBLE_LINES = 8;
+  let contextCount = 0;
+  if (currentVerseIndex > 0 && verseIndex === currentVerseIndex - 1 && filtered.length > 0) {
+    // Count how many lines the current (next) verse has
+    const nextVerse = verses[currentVerseIndex];
+    const nextVerseLines = lines.slice(nextVerse.startIndex, nextVerse.endIndex + 1);
+    const nextFiltered = filterForLyricsMode(nextVerseLines, false);
+    const nextLineCount = nextFiltered.length;
+
+    if (currentVerseIndex === verses.length - 1 && nextLineCount < MIN_VISIBLE_LINES) {
+      // Last verse: pad to MIN_VISIBLE_LINES with context from previous verse
+      contextCount = Math.min(MIN_VISIBLE_LINES - nextLineCount, filtered.length);
+    } else {
+      // Normal case: just 1 context line (or 2 if last is empty)
+      const lastLine = filtered[filtered.length - 1];
+      contextCount = (lastLine.type === 'empty' && filtered.length >= 2) ? 2 : 1;
+    }
+  }
+  const contextFromIndex = filtered.length - contextCount;
+
   const result: VerseLineInfo[] = [];
   let origIdx = verse.startIndex;
 
-  for (const line of filtered) {
+  for (let i = 0; i < filtered.length; i++) {
+    const line = filtered[i];
     while (origIdx <= verse.endIndex && lines[origIdx] !== line) {
       origIdx++;
     }
@@ -45,6 +73,7 @@ function getVerseDisplayLines(
     result.push({
       line,
       originalIndex: origIdx,
+      isContextLine: i >= contextFromIndex,
     });
 
     origIdx++;
@@ -64,10 +93,11 @@ export function ViewerZoomableVerseDisplay({
   const verseRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const [measurements, setMeasurements] = useState<VerseMeasurement[]>([]);
   const [transform, setTransform] = useState({ translateY: 0, scale: 1 });
 
   const prevVerseIndexRef = useRef<number>(currentVerseIndex);
+  const prevLyricsRef = useRef<ParsedSong | null>(null);
+  const lastTransformRef = useRef({ translateY: 0, scale: 1 });
 
   // Track viewport size
   useEffect(() => {
@@ -88,107 +118,96 @@ export function ViewerZoomableVerseDisplay({
     return () => observer.disconnect();
   }, []);
 
-  // Measure all verses - only depends on lyrics, verses, and viewportSize
+  // Measure all verses and apply transform in a single layout effect.
+  // This runs synchronously before the browser paints, preventing flashes.
   useLayoutEffect(() => {
-    const measureVerses = () => {
-      const transformContainer = transformContainerRef.current;
-      if (!transformContainer) return;
+    const container = transformContainerRef.current;
+    if (!container || viewportSize.width === 0 || viewportSize.height === 0) return;
 
-      // Save current transform and disable transition
-      const originalTransform = transformContainer.style.transform;
-      const originalTransition = transformContainer.style.transition;
-      transformContainer.style.transition = 'none';
-      transformContainer.style.transform = 'scale(1) translateY(0)';
+    // --- Measure ---
+    const originalTransition = container.style.transition;
+    container.style.transition = 'none';
+    container.style.transform = 'scale(1) translateY(0)';
+    void container.offsetHeight;
 
-      void transformContainer.offsetHeight;
+    const newMeasurements: VerseMeasurement[] = verseRefs.current.map((ref) => {
+      if (!ref) return { top: 0, height: 0, maxLineWidth: 0 };
 
-      const newMeasurements: VerseMeasurement[] = verseRefs.current.map((ref) => {
-        if (!ref) return { top: 0, height: 0, maxLineWidth: 0 };
+      const top = ref.offsetTop;
+      const height = ref.offsetHeight;
 
-        const top = ref.offsetTop;
-        const height = ref.offsetHeight;
-
-        let maxLineWidth = 0;
-        const lineDisplays = ref.querySelectorAll('.line-display');
-        lineDisplays.forEach((lineDisplay) => {
-          const textSpans = lineDisplay.querySelectorAll('.lyric, .cue');
-          textSpans.forEach((span) => {
-            const rect = span.getBoundingClientRect();
-            maxLineWidth = Math.max(maxLineWidth, rect.width);
-          });
+      let maxLineWidth = 0;
+      const lineDisplays = ref.querySelectorAll('.line-display');
+      lineDisplays.forEach((lineDisplay) => {
+        const textSpans = lineDisplay.querySelectorAll('.lyric, .cue');
+        textSpans.forEach((span) => {
+          const rect = span.getBoundingClientRect();
+          maxLineWidth = Math.max(maxLineWidth, rect.width);
         });
-
-        return { top, height, maxLineWidth };
       });
 
-      // Restore transform
-      transformContainer.style.transform = originalTransform;
-      transformContainer.style.transition = originalTransition;
+      return { top, height, maxLineWidth };
+    });
 
-      setMeasurements(newMeasurements);
-    };
+    // Measure context line height from the previous verse block
+    let contextLineHeight = 0;
+    if (currentVerseIndex > 0) {
+      const prevRef = verseRefs.current[currentVerseIndex - 1];
+      if (prevRef) {
+        prevRef.querySelectorAll('.context-line').forEach((el) => {
+          contextLineHeight += (el as HTMLElement).offsetHeight;
+        });
+      }
+    }
 
-    const timer = setTimeout(measureVerses, 50);
-    return () => clearTimeout(timer);
-  }, [lyrics, verses, viewportSize]);
-
-  const calculateTransform = useCallback(
-    (verseIndex: number) => {
-      if (
-        measurements.length === 0 ||
-        verseIndex < 0 ||
-        verseIndex >= measurements.length ||
-        viewportSize.width === 0 ||
-        viewportSize.height === 0
-      ) {
+    // --- Calculate target transform ---
+    const calcTransform = (verseIndex: number) => {
+      if (verseIndex < 0 || verseIndex >= newMeasurements.length) {
         return { translateY: 0, scale: 1 };
       }
-
-      const verse = measurements[verseIndex];
+      const verse = newMeasurements[verseIndex];
       if (verse.height === 0) {
         return { translateY: 0, scale: 1 };
       }
 
+      // Total visible height: current verse + context lines from previous block
+      const ctxH = verseIndex === currentVerseIndex ? contextLineHeight : 0;
+      const totalHeight = verse.height + ctxH;
+
       const scaleX = verse.maxLineWidth > 0 ? (viewportSize.width * 0.95) / verse.maxLineWidth : 10;
-      const scaleY = (viewportSize.height * 0.90) / verse.height;
+      const scaleY = (viewportSize.height * 0.90) / totalHeight;
       const scale = Math.max(0.3, Math.min(scaleX, scaleY, 3));
 
-      const verseCenterY = verse.top + verse.height / 2;
+      // Center the combined region (context lines + current verse)
+      const regionTop = verse.top - ctxH;
+      const regionCenterY = regionTop + totalHeight / 2;
       const viewportCenterY = viewportSize.height / 2;
-      const translateY = viewportCenterY / scale - verseCenterY;
+      const translateY = viewportCenterY / scale - regionCenterY;
 
       return { translateY, scale };
-    },
-    [measurements, viewportSize]
-  );
+    };
 
-  // Animate from previous verse position to new verse position
-  useEffect(() => {
-    const container = transformContainerRef.current;
-    if (!container || measurements.length === 0) return;
+    const target = calcTransform(currentVerseIndex);
+    const verseChanged = prevVerseIndexRef.current !== currentVerseIndex;
+    const lyricsChanged = prevLyricsRef.current !== lyrics;
+    const needsAnimation = verseChanged || lyricsChanged;
 
-    const prevIndex = prevVerseIndexRef.current;
-    const newIndex = currentVerseIndex;
-    const targetTransform = calculateTransform(newIndex);
-
-    if (prevIndex !== newIndex) {
-      const startTransform = calculateTransform(prevIndex);
-
-      // Jump to start position without transition
-      container.style.transition = 'none';
-      container.style.transform = `scale(${startTransform.scale}) translateY(${startTransform.translateY}px)`;
-
-      // Force reflow
+    if (needsAnimation) {
+      // Jump to last known position (before DOM changed), then animate to target
+      const start = lastTransformRef.current;
+      container.style.transform = `scale(${start.scale}) translateY(${start.translateY}px)`;
       void container.offsetHeight;
-
-      // Re-enable transition and animate to target
-      container.style.transition = '';
-
-      prevVerseIndexRef.current = newIndex;
+      prevVerseIndexRef.current = currentVerseIndex;
+      prevLyricsRef.current = lyrics;
     }
 
-    setTransform(targetTransform);
-  }, [currentVerseIndex, calculateTransform, measurements]);
+    // Restore transition, then apply target transform directly on the DOM
+    container.style.transition = originalTransition || '';
+    container.style.transform = `scale(${target.scale}) translateY(${target.translateY}px)`;
+
+    lastTransformRef.current = target;
+    setTransform(target);
+  }, [lyrics, verses, viewportSize, currentVerseIndex]);
 
   if (verseRefs.current.length !== verses.length) {
     verseRefs.current = verses.map((_, i) => verseRefs.current[i] || null);
@@ -209,7 +228,7 @@ export function ViewerZoomableVerseDisplay({
         <div className="verse-all-container">
           {verses.map((_, verseIndex) => {
             const isCurrent = verseIndex === currentVerseIndex;
-            const verseLines = getVerseDisplayLines(lyrics.lines, verses, verseIndex);
+            const verseLines = getVerseDisplayLines(lyrics.lines, verses, verseIndex, currentVerseIndex);
 
             return (
               <div
@@ -221,7 +240,10 @@ export function ViewerZoomableVerseDisplay({
                 data-verse-index={verseIndex}
               >
                 {verseLines.map((lineInfo, lineIndex) => (
-                  <div key={lineIndex} className="line-display">
+                  <div
+                    key={lineIndex}
+                    className={`line-display${lineInfo.isContextLine ? ' context-line' : ''}`}
+                  >
                     <LineDisplay
                       line={lineInfo.line}
                       showChords={false}
