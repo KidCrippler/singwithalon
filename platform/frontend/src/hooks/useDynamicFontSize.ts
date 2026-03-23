@@ -28,7 +28,11 @@ export function useDynamicFontSize(
     const container = containerRef.current;
     if (!container) return;
     
-    const availableHeight = container.clientHeight;
+    // Cap at window.innerHeight: if the container's flex height is not properly bounded
+    // (e.g., due to browser quirks with position:fixed ancestors), clientHeight can grow
+    // to match the content height. That makes fitsVertically trivially true at every font
+    // size, so the algorithm picks the maximum font and only the first few lines are visible.
+    const availableHeight = Math.min(container.clientHeight, window.innerHeight);
     const availableWidth = container.clientWidth;
     if (availableHeight === 0 || availableWidth === 0) return;
     
@@ -66,7 +70,13 @@ export function useDynamicFontSize(
         
         // Check vertical fit
         const fitsVertically = container.scrollHeight <= availableHeight + 5;
-        
+
+        // Check that all CSS columns fit in the visible width (no columns overflowing off-screen).
+        // With multi-column layout, scrollHeight stays equal to clientHeight even when extra
+        // columns are generated beyond the container width. scrollWidth includes those extra
+        // columns, so this catches hidden column overflow that fitsVertically misses.
+        const fitsAllColumnsVisible = container.scrollWidth <= availableWidth + 5;
+
         // Check horizontal fit - measure actual text span widths against column width
         const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
         let fitsHorizontally = true;
@@ -77,8 +87,8 @@ export function useDynamicFontSize(
             break;
           }
         }
-        
-        if (fitsVertically && fitsHorizontally) {
+
+        if (fitsVertically && fitsHorizontally && fitsAllColumnsVisible) {
           optimalForCols = mid;
           min = mid + 1;
         } else {
