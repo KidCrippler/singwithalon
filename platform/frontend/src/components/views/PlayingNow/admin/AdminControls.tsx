@@ -34,7 +34,7 @@ export function AdminControls({
         disabled={!state.versesEnabled || isAtFirstVerse}
         className={!state.versesEnabled || isAtFirstVerse ? 'disabled' : ''}
       >
-        ◀
+        ↑
       </button>
       <button
         onClick={nextVerse}
@@ -42,7 +42,7 @@ export function AdminControls({
         disabled={!state.versesEnabled || isAtLastVerse}
         className={!state.versesEnabled || isAtLastVerse ? 'disabled' : ''}
       >
-        ▶
+        ↓
       </button>
       <button
         onClick={toggleVersesEnabled}
