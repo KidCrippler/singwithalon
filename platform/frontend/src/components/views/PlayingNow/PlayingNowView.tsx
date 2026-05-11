@@ -285,8 +285,9 @@ export function PlayingNowView() {
                   {/* Song metadata header - only visible in fullscreen */}
                   {isFullscreen && (
                     <div className={`fullscreen-song-header ${isRtl ? 'rtl' : 'ltr'}`}>
-                      <h1 className="fullscreen-title">{lyrics!.metadata.title}</h1>
-                      <div className="fullscreen-artist">{lyrics!.metadata.artist}</div>
+                      <h1 className="fullscreen-title">
+                        {lyrics!.metadata.title} - {lyrics!.metadata.artist}
+                      </h1>
                       {state.song &&
                         (state.song.composers?.length ||
                           state.song.lyricists?.length ||

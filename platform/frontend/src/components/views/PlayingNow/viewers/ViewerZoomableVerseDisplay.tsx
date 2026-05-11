@@ -218,8 +218,8 @@ export function ViewerZoomableVerseDisplay({
         ? Math.max(verse.maxLineWidth, contextMaxLineWidthAbove, contextMaxLineWidthBelow)
         : verse.maxLineWidth;
 
-      const scaleX = maxWidth > 0 ? (viewportSize.width * 0.95) / maxWidth : 10;
-      const scaleY = (viewportSize.height * 0.90) / totalHeight;
+      const scaleX = maxWidth > 0 ? (viewportSize.width * 0.98) / maxWidth : 10;
+      const scaleY = (viewportSize.height * 0.95) / totalHeight;
       const scale = Math.max(0.3, Math.min(scaleX, scaleY, 3));
 
       // Center the combined region (context lines above + current verse + context lines below)
