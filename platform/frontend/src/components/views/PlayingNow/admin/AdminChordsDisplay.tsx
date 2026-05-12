@@ -24,6 +24,8 @@ interface AdminChordsDisplayProps {
   onExitFullscreen: () => void;
   onLineClick?: (lineIndex: number) => void;
   isLineInCurrentVerse: (lineIndex: number) => boolean;
+  densityLabel?: string;
+  onCycleDensity?: () => void;
 }
 
 export function AdminChordsDisplay({
@@ -40,6 +42,8 @@ export function AdminChordsDisplay({
   onExitFullscreen,
   onLineClick,
   isLineInCurrentVerse,
+  densityLabel,
+  onCycleDensity,
 }: AdminChordsDisplayProps) {
   const {
     state,
@@ -116,6 +120,13 @@ export function AdminChordsDisplay({
             ⤡
           </button>
         </div>
+      )}
+
+      {/* Temporary density toggle */}
+      {onCycleDensity && (
+        <button onClick={onCycleDensity} className="chords-density-toggle">
+          📐 {densityLabel}
+        </button>
       )}
 
       <div

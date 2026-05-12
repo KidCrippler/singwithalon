@@ -151,8 +151,31 @@ export function PlayingNowView() {
   // Should admin show purple highlight?
   const showPurpleHighlight = state.displayMode === 'lyrics' && state.versesEnabled;
 
+  // Chords density mode toggle (temporary A/B comparison)
+  const [chordsDensity, setChordsDensity] = useState<number>(() => {
+    const saved = localStorage.getItem('chords-density');
+    return saved ? parseFloat(saved) : 0;
+  });
+
+  const DENSITY_LEVELS = [
+    { label: 'Original', tolerance: 0 },
+    { label: 'Relaxed', tolerance: 0.08 },
+    { label: 'Dense', tolerance: 0.15 },
+    { label: 'Max', tolerance: 0.25 },
+  ];
+
+  const currentDensityIndex = DENSITY_LEVELS.findIndex(d => d.tolerance === chordsDensity);
+  const currentDensityLabel = DENSITY_LEVELS[currentDensityIndex >= 0 ? currentDensityIndex : 0].label;
+
+  const cycleDensity = useCallback(() => {
+    const idx = DENSITY_LEVELS.findIndex(d => d.tolerance === chordsDensity);
+    const next = DENSITY_LEVELS[(idx + 1) % DENSITY_LEVELS.length];
+    setChordsDensity(next.tolerance);
+    localStorage.setItem('chords-density', String(next.tolerance));
+  }, [chordsDensity]);
+
   // Dynamic font sizing for admin view
-  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex, isFullscreen]);
+  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex, isFullscreen, chordsDensity], { overflowTolerance: chordsDensity });
 
   // Dynamic font sizing for viewer chords view
   useDynamicFontSize(viewerChordsContainerRef, [
@@ -160,7 +183,8 @@ export function PlayingNowView() {
     viewerShowsChords,
     state.currentSongId,
     isFullscreen,
-  ]);
+    chordsDensity,
+  ], { overflowTolerance: chordsDensity });
 
   // Dynamic font sizing for viewer lyrics full view
   useDynamicFontSize(viewerLyricsContainerRef, [
@@ -249,6 +273,8 @@ export function PlayingNowView() {
               onExitFullscreen={exitFullscreen}
               onLineClick={handleLineClick}
               isLineInCurrentVerse={isLineInCurrentVerse}
+              densityLabel={currentDensityLabel}
+              onCycleDensity={cycleDensity}
             />
           )}
 

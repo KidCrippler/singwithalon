@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proportional Font Chord Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700&family=Cousine:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Rubik', sans-serif; background: #f5f5f5; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 10px; font-size: 1.3rem; }
+    .controls {
+      text-align: center; margin-bottom: 15px;
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    }
+    .controls button {
+      padding: 6px 14px; border: 1px solid #ccc; border-radius: 4px;
+      cursor: pointer; font-size: 0.85rem; background: white;
+    }
+    .controls button.active { background: #2196F3; color: white; border-color: #1976D2; }
+
+    .comparison {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      max-width: 1600px; margin: 0 auto;
+    }
+    .panel {
+      border: 1px solid #ddd; border-radius: 8px; padding: 12px; background: white; overflow: hidden;
+    }
+    .panel h2 { text-align: center; font-size: 1rem; margin-bottom: 8px; color: #333; }
+
+    .song-container { column-count: 3; column-gap: 10px; column-rule: 1px solid #eee; }
+    .section { break-inside: avoid; margin-bottom: 0.5em; }
+
+    /* ===== PROPORTIONAL (LEFT PANEL) ===== */
+    .proportional .pair-line {
+      display: flex;
+      line-height: 1.25;
+      font-family: 'Rubik', sans-serif;
+    }
+    .proportional .pair-line.rtl { justify-content: flex-end; }
+    .proportional .pair-line.ltr { justify-content: flex-start; }
+
+    .proportional .seg {
+      display: inline-flex;
+      flex-direction: column;
+    }
+    .proportional .seg .ch {
+      color: #0000ff;
+      font-weight: 700;
+      font-size: 0.85em;
+      min-height: 1.1em;
+      white-space: pre;
+    }
+    .proportional .seg .ly {
+      color: #1a1a1a;
+      white-space: pre;
+    }
+    .proportional .standalone { font-family: 'Cousine', monospace; font-weight: 700; white-space: pre; color: #0000ff; line-height: 1.2; }
+    .proportional .dir-line { color: green; font-weight: 600; }
+    .proportional .lyr-line { white-space: pre; color: #1a1a1a; }
+
+    /* ===== MONOSPACE (RIGHT PANEL) — simple, unchanged ===== */
+    .monospace { font-family: 'Cousine', 'Courier New', monospace; font-weight: 700; line-height: 1.2; }
+    .monospace .m-ch { color: #0000ff; white-space: pre; }
+    .monospace .m-ly { color: #1a1a1a; white-space: pre; }
+    .monospace .m-dir { color: green; white-space: pre; }
+  </style>
+</head>
+<body>
+  <h1>Proportional vs Monospace — Chord Alignment Demo</h1>
+  <div class="controls">
+    <button onclick="showSong('hebrew1')" id="btn-hebrew1" class="active">אהבה קטנה (RTL)</button>
+    <button onclick="showSong('hebrew2')" id="btn-hebrew2">פסק זמן (RTL)</button>
+    <button onclick="showSong('english')" id="btn-english">50 Ways (LTR)</button>
+  </div>
+
+  <div class="comparison">
+    <div class="panel">
+      <h2>Proportional Font (New Approach)</h2>
+      <div id="prop-out" class="song-container proportional"></div>
+    </div>
+    <div class="panel">
+      <h2>Monospace (Current)</h2>
+      <div id="mono-out" class="song-container monospace"></div>
+    </div>
+  </div>
+
+  <script>
+    const songs = {
+      hebrew1: {
+        direction: 'rtl',
+        lines: [
+          'D:רק פסנתר',
+          'C:C    D    Em', 'C:C    D    Em', 'E:',
+          'D:כולם מצטרפים',
+          'C:D       G     C     Em', 'L:אואואואו אואואו',
+          'C:D    D    G     C     Em', 'L:אואואואו אואואואו', 'E:',
+          'D:שקט, בלי תופים',
+          'C:C          D            Em', 'L:אני למעלה עכשיו, הפסקתי ליפול',
+          'C:C          D           Em', 'L:תעלם, תתרחק, תפסיק כבר לשאול',
+          'C:C        D           G', 'L:ענן שחור מאובק גורם לי לחשוב',
+          'C:C        D              Em', 'L:מי למעלה החליט שזה טוב לאהוב?', 'E:',
+          'D:תופים נכנסים',
+          "C:C        D              Em", "L:תרים ת'ראש ותביט בי, תגיד שנגמר",
+          'C:C        D            Em', 'L:אתה בטוח חושב, אהיה פה מחר',
+          'C:C        D         G', 'L:אז לפחות תשקר, תגיד שאתה אוהב',
+          'C:C     D         Em', 'L:ממש כמו מכונה אין קשר ללב', 'E:',
+          'C:C          D            Em', 'L:אז מה יהיה איתך עם המשחק שלך',
+          'C:D         G', 'L:מסך ההתעלמות שלא',
+          'C:C              Em', 'L:הורג אותך, הוא מחשל אותך',
+          'C:C/C#    C        D        G', 'L:אין לי אהבה קטנה לתת לך',
+          'C:D/Eb        D', 'L:אין לי אהבה קטנה',
+        ]
+      },
+      hebrew2: {
+        direction: 'rtl',
+        lines: [
+          'C:Em         A        D         Dmaj7', 'L:      לקחת פסק זמן ולא לחשוב',
+          'C:Em          A       D          C#7', 'L:      לשבת מול הים ולא לדאוג',
+          'C:F#m        G#7     C#m    A7', 'L:      לתת לראש לנוח מהפיצוצים',
+          'C:D         C#7     F#m  A7', 'L:      לתת ללב לנוח מהלחצים', 'E:',
+          'C:Em         A        D         Dmaj7', 'L:      להסתכל על הים ולראות אניה',
+          'C:Em          A       D          C#7', 'L:      חולמת שהיא באה אליי',
+          'C:F#m        G#7     C#m    A7', 'L:      שזה אפשרי שזה עוד יקרה',
+          'C:D         C#7     F#m  A7', 'L:      שמישהי עוד תעשה לי טוב',
+        ]
+      },
+      english: {
+        direction: 'ltr',
+        lines: [
+          'D:Rest Join',
+          'C:Am             Dm', 'L:   My heart is paralyzed',
+          'C:G              C', 'L:   My head was oversized',
+          'C:F                Dm                 E7', "L:   I'll take the high road like I should",
+          'C:Am               Dm', "L:   You said it's meant to be",
+          'C:G                 C', "L:   That it's not you, it's me",
+          'C:F                 Dm              E7', "L:   You're leaving now for my own good", 'E:',
+          'C:          F', 'L:She went down in an airplane',
+          'C:  C', 'L:Fried getting suntan',
+          'C:G                   Am              G', 'L:   Fell in a cement mixer full of quicksand',
+          'C: F                C                 Bm      E7', "L:Help me, help me I'm no good at goodbyes",
+        ]
+      }
+    };
+
+    function parseLine(raw) {
+      const type = raw[0], text = raw.substring(2);
+      if (type === 'C') return { type: 'chords', text };
+      if (type === 'L') return { type: 'lyric', text };
+      if (type === 'D') return { type: 'directive', text };
+      if (type === 'E') return { type: 'empty' };
+    }
+
+    function getChordPositions(chordLine) {
+      const tokens = [];
+      const regex = /\S+/g;
+      let m;
+      while ((m = regex.exec(chordLine)) !== null) {
+        tokens.push({ chord: m[0], pos: m.index });
+      }
+      return tokens;
+    }
+
+    function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ===== MONOSPACE RENDERING (simple, matches what user confirmed works) =====
+    function renderMonospace(song) {
+      const lines = song.lines.map(parseLine);
+      let html = '<div class="section">';
+      for (const line of lines) {
+        if (line.type === 'empty') { html += '</div><div class="section">'; continue; }
+        if (line.type === 'directive') { html += `<div class="m-dir">{${escHtml(line.text)}}</div>`; continue; }
+        if (line.type === 'chords') { html += `<div class="m-ch">${escHtml(line.text)}</div>`; continue; }
+        if (line.type === 'lyric') { html += `<div class="m-ly">${escHtml(line.text)}</div>`; continue; }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    // ===== PROPORTIONAL RENDERING =====
+    function renderProportional(song) {
+      const lines = song.lines.map(parseLine);
+      const isRtl = song.direction === 'rtl';
+      let html = '<div class="section">';
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.type === 'empty') { html += '</div><div class="section">'; continue; }
+        if (line.type === 'directive') { html += `<div class="dir-line">{${escHtml(line.text)}}</div>`; continue; }
+
+        if (line.type === 'chords') {
+          const next = lines[i + 1];
+          if (next && next.type === 'lyric') {
+            // Pair chords with lyrics using segments
+            html += buildPairedLine(line.text, next.text, isRtl);
+            i++; // skip lyric
+          } else {
+            html += `<div class="standalone">${escHtml(line.text)}</div>`;
+          }
+          continue;
+        }
+        if (line.type === 'lyric') { html += `<div class="lyr-line">${escHtml(line.text)}</div>`; continue; }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function buildPairedLine(chordText, lyricText, isRtl) {
+      const chords = getChordPositions(chordText);
+      if (chords.length === 0) return `<div class="lyr-line">${escHtml(lyricText)}</div>`;
+
+      // Build segments: each chord paired with its slice of lyrics
+      const segments = [];
+      // Leading text before first chord
+      if (chords[0].pos > 0) {
+        segments.push({ chord: '', lyrics: lyricText.substring(0, chords[0].pos) });
+      }
+      for (let i = 0; i < chords.length; i++) {
+        const start = chords[i].pos;
+        const end = (i + 1 < chords.length) ? chords[i + 1].pos : Math.max(lyricText.length, chordText.length);
+        segments.push({ chord: chords[i].chord, lyrics: lyricText.substring(start, end) || '' });
+      }
+
+      const dir = isRtl ? 'rtl' : 'ltr';
+      let html = `<div class="pair-line ${dir}">`;
+      for (const seg of segments) {
+        // Use ⁦ (LRI) and ⁩ (PDI) for BiDi isolation of lyrics in RTL
+        const lyricsContent = escHtml(seg.lyrics);
+        html += `<span class="seg">`;
+        html += `<span class="ch">${escHtml(seg.chord)}</span>`;
+        if (isRtl) {
+          // Wrap Hebrew lyrics in BiDi isolation characters to force correct RTL rendering
+          html += `<span class="ly">⁧${lyricsContent}⁩</span>`;
+        } else {
+          html += `<span class="ly">${lyricsContent}</span>`;
+        }
+        html += `</span>`;
+      }
+      html += `</div>`;
+      return html;
+    }
+
+    function showSong(key) {
+      const song = songs[key];
+      document.getElementById('prop-out').innerHTML = renderProportional(song);
+      document.getElementById('mono-out').innerHTML = renderMonospace(song);
+      // Set direction on monospace container (the user confirmed this worked)
+      document.getElementById('mono-out').style.direction = song.direction;
+      document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+      document.getElementById(`btn-${key}`).classList.add('active');
+    }
+
+    showSong('hebrew1');
+  </script>
+</body>
+</html>
