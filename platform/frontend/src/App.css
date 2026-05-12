@@ -2423,3 +2423,135 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* === Playlist Controls (admin overlay separator) === */
+.controls-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 0.25rem;
+  align-self: center;
+}
+
+.playlist-position {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.25rem 0.4rem;
+  background: var(--secondary-color);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.playlist-position .playlist-name {
+  font-size: 0.55rem;
+  opacity: 0.7;
+  white-space: nowrap;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* === Playlist View === */
+.playlist-view {
+  padding: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.playlist-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.playlist-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.playlist-tab:hover {
+  background: var(--secondary-color);
+}
+
+.playlist-tab.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  cursor: default;
+}
+
+.playlist-title {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.playlist-song-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.playlist-song-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background: white;
+  border: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+
+.playlist-song-item:hover {
+  background: var(--secondary-color);
+}
+
+.playlist-song-item.current {
+  background: #d4edda;
+  border-color: #28a745;
+}
+
+.playlist-song-item.played {
+  opacity: 0.5;
+}
+
+.playlist-song-item .song-position {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.playlist-song-item .song-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.playlist-song-item .song-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-song-item .song-artist {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.playlist-song-item .current-indicator {
+  color: #28a745;
+  font-size: 0.9rem;
+}

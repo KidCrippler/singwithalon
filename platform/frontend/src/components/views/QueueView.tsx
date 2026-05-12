@@ -192,7 +192,13 @@ export function QueueView() {
                       {entry.status === 'played' && (
                         <>
                           <span className="played-badge">✓ בוצע</span>
-                          <button 
+                          <button
+                            onClick={() => handlePresent(entry.id)}
+                            className="present-btn"
+                          >
+                            ▶ הצג
+                          </button>
+                          <button
                             onClick={() => handleDeleteEntry(entry.id)}
                             className="delete-entry-btn"
                             title="מחק שיר זה"

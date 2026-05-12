@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playlist Builder - SingWithAlon</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 1rem; max-width: 1200px; margin: 0 auto; background: #f8f9fa; }
+    h1 { margin-bottom: 1rem; color: #333; }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .panel { background: white; border-radius: 8px; padding: 1rem; border: 1px solid #ddd; }
+    .panel h2 { font-size: 1rem; margin-bottom: 0.75rem; color: #555; }
+    input, select { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    button { padding: 0.4rem 0.8rem; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 0.85rem; background: white; }
+    button:hover { background: #e9ecef; }
+    button.primary { background: #007bff; color: white; border-color: #007bff; }
+    button.primary:hover { background: #0056b3; }
+    button.danger { background: #dc3545; color: white; border-color: #dc3545; }
+    button.danger:hover { background: #c82333; }
+    .song-list { max-height: 500px; overflow-y: auto; }
+    .song-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.6rem; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.1s; }
+    .song-item:hover { background: #f0f7ff; }
+    .song-item .name { font-weight: 500; }
+    .song-item .artist { font-size: 0.8rem; color: #666; }
+    .song-item .add-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; }
+
+    /* Playlist entries with drag support */
+    .playlist-entries { min-height: 60px; }
+    .playlist-entry {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid transparent;
+      border-bottom: 1px solid #eee;
+      border-radius: 4px;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+      user-select: none;
+    }
+    .playlist-entry.dragging {
+      opacity: 0.4;
+      background: #e3f2fd;
+    }
+    .playlist-entry.drag-over-top {
+      border-top: 2px solid #007bff;
+    }
+    .playlist-entry.drag-over-bottom {
+      border-bottom: 2px solid #007bff;
+    }
+    .playlist-entry .drag-handle {
+      cursor: grab;
+      color: #aaa;
+      font-size: 1.1rem;
+      padding: 0 0.25rem;
+      line-height: 1;
+    }
+    .playlist-entry .drag-handle:active { cursor: grabbing; }
+    .playlist-entry .pos { color: #999; min-width: 1.5rem; text-align: center; font-size: 0.8rem; }
+    .playlist-entry .info { flex: 1; min-width: 0; }
+    .playlist-entry .info .name { font-weight: 500; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .playlist-entry .info .artist { font-size: 0.8rem; color: #666; }
+    .playlist-entry .remove-btn { width: 24px; height: 24px; padding: 0; font-size: 0.7rem; border-radius: 50%; opacity: 0.5; transition: opacity 0.15s; }
+    .playlist-entry:hover .remove-btn { opacity: 1; }
+
+    .empty-playlist { text-align: center; padding: 2rem 1rem; color: #999; font-size: 0.9rem; border: 2px dashed #ddd; border-radius: 8px; }
+
+    .config-section { margin-bottom: 1rem; }
+    .config-section label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.25rem; }
+    .output { margin-top: 1rem; }
+    .output textarea { width: 100%; height: 80px; font-family: monospace; font-size: 0.8rem; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+    .output .copy-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .status { font-size: 0.8rem; color: #666; margin-top: 0.5rem; }
+    .status.error { color: #dc3545; }
+    .playlist-tabs { display: flex; gap: 0.25rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .playlist-tabs button { font-size: 0.8rem; }
+    .playlist-tabs button.active { background: #007bff; color: white; border-color: #007bff; }
+    .header-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+    .header-row input { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <h1>Playlist Builder</h1>
+
+  <div class="config-section">
+    <label>Songs JSON URL:</label>
+    <div class="header-row">
+      <input type="text" id="songsUrl" value="https://raw.githubusercontent.com/KidCrippler/songs/master/songs.json" />
+      <button class="primary" onclick="loadSongs()">טען שירים</button>
+    </div>
+    <label>Username (admin):</label>
+    <input type="text" id="username" value="alon" style="width: 200px" />
+    <div id="loadStatus" class="status"></div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>שירים זמינים</h2>
+      <input type="text" id="searchInput" placeholder="חפש שיר או אמן..." oninput="filterSongs()" />
+      <div id="songList" class="song-list"></div>
+    </div>
+    <div class="panel">
+      <h2>פלייליסטים</h2>
+      <div class="header-row">
+        <input type="text" id="newPlaylistName" placeholder="שם פלייליסט חדש" style="width: 200px" />
+        <button onclick="addPlaylist()">+ חדש</button>
+      </div>
+      <div id="playlistTabs" class="playlist-tabs"></div>
+      <div id="playlistSongs" class="playlist-entries"></div>
+
+      <div class="output">
+        <label>ENV var output:</label>
+        <textarea id="envOutput" readonly></textarea>
+        <div class="copy-row">
+          <button class="primary" onclick="copyOutput()">העתק</button>
+          <span id="copyStatus" class="status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let songs = [];
+    let playlists = JSON.parse(localStorage.getItem('playlistBuilder_playlists') || '[]');
+    let activePlaylistIdx = 0;
+    let dragSrcIdx = null;
+
+    function save() {
+      localStorage.setItem('playlistBuilder_playlists', JSON.stringify(playlists));
+      renderOutput();
+    }
+
+    async function loadSongs() {
+      const url = document.getElementById('songsUrl').value.trim();
+      const status = document.getElementById('loadStatus');
+      status.textContent = 'טוען...';
+      status.className = 'status';
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        songs = Array.isArray(data) ? data : (data.songs || []);
+        songs.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'he'));
+        status.textContent = `נטענו ${songs.length} שירים`;
+        filterSongs();
+      } catch (e) {
+        status.textContent = `שגיאה: ${e.message}`;
+        status.className = 'status error';
+      }
+    }
+
+    function filterSongs() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = q ? songs.filter(s =>
+        (s.name || '').toLowerCase().includes(q) || (s.singer || '').toLowerCase().includes(q)
+      ) : songs;
+      const list = document.getElementById('songList');
+      list.innerHTML = filtered.slice(0, 200).map(s => `
+        <div class="song-item" onclick="addSong(${s.id})">
+          <div><span class="name">${esc(s.name)}</span><br><span class="artist">${esc(s.singer || '')}</span></div>
+          <button class="add-btn">+</button>
+        </div>
+      `).join('');
+    }
+
+    function addSong(id) {
+      if (playlists.length === 0) addPlaylist();
+      const pl = playlists[activePlaylistIdx];
+      if (pl.songIds.includes(id)) return;
+      pl.songIds.push(id);
+      save();
+      renderPlaylist();
+    }
+
+    function removeSong(idx) {
+      playlists[activePlaylistIdx].songIds.splice(idx, 1);
+      save();
+      renderPlaylist();
+    }
+
+    function addPlaylist() {
+      const nameInput = document.getElementById('newPlaylistName');
+      const name = nameInput.value.trim() || `פלייליסט ${playlists.length + 1}`;
+      playlists.push({ name, songIds: [] });
+      activePlaylistIdx = playlists.length - 1;
+      nameInput.value = '';
+      save();
+      renderTabs();
+      renderPlaylist();
+    }
+
+    function removePlaylist(idx) {
+      if (!confirm(`למחוק "${playlists[idx].name}"?`)) return;
+      playlists.splice(idx, 1);
+      if (activePlaylistIdx >= playlists.length) activePlaylistIdx = Math.max(0, playlists.length - 1);
+      save();
+      renderTabs();
+      renderPlaylist();
+    }
+
+    function selectPlaylist(idx) {
+      activePlaylistIdx = idx;
+      renderTabs();
+      renderPlaylist();
+    }
+
+    function renderTabs() {
+      const container = document.getElementById('playlistTabs');
+      container.innerHTML = playlists.map((pl, i) => `
+        <button class="${i === activePlaylistIdx ? 'active' : ''}" onclick="selectPlaylist(${i})">
+          ${esc(pl.name)} (${pl.songIds.length})
+        </button>
+      `).join('') + (playlists.length > 0 ? `<button class="danger" onclick="removePlaylist(${activePlaylistIdx})" title="מחק">✕</button>` : '');
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlistSongs');
+      if (playlists.length === 0) { container.innerHTML = '<div class="empty-playlist">הוסף פלייליסט חדש</div>'; return; }
+      const pl = playlists[activePlaylistIdx];
+      if (pl.songIds.length === 0) {
+        container.innerHTML = '<div class="empty-playlist">לחץ על שיר מהרשימה להוספה</div>';
+        return;
+      }
+      container.innerHTML = pl.songIds.map((id, i) => {
+        const song = songs.find(s => s.id === id);
+        return `<div class="playlist-entry" draggable="true" data-idx="${i}"
+          ondragstart="onDragStart(event, ${i})"
+          ondragover="onDragOver(event, ${i})"
+          ondragleave="onDragLeave(event)"
+          ondrop="onDrop(event, ${i})"
+          ondragend="onDragEnd(event)">
+          <span class="drag-handle">⠿</span>
+          <span class="pos">${i + 1}</span>
+          <div class="info"><span class="name">${esc(song?.name || `ID: ${id}`)}</span><span class="artist">${esc(song?.singer || '')}</span></div>
+          <button class="remove-btn danger" onclick="event.stopPropagation(); removeSong(${i})">✕</button>
+        </div>`;
+      }).join('');
+    }
+
+    // --- Drag and drop ---
+    function onDragStart(e, idx) {
+      dragSrcIdx = idx;
+      e.currentTarget.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', idx);
+    }
+
+    function onDragOver(e, idx) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const el = e.currentTarget;
+      // Clear previous indicators
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+      if (idx === dragSrcIdx) return;
+      // Determine if dragging above or below midpoint
+      const rect = el.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      if (e.clientY < midY) {
+        el.classList.add('drag-over-top');
+      } else {
+        el.classList.add('drag-over-bottom');
+      }
+    }
+
+    function onDragLeave(e) {
+      e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+    }
+
+    function onDrop(e, targetIdx) {
+      e.preventDefault();
+      e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom');
+      if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+
+      const arr = playlists[activePlaylistIdx].songIds;
+      // Determine insert position based on drop position
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      let insertIdx = e.clientY < midY ? targetIdx : targetIdx + 1;
+
+      // Remove from source
+      const [item] = arr.splice(dragSrcIdx, 1);
+      // Adjust insert index if source was before target
+      if (dragSrcIdx < insertIdx) insertIdx--;
+      arr.splice(insertIdx, 0, item);
+
+      save();
+      renderPlaylist();
+    }
+
+    function onDragEnd(e) {
+      dragSrcIdx = null;
+      // Clean up all drag classes
+      document.querySelectorAll('.playlist-entry').forEach(el => {
+        el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+      });
+    }
+
+    function renderOutput() {
+      const username = document.getElementById('username').value.trim() || 'alon';
+      const parts = playlists.filter(pl => pl.songIds.length > 0).map(pl =>
+        `${username}/${pl.name}:${pl.songIds.join(',')}`
+      );
+      document.getElementById('envOutput').value = parts.join(';');
+    }
+
+    function copyOutput() {
+      const textarea = document.getElementById('envOutput');
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        document.getElementById('copyStatus').textContent = 'הועתק!';
+        setTimeout(() => { document.getElementById('copyStatus').textContent = ''; }, 2000);
+      });
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // Init
+    document.getElementById('username').addEventListener('input', renderOutput);
+    renderTabs();
+    renderPlaylist();
+    renderOutput();
+    loadSongs();
+  </script>
+</body>
+</html>

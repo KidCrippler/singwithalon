@@ -68,10 +68,35 @@ export interface PlayingState {
   projectorWidth: number | null;
   projectorHeight: number | null;
   projectorLinesPerVerse: number | null;
+  activePlaylistId: number | null;
+  playlistPosition: number; // -1 = not started
   song: Song | null;
   // Song status for search view coloring
   pendingSongIds: number[];
   playedSongIds: number[];
+}
+
+// Playlist types
+export interface Playlist {
+  id: number;
+  name: string;
+  isActive: boolean;
+  songCount: number;
+}
+
+export interface PlaylistSong {
+  position: number;
+  songId: number;
+  songName: string;
+  songArtist: string;
+}
+
+export interface PlaylistWithSongs {
+  id: number;
+  name: string;
+  isActive: boolean;
+  songs: PlaylistSong[];
+  position: number;
 }
 
 // Song status payload (from socket event)

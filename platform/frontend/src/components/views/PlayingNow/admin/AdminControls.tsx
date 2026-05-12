@@ -18,13 +18,24 @@ export function AdminControls({
 }: AdminControlsProps) {
   const {
     state,
+    activePlaylist,
     nextVerse,
     prevVerse,
     setKeyOffset,
     syncKeyToAll,
     setDisplayMode,
     toggleVersesEnabled,
+    nextPlaylistSong,
+    prevPlaylistSong,
+    playlistLength,
   } = usePlayingNow();
+
+  // Playlist buttons are enabled only when the current song was triggered from the playlist
+  const isPlaylistActive = state.playlistPosition >= 0 &&
+    activePlaylist?.songs[state.playlistPosition]?.songId === state.currentSongId;
+
+  const canGoNext = isPlaylistActive && state.playlistPosition < playlistLength - 1;
+  const canGoPrev = isPlaylistActive && state.playlistPosition > 0;
 
   return (
     <div className="admin-controls">
@@ -62,6 +73,33 @@ export function AdminControls({
         <span className="verse-indicator">
           {currentVerseIndex + 1}/{versesCount}
         </span>
+      )}
+      {/* Playlist song navigation - visually separated */}
+      {state.activePlaylistId && playlistLength > 0 && (
+        <>
+          <span className="controls-separator" />
+          <button
+            onClick={nextPlaylistSong}
+            title="שיר הבא"
+            disabled={!canGoNext}
+            className={!canGoNext ? 'disabled' : ''}
+          >
+            ⏭
+          </button>
+          <span className="playlist-position">
+            {activePlaylist && <span className="playlist-name">{activePlaylist.name}</span>}
+            {isPlaylistActive ? `${state.playlistPosition + 1}/${playlistLength}` : `-/${playlistLength}`}
+          </span>
+          <button
+            onClick={prevPlaylistSong}
+            title="שיר קודם"
+            disabled={!canGoPrev}
+            className={!canGoPrev ? 'disabled' : ''}
+          >
+            ⏮
+          </button>
+          <span className="controls-separator" />
+        </>
       )}
       {/* Transpose controls - always visible for admin */}
       <TransposeControls

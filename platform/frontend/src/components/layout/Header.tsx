@@ -62,8 +62,9 @@ export function Header() {
 
   // Build room-scoped URLs
   const roomBase = username ? `/${username}` : '';
-  const isAdminRoute = location.pathname.endsWith('/admin') || 
-                       location.pathname.endsWith('/queue');
+  const isAdminRoute = location.pathname.endsWith('/admin') ||
+                       location.pathname.endsWith('/queue') ||
+                       location.pathname.endsWith('/playlist');
 
   // Display name from room context or fallback
   const displayName = room?.displayName || 'שרים עם אלון';
@@ -97,7 +98,13 @@ export function Header() {
             >
               מתנגן עכשיו
             </Link>
-            <Link 
+            <Link
+              to={`${roomBase}/playlist`}
+              className={location.pathname === `${roomBase}/playlist` ? 'active' : ''}
+            >
+              פלייליסט
+            </Link>
+            <Link
               to={`${roomBase}/queue`}
               className={location.pathname === `${roomBase}/queue` ? 'active' : ''}
             >

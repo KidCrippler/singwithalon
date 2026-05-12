@@ -1,4 +1,4 @@
-import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState } from '../types';
+import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState, Playlist, PlaylistWithSongs } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -180,6 +180,40 @@ export const stateApi = {
 
   async toggleVerses(roomUsername: string): Promise<{ success: boolean; versesEnabled: boolean }> {
     return fetchJson(`/api/rooms/${roomUsername}/state/verses/toggle`, { method: 'POST' });
+  },
+};
+
+// Playlist API (room-scoped, admin only)
+export const playlistApi = {
+  async list(roomUsername: string): Promise<Playlist[]> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists`);
+  },
+
+  async getActive(roomUsername: string): Promise<PlaylistWithSongs> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists/active`);
+  },
+
+  async activate(roomUsername: string, id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists/${id}/activate`, { method: 'POST' });
+  },
+
+  async deactivate(roomUsername: string): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists/deactivate`, { method: 'POST' });
+  },
+
+  async next(roomUsername: string): Promise<{ success: boolean; position: number; songId: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlist/next`, { method: 'POST' });
+  },
+
+  async prev(roomUsername: string): Promise<{ success: boolean; position: number; songId: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlist/prev`, { method: 'POST' });
+  },
+
+  async jump(roomUsername: string, position: number): Promise<{ success: boolean; position: number; songId: number }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlist/jump`, {
+      method: 'POST',
+      body: JSON.stringify({ position }),
+    });
   },
 };
 

@@ -101,6 +101,18 @@ CREATE INDEX IF NOT EXISTS idx_songs_name ON songs(name);
 CREATE INDEX IF NOT EXISTS idx_songs_artist ON songs(artist);
 CREATE INDEX IF NOT EXISTS idx_songs_is_private ON songs(is_private);
 
+-- Playlists (per-room, seeded from env var)
+CREATE TABLE IF NOT EXISTS playlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  song_ids TEXT NOT NULL DEFAULT '[]',  -- JSON array of song IDs, e.g. '[101,205,333]'
+  is_active BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_playlists_admin ON playlists(admin_id);
+
 -- Sync metadata (for tracking songs.json changes)
 CREATE TABLE IF NOT EXISTS sync_metadata (
   key TEXT PRIMARY KEY,

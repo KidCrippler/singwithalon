@@ -41,6 +41,8 @@ export const config = {
   },
   // Admin users seeded on startup (format: "user1:pass1,user2:pass2")
   adminUsers: process.env.ADMIN_USERS || '',
+  // Playlists seeded on startup (format: "username/name:songId1,songId2;username/name2:songId3,songId4")
+  playlists: process.env.PLAYLISTS || '',
   // Default room to redirect / and /admin to
   defaultRoom: process.env.DEFAULT_ROOM || 'alon',
 };

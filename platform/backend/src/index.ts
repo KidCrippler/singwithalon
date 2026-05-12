@@ -7,6 +7,7 @@ import { authRoutes, authHook } from './routes/auth.js';
 import { songsRoutes } from './routes/songs.js';
 import { queueRoutes } from './routes/queue.js';
 import { stateRoutes } from './routes/state.js';
+import { playlistRoutes } from './routes/playlist.js';
 import { toolsRoutes } from './routes/tools.js';
 import { initSocketIO } from './socket/index.js';
 
@@ -92,6 +93,7 @@ async function main() {
   await fastify.register(songsRoutes);
   await fastify.register(queueRoutes);
   await fastify.register(stateRoutes);
+  await fastify.register(playlistRoutes);
   await fastify.register(toolsRoutes);
 
   // Start the server

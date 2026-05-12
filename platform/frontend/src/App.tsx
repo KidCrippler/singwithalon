@@ -12,6 +12,7 @@ import { SearchView } from './components/views/SearchView';
 import { SongView } from './components/views/SongView';
 import { PlayingNowView } from './components/views/PlayingNow';
 import { QueueView } from './components/views/QueueView';
+import { PlaylistView } from './components/views/PlaylistView';
 import { MyPicksView } from './components/views/MyPicksView';
 import { SandboxView } from './components/views/SandboxView';
 import { preloadBackgrounds } from './utils/backgrounds';
@@ -84,6 +85,7 @@ function App() {
                 <Route path="song/:id" element={<SongView />} />
                 <Route path="playing-now" element={<PlayingNowView />} />
                 <Route path="queue" element={<QueueView />} />
+                <Route path="playlist" element={<PlaylistView />} />
                 <Route path="my-picks" element={<MyPicksView />} />
               </Route>
               

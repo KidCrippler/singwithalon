@@ -85,6 +85,8 @@ export async function stateRoutes(fastify: FastifyInstance) {
         projectorWidth: state.projector_width,
         projectorHeight: state.projector_height,
         projectorLinesPerVerse: state.projector_lines_per_verse,
+        activePlaylistId: state.active_playlist_id ?? null,
+        playlistPosition: state.playlist_position ?? -1,
         song: getEnrichedSong(state.current_song_id),
         // Song status for search view coloring
         pendingSongIds: songStatus.pendingSongIds,

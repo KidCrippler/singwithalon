@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
 import { config } from '../config.js';
-import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue, Song } from '../types/index.js';
+import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue, Song, Playlist } from '../types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,6 +32,7 @@ async function dropAllTables(): Promise<void> {
   await db.execute('DROP TABLE IF EXISTS song_analytics');
   await db.execute('DROP TABLE IF EXISTS sessions');
   await db.execute('DROP TABLE IF EXISTS queue');
+  await db.execute('DROP TABLE IF EXISTS playlists');
   await db.execute('DROP TABLE IF EXISTS playing_state');
   await db.execute('DROP TABLE IF EXISTS admins');
   console.log('All tables dropped.');
@@ -77,6 +78,75 @@ async function syncAdminsFromEnv(): Promise<void> {
       });
       console.log(`  Created admin: ${username} (id: ${adminId})`);
     }
+  }
+}
+
+// Add playlist-related columns to playing_state (idempotent migration)
+async function migratePlaylistColumns(): Promise<void> {
+  console.log('Running playlist migration...');
+  const columns = [
+    { name: 'active_playlist_id', def: 'INTEGER' },
+    { name: 'playlist_position', def: 'INTEGER DEFAULT -1' },
+  ];
+  for (const col of columns) {
+    try {
+      await db.execute(`ALTER TABLE playing_state ADD COLUMN ${col.name} ${col.def}`);
+      console.log(`  Migration: added column ${col.name} to playing_state`);
+    } catch {
+      // Column already exists — expected after first run
+    }
+  }
+  console.log('Playlist migration complete');
+}
+
+// Sync playlists from PLAYLISTS env var
+async function syncPlaylistsFromEnv(): Promise<void> {
+  if (!config.playlists) return;
+
+  const playlistDefs = config.playlists.split(';').filter(p => p.trim());
+  console.log(`Syncing ${playlistDefs.length} playlist(s) from PLAYLISTS...`);
+
+  for (const def of playlistDefs) {
+    const slashIdx = def.indexOf('/');
+    if (slashIdx === -1) continue;
+    const username = def.slice(0, slashIdx);
+    const rest = def.slice(slashIdx + 1);
+    const colonIdx = rest.indexOf(':');
+    if (colonIdx === -1) continue;
+    const name = rest.slice(0, colonIdx);
+    const songIds = rest.slice(colonIdx + 1).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+
+    const admin = await adminQueries.getByUsername(username);
+    if (!admin) {
+      console.log(`  Skipping playlist "${name}": admin "${username}" not found`);
+      continue;
+    }
+
+    // Delete existing playlist with this name for this admin (full replace)
+    await db.execute({
+      sql: 'DELETE FROM playlists WHERE admin_id = ? AND name = ?',
+      args: [admin.id, name],
+    });
+
+    // Insert playlist with song_ids as JSON array
+    await db.execute({
+      sql: 'INSERT INTO playlists (admin_id, name, song_ids) VALUES (?, ?, ?)',
+      args: [admin.id, name, JSON.stringify(songIds)],
+    });
+
+    // If no active playlist for this admin, make the first one active
+    const activeCheck = await db.execute({
+      sql: 'SELECT id FROM playlists WHERE admin_id = ? AND is_active = TRUE LIMIT 1',
+      args: [admin.id],
+    });
+    if (activeCheck.rows.length === 0) {
+      await db.execute({
+        sql: 'UPDATE playlists SET is_active = TRUE WHERE admin_id = ? AND name = ?',
+        args: [admin.id, name],
+      });
+    }
+
+    console.log(`  Playlist "${name}" for ${username}: ${songIds.length} songs`);
   }
 }
 
@@ -135,6 +205,12 @@ export async function initDatabase(): Promise<Client> {
 
   // Sync admins from env var
   await syncAdminsFromEnv();
+
+  // Migrate playlist columns to playing_state (idempotent)
+  await migratePlaylistColumns();
+
+  // Sync playlists from env var
+  await syncPlaylistsFromEnv();
 
   return db;
 }
@@ -410,6 +486,14 @@ export const playingStateQueries = {
       fields.push('verses_enabled = ?');
       values.push(updates.verses_enabled);
     }
+    if (updates.active_playlist_id !== undefined) {
+      fields.push('active_playlist_id = ?');
+      values.push(updates.active_playlist_id);
+    }
+    if (updates.playlist_position !== undefined) {
+      fields.push('playlist_position = ?');
+      values.push(updates.playlist_position);
+    }
 
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
@@ -438,6 +522,53 @@ export const playingStateQueries = {
     });
     const count = (result.rows[0] as Record<string, unknown>)?.count as number ?? 0;
     return count > 0;
+  },
+};
+
+// Playlist queries (room-scoped)
+export const playlistQueries = {
+  async getAllForRoom(adminId: number): Promise<Playlist[]> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM playlists WHERE admin_id = ? ORDER BY created_at ASC',
+      args: [adminId],
+    });
+    return result.rows.map(row => rowToObject<Playlist>(row as Record<string, unknown>));
+  },
+
+  async getActive(adminId: number): Promise<Playlist | undefined> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM playlists WHERE admin_id = ? AND is_active = TRUE LIMIT 1',
+      args: [adminId],
+    });
+    return result.rows[0] ? rowToObject<Playlist>(result.rows[0] as Record<string, unknown>) : undefined;
+  },
+
+  async getById(id: number): Promise<Playlist | undefined> {
+    const result = await getDb().execute({
+      sql: 'SELECT * FROM playlists WHERE id = ?',
+      args: [id],
+    });
+    return result.rows[0] ? rowToObject<Playlist>(result.rows[0] as Record<string, unknown>) : undefined;
+  },
+
+  async setActive(adminId: number, playlistId: number): Promise<void> {
+    // Deactivate all for this admin
+    await getDb().execute({
+      sql: 'UPDATE playlists SET is_active = FALSE WHERE admin_id = ?',
+      args: [adminId],
+    });
+    // Activate the selected one
+    await getDb().execute({
+      sql: 'UPDATE playlists SET is_active = TRUE WHERE id = ? AND admin_id = ?',
+      args: [playlistId, adminId],
+    });
+  },
+
+  async deactivateAll(adminId: number): Promise<void> {
+    await getDb().execute({
+      sql: 'UPDATE playlists SET is_active = FALSE WHERE admin_id = ?',
+      args: [adminId],
+    });
   },
 };
 

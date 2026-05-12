@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useSocket } from './SocketContext';
 import { useRoom } from './RoomContext';
-import { stateApi, songsApi } from '../services/api';
-import type { PlayingState, SongStatusPayload } from '../types';
+import { stateApi, songsApi, playlistApi } from '../services/api';
+import type { PlayingState, SongStatusPayload, PlaylistWithSongs } from '../types';
 
 interface PlayingNowContextValue {
   state: PlayingState;
@@ -32,6 +32,10 @@ interface PlayingNowContextValue {
   maxVerseIndex: number;
   setMaxVerseIndex: (max: number) => void;
   
+  // Playlist state
+  activePlaylist: PlaylistWithSongs | null;
+  playlistLength: number;
+
   // Actions
   setSong: (songId: number, trigger?: 'search' | 'song_view') => void;
   clearSong: () => void;
@@ -42,6 +46,12 @@ interface PlayingNowContextValue {
   syncKeyToAll: () => void;
   setDisplayMode: (mode: 'lyrics' | 'chords') => void;
   toggleVersesEnabled: () => void;
+
+  // Playlist actions
+  nextPlaylistSong: () => void;
+  prevPlaylistSong: () => void;
+  jumpToPlaylistSong: (position: number) => void;
+  refreshPlaylist: () => void;
 }
 
 const defaultState: PlayingState = {
@@ -53,6 +63,8 @@ const defaultState: PlayingState = {
   projectorWidth: null,
   projectorHeight: null,
   projectorLinesPerVerse: null,
+  activePlaylistId: null,
+  playlistPosition: -1,
   song: null,
   pendingSongIds: [],
   playedSongIds: [],
@@ -74,7 +86,10 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
   
   // Verse bounds tracking (set by PlayingNowView when it calculates verses)
   const [maxVerseIndex, setMaxVerseIndex] = useState(0);
-  
+
+  // Playlist state
+  const [activePlaylist, setActivePlaylist] = useState<PlaylistWithSongs | null>(null);
+
   const { socket, isConnected, joinRoom } = useSocket();
   const { roomUsername, getSessionId } = useRoom();
 
@@ -197,6 +212,15 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       }));
     });
 
+    socket.on('playlist:position-changed', (payload: { position: number; songId: number }) => {
+      setState(prev => ({ ...prev, playlistPosition: payload.position }));
+      setActivePlaylist(prev => prev ? { ...prev, position: payload.position } : null);
+    });
+
+    socket.on('playlist:activated', (payload: { playlistId: number }) => {
+      setState(prev => ({ ...prev, activePlaylistId: payload.playlistId, playlistPosition: -1 }));
+    });
+
     return () => {
       socket.off('song:changed');
       socket.off('song:cleared');
@@ -206,6 +230,8 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('projector:resolution');
       socket.off('verses:toggled');
       socket.off('songs:status-changed');
+      socket.off('playlist:position-changed');
+      socket.off('playlist:activated');
     };
   }, [socket]);
 
@@ -294,6 +320,39 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     stateApi.toggleVerses(roomUsername).catch(console.error);
   }, [roomUsername]);
 
+  // Playlist: fetch active playlist when activePlaylistId is set
+  const refreshPlaylist = useCallback(() => {
+    if (!roomUsername || !state.activePlaylistId) {
+      setActivePlaylist(null);
+      return;
+    }
+    playlistApi.getActive(roomUsername)
+      .then(setActivePlaylist)
+      .catch(() => setActivePlaylist(null));
+  }, [roomUsername, state.activePlaylistId]);
+
+  useEffect(() => {
+    refreshPlaylist();
+  }, [refreshPlaylist]);
+
+  // Playlist actions
+  const nextPlaylistSong = useCallback(() => {
+    if (!roomUsername) return;
+    playlistApi.next(roomUsername).catch(console.error);
+  }, [roomUsername]);
+
+  const prevPlaylistSong = useCallback(() => {
+    if (!roomUsername) return;
+    playlistApi.prev(roomUsername).catch(console.error);
+  }, [roomUsername]);
+
+  const jumpToPlaylistSong = useCallback((position: number) => {
+    if (!roomUsername) return;
+    playlistApi.jump(roomUsername, position).catch(console.error);
+  }, [roomUsername]);
+
+  const playlistLength = activePlaylist?.songs.length ?? 0;
+
   return (
     <PlayingNowContext.Provider value={{
       state,
@@ -312,6 +371,8 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       isKeyOutOfSync,
       maxVerseIndex,
       setMaxVerseIndex,
+      activePlaylist,
+      playlistLength,
       setSong,
       clearSong,
       nextVerse,
@@ -321,6 +382,10 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       syncKeyToAll,
       setDisplayMode,
       toggleVersesEnabled,
+      nextPlaylistSong,
+      prevPlaylistSong,
+      jumpToPlaylistSong,
+      refreshPlaylist,
     }}>
       {children}
     </PlayingNowContext.Provider>

@@ -79,7 +79,18 @@ export interface PlayingState {
   projector_width: number | null;
   projector_height: number | null;
   projector_lines_per_verse: number | null;
+  active_playlist_id: number | null;
+  playlist_position: number; // -1 = not started
   updated_at: string;
+}
+
+export interface Playlist {
+  id: number;
+  admin_id: number;
+  name: string;
+  song_ids: string; // JSON array string e.g. '[101,205,333]'
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface Session {
