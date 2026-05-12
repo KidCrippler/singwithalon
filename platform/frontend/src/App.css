@@ -1918,6 +1918,24 @@ body {
   font-size: 0.875rem;
 }
 
+/* My Picks View (Viewer) */
+.my-picks-view {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.my-picks-view h1 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.my-picks-view .back-to-search {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
 /* Login View */
 .login-view {
   display: flex;

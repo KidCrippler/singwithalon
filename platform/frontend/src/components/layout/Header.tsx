@@ -14,7 +14,7 @@ export function Header() {
   const { isConnected } = useSocket();
   const { clearSong, state } = usePlayingNow();
   const { filteredCount } = useSearch();
-  const { queueCount } = useQueue();
+  const { queueCount, myPicks, myPicksCount } = useQueue();
   const { room } = useRoom();
   const { reloadSongs } = useSongs();
   const location = useLocation();
@@ -106,18 +106,26 @@ export function Header() {
           </>
         ) : (
           <>
-            <Link 
+            <Link
               to={roomBase || '/'}
               className={location.pathname === roomBase || location.pathname === '/' ? 'active' : ''}
             >
               חיפוש {filteredCount > 0 && `(${filteredCount})`}
             </Link>
-            <Link 
+            <Link
               to={`${roomBase}/playing-now`}
               className={location.pathname === `${roomBase}/playing-now` ? 'active' : ''}
             >
               מתנגן עכשיו
             </Link>
+            {myPicks.length > 0 && (
+              <Link
+                to={`${roomBase}/my-picks`}
+                className={location.pathname === `${roomBase}/my-picks` ? 'active' : ''}
+              >
+                בחירות {myPicksCount > 0 && `(${myPicksCount})`}
+              </Link>
+            )}
           </>
         )}
       </nav>
