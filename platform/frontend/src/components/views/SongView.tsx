@@ -15,7 +15,8 @@ import { ToastContainer, useToast } from '../common/Toast';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
 import { LineDisplay } from '../common/LineDisplay';
-import type { Song, ParsedSong } from '../../types';
+import { ChordLyricLine } from '../common/ChordLyricLine';
+import type { Song, ParsedSong, ParsedLine } from '../../types';
 
 export function SongView() {
   const { id, username } = useParams<{ id: string; username: string }>();
@@ -134,6 +135,26 @@ export function SongView() {
   }
 
   const isRtl = lyrics.metadata.direction === 'rtl';
+
+  function renderChordsSection(section: ParsedLine[], offset: number, rtl: boolean) {
+    const elements: JSX.Element[] = [];
+    let i = 0;
+    while (i < section.length) {
+      const line = section[i];
+      if (line.type === 'chords' && i + 1 < section.length && section[i + 1].type === 'lyric') {
+        elements.push(
+          <ChordLyricLine key={i} chordLine={line} lyricLine={section[i + 1]} keyOffset={offset} lineIndex={i} isRtl={rtl} />
+        );
+        i += 2;
+      } else {
+        elements.push(
+          <LineDisplay key={i} line={line} showChords={true} lineIndex={i} keyOffset={offset} />
+        );
+        i++;
+      }
+    }
+    return elements;
+  }
 
   return (
     <div className={`song-view ${isRtl ? 'rtl' : 'ltr'}`}>
@@ -263,21 +284,13 @@ export function SongView() {
             />
           )}
 
-          <div 
+          <div
             ref={lyricsContainerRef}
             className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
           >
             {sections.map((section, sectionIndex) => (
               <div key={sectionIndex} className="lyrics-section">
-                {section.map((line, lineIndex) => (
-                  <LineDisplay
-                    key={lineIndex}
-                    line={line}
-                    showChords={true}
-                    lineIndex={lineIndex}
-                    keyOffset={keyOffset}
-                  />
-                ))}
+                {renderChordsSection(section, keyOffset, isRtl)}
               </div>
             ))}
           </div>

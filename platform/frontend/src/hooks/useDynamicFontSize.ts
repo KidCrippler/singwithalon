@@ -93,7 +93,7 @@ export function useDynamicFontSize(
         const fitsAllColumnsVisible = container.scrollWidth <= availableWidth + 5;
 
         // Check horizontal fit - measure actual text span widths against column width
-        const textSpans = container.querySelectorAll('.lyric, .cue, .chords');
+        const textSpans = container.querySelectorAll('.lyric, .cue, .chords, .chord-lyric-combined');
         let fitsHorizontally = true;
         for (const span of textSpans) {
           const spanWidth = span.getBoundingClientRect().width;

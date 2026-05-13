@@ -789,11 +789,10 @@ body {
 
 /* CHORDS MODE: Use Cousine monospace - has true Hebrew monospace support */
 .lyrics-container.chords {
-  font-family: 'Cousine', 'Courier New', Courier, monospace;
-  font-weight: 700;
-  /* Tighter spacing to maximize font size */
+  font-family: 'Assistant', 'Rubik', sans-serif;
+  font-weight: 600;
   padding: 0.25rem;
-  line-height: 1.15;
+  line-height: 1.3;
   column-gap: 0.7rem;
   -webkit-column-gap: 0.7rem;
   -moz-column-gap: 0.7rem;
@@ -802,6 +801,42 @@ body {
 /* Tighter line spacing for chords mode */
 .lyrics-container.chords .line {
   min-height: 0.9em;
+}
+
+/* Standalone chord lines (no lyric below) use monospace */
+.lyrics-container.chords .line-chords {
+  font-family: 'Cousine', 'Courier New', Courier, monospace;
+  font-size: 0.8em;
+  line-height: 1.15;
+}
+
+/* Combined chord+lyric line */
+.lyrics-container.chords .chord-lyric-combined {
+  white-space: pre;
+  padding-top: 0.6em;
+}
+
+.lyrics-container.chords .chord-anchor {
+  position: relative;
+}
+
+.lyrics-container.chords .chord-label {
+  position: absolute;
+  bottom: 0.95em;
+  color: #0000ff;
+  font-weight: 700;
+  font-size: 0.85em;
+  white-space: nowrap;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.rtl .lyrics-container.chords .chord-label {
+  right: 0;
+}
+
+.ltr .lyrics-container.chords .chord-label {
+  left: 0;
 }
 
 /* Tighter section spacing in chords mode */
