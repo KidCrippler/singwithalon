@@ -2619,6 +2619,31 @@ body {
   background: #e3f2fd;
 }
 
+.playlist-song-item.selected-for-move {
+  background: #e3f2fd;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.playlist-song-item.drop-target {
+  cursor: pointer;
+}
+
+.playlist-song-item.drop-target:hover {
+  background: #e8f5e9;
+  border-color: var(--success-color);
+}
+
+.move-hint {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--primary-color);
+  padding: 0.4rem;
+  background: rgba(74, 144, 217, 0.08);
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
 .playlist-song-item.drag-over-top {
   border-top: 2px solid var(--primary-color);
 }

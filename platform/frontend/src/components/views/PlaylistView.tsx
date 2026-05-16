@@ -7,6 +7,8 @@ import { useSongs } from '../../context/SongsContext';
 import { playlistApi } from '../../services/api';
 import type { Playlist, PlaylistSong } from '../../types';
 
+const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 export function PlaylistView() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +18,7 @@ export function PlaylistView() {
   const [drag, setDrag] = useState<{ srcIdx: number | null; overIdx: number | null; overHalf: 'top' | 'bottom' | null }>({
     srcIdx: null, overIdx: null, overHalf: null,
   });
+  const [selectedForMove, setSelectedForMove] = useState<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const { isRoomOwner } = useAuth();
@@ -165,6 +168,25 @@ export function PlaylistView() {
 
   const onDragEnd = useCallback(() => clearDrag(), [clearDrag]);
 
+  // Touch: tap-to-select, tap-to-place
+  const handleTapToMove = useCallback((position: number) => {
+    if (!activePlaylist) return;
+    if (selectedForMove === null) {
+      setSelectedForMove(position);
+    } else {
+      if (selectedForMove === position) {
+        setSelectedForMove(null);
+        return;
+      }
+      const arr = activePlaylist.songs.map(s => s.songId);
+      const [item] = arr.splice(selectedForMove, 1);
+      const insertIdx = selectedForMove < position ? position - 1 : position;
+      arr.splice(insertIdx, 0, item);
+      setSelectedForMove(null);
+      updateSongList(arr);
+    }
+  }, [activePlaylist, selectedForMove, updateSongList]);
+
   // Memoized search results — only recomputes when query or songs change
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -231,26 +253,39 @@ export function PlaylistView() {
             </button>
           </div>
 
-          {/* Draggable song list */}
+          {/* Song list — drag on desktop, tap-to-move on touch */}
           <div className="playlist-song-list">
+            {selectedForMove !== null && (
+              <div className="move-hint">הקש על המיקום החדש</div>
+            )}
             {activePlaylist.songs.map((song: PlaylistSong) => {
               const isCurrent = song.position === state.playlistPosition;
               const isDragging = song.position === drag.srcIdx;
               const isOver = song.position === drag.overIdx;
+              const isSelected = song.position === selectedForMove;
+              const isDropTarget = selectedForMove !== null && song.position !== selectedForMove;
               return (
                 <div
                   key={`${song.songId}-${song.position}`}
-                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isDragging ? 'dragging' : ''} ${isOver && drag.overHalf === 'top' ? 'drag-over-top' : ''} ${isOver && drag.overHalf === 'bottom' ? 'drag-over-bottom' : ''}`}
-                  draggable
+                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isDragging ? 'dragging' : ''} ${isOver && drag.overHalf === 'top' ? 'drag-over-top' : ''} ${isOver && drag.overHalf === 'bottom' ? 'drag-over-bottom' : ''} ${isSelected ? 'selected-for-move' : ''} ${isDropTarget ? 'drop-target' : ''}`}
+                  draggable={!isTouchDevice()}
                   onDragStart={() => onDragStart(song.position)}
                   onDragOver={e => onDragOver(e, song.position)}
                   onDragLeave={onDragLeave}
                   onDrop={e => onDrop(e, song.position)}
                   onDragEnd={onDragEnd}
                 >
-                  <span className="drag-handle">⠿</span>
+                  <span
+                    className="drag-handle"
+                    onClick={isTouchDevice() ? () => handleTapToMove(song.position) : undefined}
+                  >
+                    {isSelected ? '✓' : '⠿'}
+                  </span>
                   <span className="song-position">{song.position + 1}</span>
-                  <div className="song-info" onClick={() => handleJump(song.position)}>
+                  <div
+                    className="song-info"
+                    onClick={isDropTarget ? () => handleTapToMove(song.position) : () => handleJump(song.position)}
+                  >
                     <span className="song-name">{song.songName}</span>
                     <span className="song-artist">{song.songArtist}</span>
                   </div>
