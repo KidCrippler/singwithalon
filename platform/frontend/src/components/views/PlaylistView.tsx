@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePlayingNow } from '../../context/PlayingNowContext';
@@ -13,9 +13,9 @@ export function PlaylistView() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-  const [dragOverHalf, setDragOverHalf] = useState<'top' | 'bottom' | null>(null);
+  const [drag, setDrag] = useState<{ srcIdx: number | null; overIdx: number | null; overHalf: 'top' | 'bottom' | null }>({
+    srcIdx: null, overIdx: null, overHalf: null,
+  });
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const { isRoomOwner } = useAuth();
@@ -49,6 +49,7 @@ export function PlaylistView() {
   const handleActivate = async (playlistId: number) => {
     if (!roomUsername) return;
     await playlistApi.activate(roomUsername, playlistId);
+    // reloadPlaylists updates isActive flags; refreshPlaylist fetches the new active song list
     reloadPlaylists();
     refreshPlaylist();
   };
@@ -56,8 +57,7 @@ export function PlaylistView() {
   const handleDeactivate = async () => {
     if (!roomUsername) return;
     await playlistApi.deactivate(roomUsername);
-    reloadPlaylists();
-    refreshPlaylist();
+    reloadPlaylists(); // updates isActive flags; context clears activePlaylist via activePlaylistId→null
   };
 
   const handleCreate = async () => {
@@ -73,8 +73,7 @@ export function PlaylistView() {
     if (!roomUsername || !activePlaylist) return;
     if (!confirm(`למחוק את "${activePlaylist.name}"?`)) return;
     await playlistApi.remove(roomUsername, activePlaylist.id);
-    reloadPlaylists();
-    refreshPlaylist();
+    reloadPlaylists(); // context clears activePlaylist via socket broadcast
   };
 
   const handleRename = async () => {
@@ -84,7 +83,7 @@ export function PlaylistView() {
       return;
     }
     await playlistApi.update(roomUsername, activePlaylist.id, { name: nameValue.trim() });
-    reloadPlaylists();
+    reloadPlaylists(); // updates tab label; refreshPlaylist not needed (name change only)
     refreshPlaylist();
     setEditingName(false);
   };
@@ -123,65 +122,58 @@ export function PlaylistView() {
     setSearchQuery('');
   };
 
+  const clearDrag = useCallback(() => setDrag({ srcIdx: null, overIdx: null, overHalf: null }), []);
+
   // Drag and drop
-  const onDragStart = (idx: number) => {
-    setDragSrcIdx(idx);
-  };
+  const onDragStart = useCallback((idx: number) => {
+    setDrag(prev => ({ ...prev, srcIdx: idx }));
+  }, []);
 
-  const onDragOver = (e: React.DragEvent, idx: number) => {
+  const onDragOver = useCallback((e: React.DragEvent, idx: number) => {
     e.preventDefault();
-    if (idx === dragSrcIdx) {
-      setDragOverIdx(null);
-      return;
-    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const overHalf = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom';
+    setDrag(prev => {
+      if (idx === prev.srcIdx) return prev;
+      if (prev.overIdx === idx && prev.overHalf === overHalf) return prev;
+      return { ...prev, overIdx: idx, overHalf };
+    });
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDrag(prev => ({ ...prev, overIdx: null, overHalf: null }));
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const half = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom';
-    setDragOverIdx(idx);
-    setDragOverHalf(half);
-  };
+    setDrag(prev => {
+      if (prev.srcIdx === null || prev.srcIdx === targetIdx || !activePlaylist) return { srcIdx: null, overIdx: null, overHalf: null };
 
-  const onDragLeave = () => {
-    setDragOverIdx(null);
-    setDragOverHalf(null);
-  };
+      const arr = activePlaylist.songs.map(s => s.songId);
+      let insertIdx = half === 'top' ? targetIdx : targetIdx + 1;
 
-  const onDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault();
-    if (dragSrcIdx === null || dragSrcIdx === targetIdx || !activePlaylist) {
-      setDragSrcIdx(null);
-      setDragOverIdx(null);
-      setDragOverHalf(null);
-      return;
-    }
+      const [item] = arr.splice(prev.srcIdx, 1);
+      if (prev.srcIdx < insertIdx) insertIdx--;
+      arr.splice(insertIdx, 0, item);
 
-    const arr = activePlaylist.songs.map(s => s.songId);
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const half = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom';
-    let insertIdx = half === 'top' ? targetIdx : targetIdx + 1;
+      updateSongList(arr);
+      return { srcIdx: null, overIdx: null, overHalf: null };
+    });
+  }, [activePlaylist, updateSongList]);
 
-    const [item] = arr.splice(dragSrcIdx, 1);
-    if (dragSrcIdx < insertIdx) insertIdx--;
-    arr.splice(insertIdx, 0, item);
+  const onDragEnd = useCallback(() => clearDrag(), [clearDrag]);
 
-    setDragSrcIdx(null);
-    setDragOverIdx(null);
-    setDragOverHalf(null);
-    updateSongList(arr);
-  };
-
-  const onDragEnd = () => {
-    setDragSrcIdx(null);
-    setDragOverIdx(null);
-    setDragOverHalf(null);
-  };
-
-  // Search results for adding songs
-  const searchResults = searchQuery.trim().length >= 2
-    ? songs.filter(s =>
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.singer.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 8)
-    : [];
+  // Memoized search results — only recomputes when query or songs change
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 2) return [];
+    return songs.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.singer.toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [searchQuery, songs]);
 
   if (isRoomLoading || isLoading) {
     return <div className="view-loading">טוען...</div>;
@@ -243,12 +235,12 @@ export function PlaylistView() {
           <div className="playlist-song-list">
             {activePlaylist.songs.map((song: PlaylistSong) => {
               const isCurrent = song.position === state.playlistPosition;
-              const isDragging = song.position === dragSrcIdx;
-              const isOver = song.position === dragOverIdx;
+              const isDragging = song.position === drag.srcIdx;
+              const isOver = song.position === drag.overIdx;
               return (
                 <div
                   key={`${song.songId}-${song.position}`}
-                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isDragging ? 'dragging' : ''} ${isOver && dragOverHalf === 'top' ? 'drag-over-top' : ''} ${isOver && dragOverHalf === 'bottom' ? 'drag-over-bottom' : ''}`}
+                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isDragging ? 'dragging' : ''} ${isOver && drag.overHalf === 'top' ? 'drag-over-top' : ''} ${isOver && drag.overHalf === 'bottom' ? 'drag-over-bottom' : ''}`}
                   draggable
                   onDragStart={() => onDragStart(song.position)}
                   onDragOver={e => onDragOver(e, song.position)}

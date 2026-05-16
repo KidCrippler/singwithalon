@@ -320,20 +320,22 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     stateApi.toggleVerses(roomUsername).catch(console.error);
   }, [roomUsername]);
 
-  // Playlist: fetch active playlist when activePlaylistId is set
+  // Playlist: stable fetch function — doesn't depend on state so it doesn't trigger cascades
   const refreshPlaylist = useCallback(() => {
-    if (!roomUsername || !state.activePlaylistId) {
-      setActivePlaylist(null);
-      return;
-    }
+    if (!roomUsername) return;
     playlistApi.getActive(roomUsername)
       .then(setActivePlaylist)
       .catch(() => setActivePlaylist(null));
-  }, [roomUsername, state.activePlaylistId]);
+  }, [roomUsername]);
 
+  // Re-fetch active playlist only when activePlaylistId actually changes
   useEffect(() => {
+    if (!state.activePlaylistId) {
+      setActivePlaylist(null);
+      return;
+    }
     refreshPlaylist();
-  }, [refreshPlaylist]);
+  }, [state.activePlaylistId, refreshPlaylist]);
 
   // Playlist actions
   const nextPlaylistSong = useCallback(() => {
