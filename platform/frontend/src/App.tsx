@@ -1,7 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { SocketProvider } from './context/SocketContext';
 import { AuthProvider } from './context/AuthContext';
-import { RoomProvider } from './context/RoomContext';
+import { RoomProvider, useRoom } from './context/RoomContext';
 import { PlayingNowProvider } from './context/PlayingNowContext';
 import { SearchProvider } from './context/SearchContext';
 import { SongsProvider } from './context/SongsContext';
@@ -31,6 +32,13 @@ preloadBackgrounds().catch(err => {
 function RoomContent() {
   // Keyboard shortcuts for admin verse navigation (needs PlayingNowContext)
   useKeyboardShortcuts();
+  const { room } = useRoom();
+
+  useEffect(() => {
+    if (room?.displayName) {
+      document.title = room.displayName;
+    }
+  }, [room?.displayName]);
 
   return (
     <div className="app">
