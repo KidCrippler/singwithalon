@@ -91,6 +91,78 @@ export async function playlistRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Create a playlist
+  fastify.post<{ Params: RoomParams; Body: { name: string; songIds?: number[] } }>(
+    '/api/rooms/:username/playlists',
+    { preHandler: [resolveRoom, requireRoomOwner] },
+    async (request, reply) => {
+      const adminId = request.room!.adminId;
+      const { name, songIds = [] } = request.body;
+
+      if (!name || !name.trim()) {
+        return reply.status(400).send({ error: 'Playlist name is required' });
+      }
+
+      const playlist = await playlistQueries.create(adminId, name.trim(), songIds);
+      return { id: playlist.id, name: playlist.name, isActive: false, songCount: songIds.length };
+    }
+  );
+
+  // Update a playlist (name and/or song list)
+  fastify.put<{ Params: PlaylistIdParams; Body: { name?: string; songIds?: number[] } }>(
+    '/api/rooms/:username/playlists/:id',
+    { preHandler: [resolveRoom, requireRoomOwner] },
+    async (request, reply) => {
+      const adminId = request.room!.adminId;
+      const playlistId = parseInt(request.params.id, 10);
+      const { name, songIds } = request.body;
+
+      const existing = await playlistQueries.getById(playlistId);
+      if (!existing || existing.admin_id !== adminId) {
+        return reply.status(404).send({ error: 'Playlist not found' });
+      }
+
+      const updates: { name?: string; songIds?: number[] } = {};
+      if (name !== undefined) updates.name = name.trim();
+      if (songIds !== undefined) updates.songIds = songIds;
+
+      const updated = await playlistQueries.update(playlistId, adminId, updates);
+      if (!updated) {
+        return reply.status(404).send({ error: 'Playlist not found' });
+      }
+
+      const parsedSongIds = JSON.parse(updated.song_ids) as number[];
+      return { id: updated.id, name: updated.name, isActive: !!updated.is_active, songCount: parsedSongIds.length };
+    }
+  );
+
+  // Delete a playlist
+  fastify.delete<{ Params: PlaylistIdParams }>(
+    '/api/rooms/:username/playlists/:id',
+    { preHandler: [resolveRoom, requireRoomOwner] },
+    async (request, reply) => {
+      const adminId = request.room!.adminId;
+      const playlistId = parseInt(request.params.id, 10);
+
+      const existing = await playlistQueries.getById(playlistId);
+      if (!existing || existing.admin_id !== adminId) {
+        return reply.status(404).send({ error: 'Playlist not found' });
+      }
+
+      // If deleting the active playlist, clear playing state
+      if (existing.is_active) {
+        await playingStateQueries.update(adminId, {
+          active_playlist_id: null,
+          playlist_position: -1,
+        });
+        broadcastToRoom(adminId, 'admin', 'playlist:activated', { playlistId: null });
+      }
+
+      await playlistQueries.remove(playlistId, adminId);
+      return { success: true };
+    }
+  );
+
   // Activate a playlist
   fastify.post<{ Params: PlaylistIdParams }>(
     '/api/rooms/:username/playlists/:id/activate',

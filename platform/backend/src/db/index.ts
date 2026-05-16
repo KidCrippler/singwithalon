@@ -570,6 +570,46 @@ export const playlistQueries = {
       args: [adminId],
     });
   },
+
+  async create(adminId: number, name: string, songIds: number[]): Promise<Playlist> {
+    const result = await getDb().execute({
+      sql: 'INSERT INTO playlists (admin_id, name, song_ids) VALUES (?, ?, ?)',
+      args: [adminId, name, JSON.stringify(songIds)],
+    });
+    const id = Number(result.lastInsertRowid);
+    return { id, admin_id: adminId, name, song_ids: JSON.stringify(songIds), is_active: false, created_at: new Date().toISOString() };
+  },
+
+  async update(id: number, adminId: number, updates: { name?: string; songIds?: number[] }): Promise<Playlist | undefined> {
+    const fields: string[] = [];
+    const values: InValue[] = [];
+
+    if (updates.name !== undefined) {
+      fields.push('name = ?');
+      values.push(updates.name);
+    }
+    if (updates.songIds !== undefined) {
+      fields.push('song_ids = ?');
+      values.push(JSON.stringify(updates.songIds));
+    }
+
+    if (fields.length === 0) return this.getById(id);
+
+    values.push(id, adminId);
+    await getDb().execute({
+      sql: `UPDATE playlists SET ${fields.join(', ')} WHERE id = ? AND admin_id = ?`,
+      args: values,
+    });
+    return this.getById(id);
+  },
+
+  async remove(id: number, adminId: number): Promise<boolean> {
+    const result = await getDb().execute({
+      sql: 'DELETE FROM playlists WHERE id = ? AND admin_id = ?',
+      args: [id, adminId],
+    });
+    return (result.rowsAffected ?? 0) > 0;
+  },
 };
 
 // Session queries (room-scoped)

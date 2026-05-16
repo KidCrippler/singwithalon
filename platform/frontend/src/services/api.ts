@@ -201,6 +201,24 @@ export const playlistApi = {
     return fetchJson(`/api/rooms/${roomUsername}/playlists/deactivate`, { method: 'POST' });
   },
 
+  async create(roomUsername: string, name: string, songIds: number[] = []): Promise<Playlist> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists`, {
+      method: 'POST',
+      body: JSON.stringify({ name, songIds }),
+    });
+  },
+
+  async update(roomUsername: string, id: number, updates: { name?: string; songIds?: number[] }): Promise<Playlist> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  async remove(roomUsername: string, id: number): Promise<{ success: boolean }> {
+    return fetchJson(`/api/rooms/${roomUsername}/playlists/${id}`, { method: 'DELETE' });
+  },
+
   async next(roomUsername: string): Promise<{ success: boolean; position: number; songId: number }> {
     return fetchJson(`/api/rooms/${roomUsername}/playlist/next`, { method: 'POST' });
   },
