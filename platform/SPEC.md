@@ -1387,24 +1387,129 @@ With the tracked data, you can calculate:
 
 ---
 
-## 18. Future Considerations (Out of Scope for V1)
+## 18. Playlists
 
-1. **Song caching**: Pre-download all songs for offline resilience
-2. **Setlist feature**: Pre-plan song order for a show
-3. **Song editing UI**: Admin interface to edit lyrics (currently Git-only)
-4. **Analytics**: Track popular songs, frequent requesters per room
-5. **Mixed-language songs**: Hebrew lyrics with English words
-6. **Auto-scroll**: Automatically advance verses on a timer
-7. **Song categories/filtering**: Filter by category in search
-8. **Favorites**: Let viewers mark favorite songs
-9. **History**: Show recently played songs per room
-10. **Custom domains**: Allow rooms to have custom subdomains (e.g., alon.singalong.com)
-11. **Per-room song catalogs**: Allow admins to curate their own song lists
-12. **Room display name editing UI**: Allow admins to change their room's display name
+### 18.1 Overview
+
+Playlists allow admins to prepare ordered song lists before events and navigate through them linearly during a performance. Playlists coexist with the queue — the admin can present from either source at any time.
+
+### 18.2 Core Concepts
+
+- **Multiple playlists per room**: Each admin can have several named playlists
+- **One active at a time**: Only one playlist can be active; choosing "none" deactivates all
+- **Position memory**: The playlist remembers the current position. Presenting from the queue does NOT change the playlist position — the admin can return to the playlist where they left off
+- **Independent from queue**: Playlist and queue are two parallel song sources. No mode toggle needed
+
+### 18.3 Database Schema
+
+```sql
+CREATE TABLE IF NOT EXISTS playlists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_id INTEGER NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  song_ids TEXT NOT NULL DEFAULT '[]',  -- JSON array of song IDs
+  is_active BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+The `playing_state` table is extended with:
+- `active_playlist_id INTEGER` — currently active playlist (NULL = none)
+- `playlist_position INTEGER DEFAULT -1` — current position in active playlist (-1 = not started)
+
+### 18.4 Seeding from Environment
+
+Playlists can be seeded from the `PLAYLISTS` env var on server startup:
+
+```env
+PLAYLISTS="alon/ערב שירה:1000001,1000002,1000003;alon/שירי רוק:1000006,1000007"
+```
+
+Format: `username/playlistName:songId1,songId2,...` separated by `;`
+
+On each startup, playlists defined in the env var are re-synced (delete + re-insert by name). Playlists created via the admin UI are not affected by env var syncing.
+
+### 18.5 Admin UI (Playlist Tab)
+
+A dedicated admin tab ("פלייליסט") provides full CRUD functionality:
+
+**Playlist selector row:**
+- Buttons for each playlist (name + song count)
+- "ללא" button to deactivate all playlists
+- "+ חדש" button to create a new playlist
+
+**Active playlist management:**
+- Editable playlist name (click to edit inline)
+- Delete button with confirmation
+- Draggable song list (HTML5 drag-and-drop with grip handle)
+- Remove button (✕) on each song, visible on hover
+- Inline search input at bottom to add songs from the global catalog
+- Click any song to jump to it (presents immediately on Playing Now)
+- Current playing position highlighted in green
+
+**Auto-save:** Every mutation (add, remove, reorder, rename) saves immediately via API.
+
+### 18.6 Playing Now Integration
+
+Admin controls overlay gains playlist navigation buttons (visually separated from verse controls):
+
+- ⏭ Next song in playlist
+- ⏮ Previous song in playlist
+- Position indicator: `2/5` with playlist name above
+- Buttons are **disabled** unless the currently playing song was triggered from the playlist
+
+**Disable logic:**
+- Buttons become enabled when the admin presents a song from the playlist tab
+- Buttons become disabled when the admin presents from the queue or search
+- This prevents confusion about what "next" means when the current song didn't come from the playlist
+
+### 18.7 API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/rooms/:username/playlists` | Owner | List all playlists (id, name, isActive, songCount) |
+| GET | `/api/rooms/:username/playlists/active` | Owner | Get active playlist with enriched song list |
+| POST | `/api/rooms/:username/playlists` | Owner | Create playlist (body: `{ name, songIds }`) |
+| PUT | `/api/rooms/:username/playlists/:id` | Owner | Update playlist (body: `{ name?, songIds? }`) |
+| DELETE | `/api/rooms/:username/playlists/:id` | Owner | Delete playlist |
+| POST | `/api/rooms/:username/playlists/:id/activate` | Owner | Activate a playlist |
+| POST | `/api/rooms/:username/playlists/deactivate` | Owner | Deactivate all playlists |
+| POST | `/api/rooms/:username/playlist/next` | Owner | Present next song in playlist |
+| POST | `/api/rooms/:username/playlist/prev` | Owner | Present previous song in playlist |
+| POST | `/api/rooms/:username/playlist/jump` | Owner | Present song at specific position |
+
+### 18.8 Socket Events
+
+| Event | Direction | Namespace | Payload |
+|-------|-----------|-----------|---------|
+| `playlist:position-changed` | Server → Admin | `room:{adminId}:admin` | `{ position, songId }` |
+| `playlist:activated` | Server → Admin | `room:{adminId}:admin` | `{ playlistId }` (null if deactivated) |
+
+Viewers are not aware of playlists — they just receive the standard `song:changed` event when a new song is presented from any source.
+
+### 18.9 Standalone Builder Tool
+
+A self-contained HTML file (`tools/playlist-builder.html`) can be used to visually build playlists and generate the `PLAYLISTS` env var string. It fetches songs.json, provides search/filter, drag-to-reorder, and outputs the formatted config string with a copy button.
 
 ---
 
-## 19. Visual Reference
+## 19. Future Considerations (Out of Scope for V1)
+
+1. **Song caching**: Pre-download all songs for offline resilience
+2. **Song editing UI**: Admin interface to edit lyrics (currently Git-only)
+3. **Analytics**: Track popular songs, frequent requesters per room
+4. **Mixed-language songs**: Hebrew lyrics with English words
+5. **Auto-scroll**: Automatically advance verses on a timer
+6. **Song categories/filtering**: Filter by category in search
+7. **Favorites**: Let viewers mark favorite songs
+8. **History**: Show recently played songs per room
+9. **Custom domains**: Allow rooms to have custom subdomains (e.g., alon.singalong.com)
+10. **Per-room song catalogs**: Allow admins to curate their own song lists
+11. **Room display name editing UI**: Allow admins to change their room's display name
+
+---
+
+## 20. Visual Reference
 
 ### Lyrics + Chords Mode (Band View)
 - White background
