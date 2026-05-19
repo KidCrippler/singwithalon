@@ -27,15 +27,54 @@ export function AdminControls({
     toggleVersesEnabled,
     nextPlaylistSong,
     prevPlaylistSong,
+    jumpToPlaylistSong,
     playlistLength,
+    playlistPlayedSongIds,
   } = usePlayingNow();
 
   // Playlist buttons are enabled only when the current song was triggered from the playlist
-  const isPlaylistActive = state.playlistPosition >= 0 &&
+  // Check both server position AND localStorage played tracking (survives playlist switching)
+  const isPlaylistActive = (() => {
+    if (!activePlaylist || !state.currentSongId) return false;
+    // Server position matches
+    if (state.playlistPosition >= 0 && activePlaylist.songs[state.playlistPosition]?.songId === state.currentSongId) return true;
+    // Fallback: song is in this playlist's played set (localStorage) and exists in the song list
+    if (playlistPlayedSongIds.includes(state.currentSongId) && activePlaylist.songs.some(s => s.songId === state.currentSongId)) return true;
+    return false;
+  })();
+
+  // Find effective position from either server state or song list lookup
+  const effectivePosition = (() => {
+    if (state.playlistPosition >= 0 && activePlaylist?.songs[state.playlistPosition]?.songId === state.currentSongId) {
+      return state.playlistPosition;
+    }
+    if (!activePlaylist || !state.currentSongId) return -1;
+    const idx = activePlaylist.songs.findIndex(s => s.songId === state.currentSongId);
+    return idx;
+  })();
+
+  const canGoNext = isPlaylistActive && effectivePosition < playlistLength - 1;
+  const canGoPrev = isPlaylistActive && effectivePosition > 0;
+
+  // Use jump when server position is stale (was reset by playlist switch)
+  const serverPositionValid = state.playlistPosition >= 0 &&
     activePlaylist?.songs[state.playlistPosition]?.songId === state.currentSongId;
 
-  const canGoNext = isPlaylistActive && state.playlistPosition < playlistLength - 1;
-  const canGoPrev = isPlaylistActive && state.playlistPosition > 0;
+  const handleNext = () => {
+    if (serverPositionValid) {
+      nextPlaylistSong();
+    } else {
+      jumpToPlaylistSong(effectivePosition + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (serverPositionValid) {
+      prevPlaylistSong();
+    } else {
+      jumpToPlaylistSong(effectivePosition - 1);
+    }
+  };
 
   return (
     <div className="admin-controls">
@@ -79,7 +118,7 @@ export function AdminControls({
         <>
           <span className="controls-separator" />
           <button
-            onClick={nextPlaylistSong}
+            onClick={handleNext}
             title="שיר הבא"
             disabled={!canGoNext}
             className={!canGoNext ? 'disabled' : ''}
@@ -88,10 +127,10 @@ export function AdminControls({
           </button>
           <span className="playlist-position">
             {activePlaylist && <span className="playlist-name">{activePlaylist.name}</span>}
-            {isPlaylistActive ? `${state.playlistPosition + 1}/${playlistLength}` : `-/${playlistLength}`}
+            {isPlaylistActive ? `${effectivePosition + 1}/${playlistLength}` : `-/${playlistLength}`}
           </span>
           <button
-            onClick={prevPlaylistSong}
+            onClick={handlePrev}
             title="שיר קודם"
             disabled={!canGoPrev}
             className={!canGoPrev ? 'disabled' : ''}

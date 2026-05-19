@@ -52,6 +52,10 @@ interface PlayingNowContextValue {
   prevPlaylistSong: () => void;
   jumpToPlaylistSong: (position: number) => void;
   refreshPlaylist: () => void;
+
+  // Playlist played tracking (per-playlist, localStorage-persisted)
+  playlistPlayedSongIds: number[];
+  resetPlaylistPlayed: () => void;
 }
 
 const defaultState: PlayingState = {
@@ -89,6 +93,40 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
 
   // Playlist state
   const [activePlaylist, setActivePlaylist] = useState<PlaylistWithSongs | null>(null);
+
+  // Playlist played tracking — persisted to localStorage per playlist
+  const [playlistPlayed, setPlaylistPlayed] = useState<Record<number, number[]>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('playlistPlayed') || '{}');
+    } catch { return {}; }
+  });
+
+  const savePlaylistPlayed = useCallback((updated: Record<number, number[]>) => {
+    setPlaylistPlayed(updated);
+    localStorage.setItem('playlistPlayed', JSON.stringify(updated));
+  }, []);
+
+  const markPlaylistSongPlayed = useCallback((playlistId: number, songId: number) => {
+    setPlaylistPlayed(prev => {
+      const current = prev[playlistId] || [];
+      if (current.includes(songId)) return prev;
+      const updated = { ...prev, [playlistId]: [...current, songId] };
+      localStorage.setItem('playlistPlayed', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const resetPlaylistPlayed = useCallback(() => {
+    if (!state.activePlaylistId) return;
+    setPlaylistPlayed(prev => {
+      const updated = { ...prev };
+      delete updated[state.activePlaylistId!];
+      localStorage.setItem('playlistPlayed', JSON.stringify(updated));
+      return updated;
+    });
+  }, [state.activePlaylistId]);
+
+  const playlistPlayedSongIds = (state.activePlaylistId ? playlistPlayed[state.activePlaylistId] : null) || [];
 
   const { socket, isConnected, joinRoom } = useSocket();
   const { roomUsername, getSessionId } = useRoom();
@@ -213,7 +251,12 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     });
 
     socket.on('playlist:position-changed', (payload: { position: number; songId: number }) => {
-      setState(prev => ({ ...prev, playlistPosition: payload.position }));
+      setState(prev => {
+        if (prev.activePlaylistId) {
+          markPlaylistSongPlayed(prev.activePlaylistId, payload.songId);
+        }
+        return { ...prev, playlistPosition: payload.position };
+      });
       setActivePlaylist(prev => prev ? { ...prev, position: payload.position } : null);
     });
 
@@ -233,7 +276,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       socket.off('playlist:position-changed');
       socket.off('playlist:activated');
     };
-  }, [socket]);
+  }, [socket, markPlaylistSongPlayed]);
 
   // Fetch song metadata when currentSongId changes
   useEffect(() => {
@@ -388,6 +431,8 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       prevPlaylistSong,
       jumpToPlaylistSong,
       refreshPlaylist,
+      playlistPlayedSongIds,
+      resetPlaylistPlayed,
     }}>
       {children}
     </PlayingNowContext.Provider>

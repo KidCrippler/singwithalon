@@ -22,7 +22,7 @@ export function PlaylistView() {
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const { isRoomOwner } = useAuth();
-  const { state, activePlaylist, jumpToPlaylistSong, refreshPlaylist } = usePlayingNow();
+  const { state, activePlaylist, jumpToPlaylistSong, refreshPlaylist, playlistPlayedSongIds, resetPlaylistPlayed } = usePlayingNow();
   const { roomUsername, isRoomLoading } = useRoom();
   const { username } = useParams<{ username: string }>();
   const { songs } = useSongs();
@@ -248,6 +248,11 @@ export function PlaylistView() {
                 {activePlaylist.name}
               </h2>
             )}
+            {playlistPlayedSongIds.length > 0 && (
+              <button className="playlist-reset-btn" onClick={resetPlaylistPlayed} title="אפס סטטוס שירים">
+                ↺
+              </button>
+            )}
             <button className="playlist-delete-btn" onClick={handleDelete} title="מחק פלייליסט">
               🗑️
             </button>
@@ -259,7 +264,9 @@ export function PlaylistView() {
               <div className="move-hint">הקש על המיקום החדש</div>
             )}
             {activePlaylist.songs.map((song: PlaylistSong) => {
-              const isCurrent = song.position === state.playlistPosition;
+              const isCurrent = song.songId === state.currentSongId &&
+                playlistPlayedSongIds.includes(song.songId);
+              const isPlayed = playlistPlayedSongIds.includes(song.songId) && !isCurrent;
               const isDragging = song.position === drag.srcIdx;
               const isOver = song.position === drag.overIdx;
               const isSelected = song.position === selectedForMove;
@@ -267,7 +274,7 @@ export function PlaylistView() {
               return (
                 <div
                   key={`${song.songId}-${song.position}`}
-                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isDragging ? 'dragging' : ''} ${isOver && drag.overHalf === 'top' ? 'drag-over-top' : ''} ${isOver && drag.overHalf === 'bottom' ? 'drag-over-bottom' : ''} ${isSelected ? 'selected-for-move' : ''} ${isDropTarget ? 'drop-target' : ''}`}
+                  className={`playlist-song-item ${isCurrent ? 'current' : ''} ${isPlayed ? 'played' : ''} ${isDragging ? 'dragging' : ''} ${isOver && drag.overHalf === 'top' ? 'drag-over-top' : ''} ${isOver && drag.overHalf === 'bottom' ? 'drag-over-bottom' : ''} ${isSelected ? 'selected-for-move' : ''} ${isDropTarget ? 'drop-target' : ''}`}
                   draggable={!isTouchDevice()}
                   onDragStart={() => onDragStart(song.position)}
                   onDragOver={e => onDragOver(e, song.position)}
