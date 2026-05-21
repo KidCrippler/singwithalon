@@ -371,12 +371,15 @@ function isCue(line: string): boolean {
   // Extract content inside brackets
   const content = cleaned.slice(1, -1).trim();
   if (content.length === 0) return false;
-  
+
+  // If the content contains brackets, this is a multi-token line (e.g. "[]   [E]"), not a single cue
+  if (content.includes('[') || content.includes(']')) return false;
+
   // If the content is a valid chord token, it's NOT a cue
   // Cues contain non-chord text like Hebrew section names
   // Check if it looks like a chord (starts with A-G or /)
   if (/^[A-G\/]/.test(content)) return false;
-  
+
   return true;
 }
 

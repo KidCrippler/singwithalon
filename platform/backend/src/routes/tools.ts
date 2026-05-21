@@ -150,10 +150,13 @@ function isCue(line: string): boolean {
   
   const content = cleaned.slice(1, -1).trim();
   if (content.length === 0) return false;
-  
+
+  // If the content contains brackets, this is a multi-token line (e.g. "[]   [E]"), not a single cue
+  if (content.includes('[') || content.includes(']')) return false;
+
   // If the content looks like a chord, it's NOT a cue
   if (/^[A-G\/]/.test(content)) return false;
-  
+
   return true;
 }
 
