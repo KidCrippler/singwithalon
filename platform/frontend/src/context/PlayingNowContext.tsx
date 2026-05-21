@@ -101,11 +101,6 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     } catch { return {}; }
   });
 
-  const savePlaylistPlayed = useCallback((updated: Record<number, number[]>) => {
-    setPlaylistPlayed(updated);
-    localStorage.setItem('playlistPlayed', JSON.stringify(updated));
-  }, []);
-
   const markPlaylistSongPlayed = useCallback((playlistId: number, songId: number) => {
     setPlaylistPlayed(prev => {
       const current = prev[playlistId] || [];
