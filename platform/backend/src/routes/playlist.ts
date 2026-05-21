@@ -3,6 +3,7 @@ import { playlistQueries, playingStateQueries, queueQueries } from '../db/index.
 import { getSongsIndex } from './songs.js';
 import { resolveRoom, requireRoomOwner } from './auth.js';
 import { broadcastToRoom } from '../socket/index.js';
+import { analytics } from '../services/analytics.js';
 
 interface RoomParams {
   username: string;
@@ -302,6 +303,13 @@ async function presentFromPlaylist(adminId: number, songIds: number[], position:
     current_verse_index: 0,
     current_key_offset: 0,
     playlist_position: position,
+  });
+
+  analytics.trackSongEvent({
+    roomId: adminId,
+    songId,
+    action: 'played',
+    trigger: 'playlist',
   });
 
   // Broadcast to all clients

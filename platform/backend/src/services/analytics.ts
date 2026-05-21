@@ -7,10 +7,11 @@ export type AnalyticsAction =
   | 'removed_by_viewer' 
   | 'removed_by_admin';
 
-export type AnalyticsTrigger = 
-  | 'search' 
-  | 'song_view' 
-  | 'queue';
+export type AnalyticsTrigger =
+  | 'search'
+  | 'song_view'
+  | 'queue'
+  | 'playlist';
 
 interface TrackSongEventParams {
   roomId: number;
