@@ -5,6 +5,19 @@ import { requireAdmin } from './auth.js';
 import { syncSongsToDatabase, syncMetadataQueries } from '../db/index.js';
 import type { Song, ParsedSong } from '../types/index.js';
 import { config } from '../config.js';
+import {
+  stripDirectionalChars,
+  detectDirection,
+  isDirective,
+  isCue,
+  extractDirectiveText,
+  isChordLine,
+  parseLine,
+  reverseChordLineForRtl,
+  isValidChordToken,
+} from '../services/songParser.js';
+
+export { isValidChordToken, reverseChordLineForRtl };
 
 // In-memory song storage
 let songsIndex: Song[] = [];
@@ -297,29 +310,7 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
 
   // Parse remaining lines
   for (let i = lineIndex; i < lines.length; i++) {
-    const line = lines[i];
-    // Strip directional control chars early - they can cause rendering issues
-    // (e.g., RLM U+200F scattered throughout lyric lines scrambles display)
-    const cleanedLine = stripDirectionalChars(line);
-    const trimmed = cleanedLine.trim();
-
-    if (trimmed === '') {
-      parsedLines.push({ type: 'empty', text: '' });
-    } else if (isDirective(trimmed)) {
-      // {} directives - shown in green in chords mode only
-      parsedLines.push({ type: 'directive', text: extractDirectiveText(trimmed) });
-    } else if (isCue(trimmed)) {
-      // [] cues - shown in red in both modes
-      parsedLines.push({ type: 'cue', text: extractDirectiveText(trimmed) });
-    } else if (isChordLine(trimmed)) {
-      // For RTL songs, reverse chord lines so they display correctly
-      // Trim trailing whitespace (meaningless, can cause font sizing issues)
-      const chordLine = isRtl ? reverseChordLineForRtl(cleanedLine.trimEnd()) : cleanedLine.trimEnd();
-      parsedLines.push({ type: 'chords', text: chordLine, raw: chordLine });
-    } else {
-      // Trim trailing whitespace (meaningless, can cause font sizing issues)
-      parsedLines.push({ type: 'lyric', text: cleanedLine.trimEnd() });
-    }
+    parsedLines.push(parseLine(lines[i], isRtl));
   }
 
   return {
@@ -332,225 +323,3 @@ function parseSongMarkup(text: string, song: Song): ParsedSong {
     lines: parsedLines,
   };
 }
-
-function detectDirection(text: string, override?: 'ltr' | 'rtl'): 'ltr' | 'rtl' {
-  if (override) return override;
-  
-  // Count Hebrew characters
-  const hebrewRegex = /[\u0590-\u05FF]/g;
-  const hebrewMatches = text.match(hebrewRegex);
-  const hebrewCount = hebrewMatches?.length ?? 0;
-  
-  // If significant Hebrew content, use RTL
-  return hebrewCount > 10 ? 'rtl' : 'ltr';
-}
-
-/**
- * Strip Unicode directional control characters that interfere with parsing.
- * These include RTL/LTR marks and other invisible formatting characters.
- */
-function stripDirectionalChars(text: string): string {
-  // Remove: RTL Mark (U+200F), LTR Mark (U+200E), Arabic Letter Mark (U+061C),
-  // Directional isolates (U+2066-U+2069), Directional formatting (U+202A-U+202E)
-  return text.replace(/[\u200E\u200F\u061C\u2066-\u2069\u202A-\u202E]/g, '');
-}
-
-function isDirective(line: string): boolean {
-  const cleaned = stripDirectionalChars(line).trim();
-  return cleaned.startsWith('{') && cleaned.endsWith('}');
-}
-
-/**
- * Check if line is a cue (square brackets with non-chord content like [פזמון])
- * This is different from bracketed chords like [Am] or [/A]
- */
-function isCue(line: string): boolean {
-  const cleaned = stripDirectionalChars(line).trim();
-  if (!cleaned.startsWith('[') || !cleaned.endsWith(']')) return false;
-  
-  // Extract content inside brackets
-  const content = cleaned.slice(1, -1).trim();
-  if (content.length === 0) return false;
-
-  // If the content contains brackets, this is a multi-token line (e.g. "[]   [E]"), not a single cue
-  if (content.includes('[') || content.includes(']')) return false;
-
-  // If the content is a valid chord token, it's NOT a cue
-  // Cues contain non-chord text like Hebrew section names
-  // Check if it looks like a chord (starts with A-G or /)
-  if (/^[A-G\/]/.test(content)) return false;
-
-  return true;
-}
-
-/**
- * Extract directive text, stripping directional characters
- */
-function extractDirectiveText(line: string): string {
-  const cleaned = stripDirectionalChars(line).trim();
-  return cleaned.slice(1, -1); // Remove { } or [ ]
-}
-
-// Chord detection regex - matches common chord patterns
-// Supports: Am, G7, Cmaj7, BbMaj7, CM7, Bm7b5, F#dim, Dsus4, B7sus4, Asus4, Eadd9, A/C#, Fo7, B°7, Am!, [Em], G+, D7+, etc.
-// Quality can be: m (minor), M/Maj/maj (major), min, dim, aug, add, o/°/º (dim), + (aug)
-// Augmented indicator (+) can appear before or after extension: C+ or C7+ or C+7
-// Suspension modifiers (sus, sus2, sus4) come after extension numbers to support chords like B7sus4
-// Note: Both ° (U+00B0 degree sign) and º (U+00BA masculine ordinal) are accepted for diminished
-const CHORD_REGEX = /^[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?!?$/;
-
-// Matches chords wrapped in square brackets like [Em] or [Am7] or [BbMaj7] or [B7sus4] or [D7+]
-const BRACKETED_CHORD_REGEX = /^\[[A-G][#b]?(m|M|[Mm]aj|[Mm]in|dim|aug|add|o|°|º|\+)?[0-9]*\+?(sus[24]?)?(b[0-9]+)?(\/[A-G][#b]?)?\]!?$/;
-
-// Matches bass-only notation like /F, /Bb, /A, /F# (just a slash followed by a note)
-const BASS_ONLY_REGEX = /^\/[A-G][#b]?$/;
-
-// Matches bracketed bass-only notation like [/A], [/F#], [/Bb]
-const BRACKETED_BASS_ONLY_REGEX = /^\[\/[A-G][#b]?\]$/;
-
-// Arrow/continuation markers - can point left or right, with 2 or 3 hyphens
-// Valid: --->, -->, <---, <--
-const ARROW_REGEX = /^(-{2,3}>|<-{2,3})$/;
-
-// Matches inline directives like {אקפלה} or {Brass Solo} within chord lines
-const INLINE_DIRECTIVE_REGEX = /^\{[^}]+\}$/;
-
-/**
- * Check if a token is a valid chord token.
- * Exported for testing purposes.
- */
-export function isValidChordToken(token: string): boolean {
-  // Handle continuation markers (arrows pointing either direction, 2 or 3 hyphens)
-  // Valid: --->, -->, <---, <--
-  if (ARROW_REGEX.test(token)) return true;
-  // Handle single hyphen (used as separator between chords)
-  if (token === '-') return true;
-  // Handle empty brackets (placeholder/rest marker)
-  if (token === '[]') return true;
-  // Handle repeat notation: 'x', digits like '2', '3', '4', and combined 'x2', 'x3', etc.
-  if (token === 'x' || /^\d+$/.test(token) || /^x\d+$/i.test(token)) return true;
-  // Handle parenthesized tokens (opening or closing parens in chord progressions)
-  if (token.startsWith('(') || token.endsWith(')')) return true;
-  // Handle inline directives like {אקפלה} or {Intro}
-  if (INLINE_DIRECTIVE_REGEX.test(token)) return true;
-  // Test against bracketed chord regex (e.g., [Em], [Am7])
-  if (BRACKETED_CHORD_REGEX.test(token)) return true;
-  // Test against bass-only notation (e.g., /F, /Bb, /A)
-  if (BASS_ONLY_REGEX.test(token)) return true;
-  // Test against bracketed bass-only notation (e.g., [/A], [/F#])
-  if (BRACKETED_BASS_ONLY_REGEX.test(token)) return true;
-  // Test against standard chord regex (including chords with !)
-  return CHORD_REGEX.test(token);
-}
-
-function isChordLine(line: string): boolean {
-  // Strip directional control characters before checking
-  const cleaned = stripDirectionalChars(line).trim();
-  const tokens = cleaned.split(/\s+/);
-  if (tokens.length === 0 || (tokens.length === 1 && tokens[0] === '')) return false;
-  
-  // Check if ALL tokens are valid chords or special markers
-  return tokens.every(isValidChordToken);
-}
-
-/**
- * Flip an arrow's direction: ---> becomes <---, --> becomes <--, etc.
- */
-function flipArrow(arrow: string): string {
-  if (arrow.startsWith('<')) {
-    // Left-pointing to right-pointing: <--- → --->, <-- → -->
-    return arrow.slice(1) + '>';
-  } else if (arrow.endsWith('>')) {
-    // Right-pointing to left-pointing: ---> → <---, --> → <--
-    return '<' + arrow.slice(0, -1);
-  }
-  return arrow;
-}
-
-/**
- * Reverse a chord line for RTL display.
- * Algorithm:
- * 1. Reverse the entire string character by character
- * 2. For each token, reverse it back to restore chord names
- * 3. For tokens with unbalanced brackets, move bracket to opposite side and swap type
- * 4. For arrow tokens, flip their direction (---> becomes <---, etc.)
- * 
- * Example: "   C  G Am  D  Em    Em"
- * Step 1 (reverse all): "mE    mE  D  mA G  C   "
- * Step 2 (reverse tokens): "Em    Em  D  Am G  C   "
- * 
- * Example with parens: "(Cm   Ab   Eb   Bb) x 2"
- * Step 1 (reverse): "2 x )bB   bE   bA   mC("
- * Step 2 (reverse tokens): "2 x Bb)   Eb   Ab   (Cm"
- * Step 3 (fix brackets): "2 x (Bb   Eb   Ab   Cm)"
- * 
- * Example with arrows: "Am --->  G"
- * Step 1 (reverse): "G  >--- mA"
- * Step 2 (reverse tokens): "G  ---> Am"
- * Step 3 (flip arrows): "G  <--- Am"
- * 
- * Example with directive: "Am       {אקפלה}"
- * Step 1 (reverse all): "}הלפקא{       mA"
- * Step 2 (reverse tokens): "{אקפלה}       Am"
- * (Directive content is reversed so it displays correctly with bidi-override LTR)
- * 
- * Exported for testing purposes.
- */
-export function reverseChordLineForRtl(line: string): string {
-  // Step 1: Reverse the entire string
-  const reversed = line.split('').reverse().join('');
-  
-  // Step 2: For each token, reverse it and fix bracket positions
-  return reversed.replace(/\S+/g, (token) => {
-    // Special handling for {} directives
-    // After line reversal, {אקפלה} becomes }הלפקא{ and {Intro} becomes }ortnI{
-    if (token.startsWith('}') && token.endsWith('{')) {
-      const content = token.slice(1, -1);
-      // Check if content contains Hebrew characters
-      const hasHebrew = /[\u0590-\u05FF]/.test(content);
-      if (hasHebrew) {
-        // Hebrew content: keep reversed (for proper display with bidi-override)
-        return '{' + content + '}';
-      } else {
-        // English/other content: reverse back to original
-        return '{' + content.split('').reverse().join('') + '}';
-      }
-    }
-    
-    // Reverse the token to restore chord names
-    let result = token.split('').reverse().join('');
-    
-    // Check if this is an arrow token - flip its direction
-    if (ARROW_REGEX.test(result)) {
-      return flipArrow(result);
-    }
-    
-    // Check if brackets are balanced (at both ends) - if so, leave alone
-    // This includes () parens and [] chords like [Am7]
-    const startsWithOpen = result.startsWith('(') || result.startsWith('[');
-    const endsWithClose = result.endsWith(')') || result.endsWith(']');
-    
-    if (startsWithOpen && endsWithClose) {
-      // Balanced brackets like (Em) or [Am7] - leave as is
-      return result;
-    }
-    
-    // Fix unbalanced bracket positions: move to opposite side and swap type
-    // Opening bracket at start → move to end as closing bracket
-    if (result.startsWith('(')) {
-      result = result.slice(1) + ')';
-    } else if (result.startsWith('[')) {
-      result = result.slice(1) + ']';
-    }
-    // Closing bracket at end → move to start as opening bracket
-    else if (result.endsWith(')')) {
-      result = '(' + result.slice(0, -1);
-    } else if (result.endsWith(']')) {
-      result = '[' + result.slice(0, -1);
-    }
-    
-    return result;
-  });
-}
-
-

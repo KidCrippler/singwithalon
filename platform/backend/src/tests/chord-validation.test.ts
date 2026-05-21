@@ -4,6 +4,8 @@
  */
 
 import { isValidChordToken, reverseChordLineForRtl } from '../routes/songs.js';
+import { isCue, isChordLine, parseLine } from '../services/songParser.js';
+import type { ParsedLine } from '../types/index.js';
 
 interface TestCase {
   input: string;
@@ -248,6 +250,85 @@ const reversalTestCases: ReversalTestCase[] = [
   },
 ];
 
+// === isCue test cases ===
+interface CueTestCase {
+  input: string;
+  expected: boolean;
+  description: string;
+}
+
+const cueTestCases: CueTestCase[] = [
+  // True cues — section labels in square brackets
+  { input: '[פזמון]', expected: true, description: 'Hebrew section label' },
+  { input: '[בית]', expected: true, description: 'Hebrew verse label' },
+  { input: '[Chorus]', expected: false, description: 'English label starting with C — looks like chord root' },
+  { input: '[Bridge]', expected: false, description: 'English label starting with B — looks like chord root' },
+  { input: '[intro]', expected: true, description: 'Lowercase label not starting with A-G' },
+
+  // Regression: multi-token chord lines must NOT be treated as cues
+  { input: '[]          [E]', expected: false, description: 'Regression: multi-token line with [] and [E]' },
+  { input: '[Am]   [G]', expected: false, description: 'Two bracketed chords' },
+  { input: '[]', expected: false, description: 'Empty brackets — rest marker, not a cue' },
+
+  // Single bracketed chords are not cues
+  { input: '[Am]', expected: false, description: 'Bracketed chord starts with A' },
+  { input: '[E]', expected: false, description: 'Bracketed chord starts with E' },
+  { input: '[/A]', expected: false, description: 'Bracketed bass-only starts with /' },
+
+  // Not bracket-wrapped at all
+  { input: 'פזמון', expected: false, description: 'Label without brackets' },
+  { input: '{פזמון}', expected: false, description: 'Curly-brace directive, not a cue' },
+];
+
+// === isChordLine test cases ===
+interface ChordLineTestCase {
+  input: string;
+  expected: boolean;
+  description: string;
+}
+
+const chordLineTestCases: ChordLineTestCase[] = [
+  // Should be chord lines
+  { input: 'Am G F E', expected: true, description: 'Simple chord sequence' },
+  { input: '[]          [E]', expected: true, description: 'Regression: empty bracket placeholder + bracketed chord' },
+  { input: '[Am]   G   F   [E]', expected: true, description: 'Mix of bracketed and plain chords' },
+  { input: '[] [] []', expected: true, description: 'All empty bracket placeholders' },
+  { input: 'Am ---> G', expected: true, description: 'Chord line with arrow' },
+  { input: '(Cm   Ab   Eb   Bb) x 2', expected: true, description: 'Progression with parens and repeat' },
+  { input: 'Am {אקפלה} G', expected: true, description: 'Chord line with inline directive' },
+
+  // Should NOT be chord lines
+  { input: 'הורה האחזות', expected: false, description: 'Hebrew lyric line' },
+  { input: 'Hello world', expected: false, description: 'English lyric line' },
+  { input: 'Am G ??? E', expected: false, description: 'Contains invalid token' },
+  { input: '', expected: false, description: 'Empty string' },
+  { input: '[פזמון]', expected: false, description: 'Cue label is not a chord line' },
+];
+
+// === parseLine round-trip test cases ===
+interface ParseLineTestCase {
+  input: string;
+  isRtl: boolean;
+  expected: Omit<ParsedLine, 'raw'>;
+  description: string;
+}
+
+const parseLineTestCases: ParseLineTestCase[] = [
+  { input: '', isRtl: false, expected: { type: 'empty', text: '' }, description: 'Empty line' },
+  { input: '   ', isRtl: false, expected: { type: 'empty', text: '' }, description: 'Whitespace-only line' },
+  { input: '{Intro}', isRtl: false, expected: { type: 'directive', text: 'Intro' }, description: 'Curly-brace directive' },
+  { input: '[פזמון]', isRtl: false, expected: { type: 'cue', text: 'פזמון' }, description: 'Hebrew cue label' },
+  { input: 'Am G F E', isRtl: false, expected: { type: 'chords', text: 'Am G F E' }, description: 'LTR chord line' },
+  { input: '[]          [E]', isRtl: false, expected: { type: 'chords', text: '[]          [E]' }, description: 'Regression: [] + [E] is a chord line, not a cue' },
+  { input: 'הורה האחזות', isRtl: false, expected: { type: 'lyric', text: 'הורה האחזות' }, description: 'Hebrew lyric' },
+  { input: 'Hello world', isRtl: false, expected: { type: 'lyric', text: 'Hello world' }, description: 'English lyric' },
+  // RTL chord line gets reversed
+  { input: 'Am G', isRtl: true, expected: { type: 'chords', text: 'G Am' }, description: 'RTL chord line is reversed' },
+  // Trailing whitespace stripped from lyrics and chords
+  { input: 'Am G   ', isRtl: false, expected: { type: 'chords', text: 'Am G' }, description: 'Trailing whitespace stripped from chord line' },
+  { input: 'Hello   ', isRtl: false, expected: { type: 'lyric', text: 'Hello' }, description: 'Trailing whitespace stripped from lyric' },
+];
+
 function runTests(): void {
   let totalPassed = 0;
   let totalFailed = 0;
@@ -303,7 +384,76 @@ function runTests(): void {
   totalFailed += failed;
   
   console.log(`\nRTL reversal: ${passed} passed, ${failed} failed`);
-  
+
+  // Run isCue tests
+  console.log('\n=== isCue Tests ===\n');
+
+  passed = 0;
+  failed = 0;
+
+  for (const testCase of cueTestCases) {
+    const actual = isCue(testCase.input);
+    if (actual === testCase.expected) {
+      passed++;
+      console.log(`✅ PASS: "${testCase.input}" - ${testCase.description}`);
+    } else {
+      failed++;
+      console.log(`❌ FAIL: "${testCase.input}" - ${testCase.description}`);
+      console.log(`   Expected: ${testCase.expected}, Got: ${actual}`);
+    }
+  }
+
+  totalPassed += passed;
+  totalFailed += failed;
+  console.log(`\nisCue: ${passed} passed, ${failed} failed`);
+
+  // Run isChordLine tests
+  console.log('\n=== isChordLine Tests ===\n');
+
+  passed = 0;
+  failed = 0;
+
+  for (const testCase of chordLineTestCases) {
+    const actual = isChordLine(testCase.input);
+    if (actual === testCase.expected) {
+      passed++;
+      console.log(`✅ PASS: "${testCase.input}" - ${testCase.description}`);
+    } else {
+      failed++;
+      console.log(`❌ FAIL: "${testCase.input}" - ${testCase.description}`);
+      console.log(`   Expected: ${testCase.expected}, Got: ${actual}`);
+    }
+  }
+
+  totalPassed += passed;
+  totalFailed += failed;
+  console.log(`\nisChordLine: ${passed} passed, ${failed} failed`);
+
+  // Run parseLine tests
+  console.log('\n=== parseLine Tests ===\n');
+
+  passed = 0;
+  failed = 0;
+
+  for (const testCase of parseLineTestCases) {
+    const actual = parseLine(testCase.input, testCase.isRtl);
+    const typeMatch = actual.type === testCase.expected.type;
+    const textMatch = actual.text === testCase.expected.text;
+    if (typeMatch && textMatch) {
+      passed++;
+      console.log(`✅ PASS: ${testCase.description}`);
+    } else {
+      failed++;
+      console.log(`❌ FAIL: ${testCase.description}`);
+      if (!typeMatch) console.log(`   type:  expected "${testCase.expected.type}", got "${actual.type}"`);
+      if (!textMatch) console.log(`   text:  expected "${testCase.expected.text}", got "${actual.text}"`);
+    }
+  }
+
+  totalPassed += passed;
+  totalFailed += failed;
+  console.log(`\nparseLine: ${passed} passed, ${failed} failed`);
+
   // Summary
   console.log('\n' + '='.repeat(50));
   console.log(`Total: ${totalPassed} passed, ${totalFailed} failed`);
