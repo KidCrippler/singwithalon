@@ -120,7 +120,6 @@ export function PlaylistView() {
   const handleAddSong = (songId: number) => {
     if (!activePlaylist) return;
     const currentIds = activePlaylist.songs.map(s => s.songId);
-    if (currentIds.includes(songId)) return;
     updateSongList([...currentIds, songId]);
     setSearchQuery('');
   };
@@ -190,11 +189,11 @@ export function PlaylistView() {
   // Memoized search results — only recomputes when query or songs change
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (q.length < 2) return [];
+    if (q.length < 3) return [];
     return songs.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.singer.toLowerCase().includes(q)
-    ).slice(0, 8);
+    ).slice(0, 20);
   }, [searchQuery, songs]);
 
   if (isRoomLoading || isLoading) {
@@ -253,9 +252,29 @@ export function PlaylistView() {
                 ↺
               </button>
             )}
-            <button className="playlist-delete-btn" onClick={handleDelete} title="מחק פלייליסט">
+<button className="playlist-delete-btn" onClick={handleDelete} title="מחק פלייליסט">
               🗑️
             </button>
+          </div>
+
+          {/* Sticky search bar */}
+          <div className="playlist-add-section playlist-add-section--top">
+            <input
+              className="playlist-add-search"
+              placeholder="הוסף שיר..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchResults.length > 0 && (
+              <div className="playlist-search-results">
+                {searchResults.map(s => (
+                  <div key={s.id} className="search-result-item" onClick={() => handleAddSong(s.id)}>
+                    <span className="result-name">{s.name}</span>
+                    <span className="result-artist">{s.singer}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Song list — drag on desktop, tap-to-move on touch */}
@@ -309,29 +328,6 @@ export function PlaylistView() {
             })}
           </div>
 
-          {/* Inline search to add songs */}
-          <div className="playlist-add-section">
-            <input
-              className="playlist-add-search"
-              placeholder="הוסף שיר..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-            {searchResults.length > 0 && (
-              <div className="playlist-search-results">
-                {searchResults.map(s => (
-                  <div
-                    key={s.id}
-                    className="search-result-item"
-                    onClick={() => handleAddSong(s.id)}
-                  >
-                    <span className="result-name">{s.name}</span>
-                    <span className="result-artist">{s.singer}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       ) : (
         <div className="empty-state">

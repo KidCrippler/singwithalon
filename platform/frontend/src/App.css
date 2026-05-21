@@ -2726,6 +2726,16 @@ body {
   overflow-y: auto;
 }
 
+
+.playlist-add-section--top {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 5;
+  background: var(--secondary-color);
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+}
+
 .search-result-item {
   display: flex;
   align-items: center;
