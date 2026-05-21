@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import { usePlayingNow } from '../../../../context/PlayingNowContext';
 import { TransposeControls } from '../../../TransposeControls';
 
@@ -55,6 +56,18 @@ export function AdminControls({
 
   const canGoNext = isPlaylistActive && effectivePosition < playlistLength - 1;
   const canGoPrev = isPlaylistActive && effectivePosition > 0;
+
+  const [peekVisible, setPeekVisible] = useState(false);
+  const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const nextSong = activePlaylist?.songs[effectivePosition + 1] ?? null;
+
+  const handlePeek = () => {
+    if (!nextSong) return;
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    setPeekVisible(true);
+    peekTimerRef.current = setTimeout(() => setPeekVisible(false), 3000);
+  };
 
   // Use jump when server position is stale (was reset by playlist switch)
   const serverPositionValid = state.playlistPosition >= 0 &&
@@ -125,10 +138,22 @@ export function AdminControls({
           >
             ⏭
           </button>
-          <span className="playlist-position">
-            {activePlaylist && <span className="playlist-name">{activePlaylist.name}</span>}
-            {isPlaylistActive ? `${effectivePosition + 1}/${playlistLength}` : `-/${playlistLength}`}
-          </span>
+          <div className="playlist-position-wrapper">
+            {peekVisible && nextSong && (
+              <div className="next-song-peek">
+                הבא: {nextSong.songName}
+              </div>
+            )}
+            <button
+              className="playlist-position"
+              onClick={handlePeek}
+              title="לחץ לראות השיר הבא"
+              disabled={!canGoNext}
+            >
+              {activePlaylist && <span className="playlist-name">{activePlaylist.name}</span>}
+              {isPlaylistActive ? `${effectivePosition + 1}/${playlistLength}` : `-/${playlistLength}`}
+            </button>
+          </div>
           <button
             onClick={handlePrev}
             title="שיר קודם"

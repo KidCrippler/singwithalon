@@ -2454,6 +2454,40 @@ body {
   text-overflow: ellipsis;
 }
 
+.playlist-position-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  z-index: 10000;
+}
+
+button.playlist-position {
+  cursor: pointer;
+  border: none;
+}
+
+button.playlist-position:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.next-song-peek {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
 /* === Playlist View === */
 .playlist-view {
   padding: 1rem;
