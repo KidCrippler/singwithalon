@@ -2711,12 +2711,6 @@ button.playlist-position:disabled {
   font-size: 0.8rem;
   color: #999;
   border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.playlist-song-item:hover .song-remove-btn {
-  opacity: 1;
 }
 
 .playlist-song-item .song-remove-btn:hover {
