@@ -35,7 +35,6 @@
 html {
   font-size: 16px;
   height: 100%;
-  /* Prevent html scroll - app container handles scrolling */
   overflow: hidden;
 }
 
@@ -46,11 +45,9 @@ body {
   /* Use dvh for mobile browsers (accounts for address bar), fallback to vh */
   height: 100vh;
   height: 100dvh;
-  /* Prevent body scroll - app container handles scrolling */
   overflow: hidden;
   max-width: 100vw;
-  /* Allow vertical pan and pinch zoom, but not horizontal pan */
-  touch-action: pan-y pinch-zoom;
+  touch-action: manipulation;
 }
 
 /* App Layout */
@@ -61,8 +58,7 @@ body {
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scroll on mobile */
-  overscroll-behavior-x: none; /* Prevent elastic bounce on horizontal swipe */
+  overflow-x: clip; /* Prevent horizontal scroll; clip (not hidden) so pan gesture can reach visual viewport */
   /* Support iOS safe area for bottom home bar */
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
@@ -756,8 +752,9 @@ body {
   padding: 0.5rem;
   font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
   white-space: pre-wrap;
-  overflow: hidden; /* NO SCROLLING - JS handles sizing */
-  
+  overflow: clip;
+  touch-action: manipulation;
+
   /* CSS Columns - with webkit prefixes for older Safari/iOS */
   -webkit-column-gap: 1rem;
   -moz-column-gap: 1rem;
@@ -981,15 +978,11 @@ body {
   flex-direction: column;
   flex: 1;
   background: white;
-  overflow: hidden; /* NO SCROLLING */
-  /* Mobile viewport fixes */
-  overflow-x: hidden;
+  overflow: hidden;
   -webkit-overflow-scrolling: touch;
-  /* Prevent any horizontal shift on mobile */
   max-width: 100vw;
   width: 100%;
   height: 100%;
-  /* Use isolation instead of transform for stacking context - doesn't affect fixed positioning */
   isolation: isolate;
 }
 
@@ -1223,7 +1216,6 @@ body {
   flex: 1;
   min-height: 0;
   position: relative;
-  /* Mobile fixes - prevent horizontal overflow */
   overflow: hidden;
   max-width: 100%;
   width: 100%;

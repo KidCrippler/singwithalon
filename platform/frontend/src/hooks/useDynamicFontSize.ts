@@ -22,7 +22,8 @@ function setColumnCount(element: HTMLElement, count: number): void {
  */
 export function useDynamicFontSize(
   containerRef: React.RefObject<HTMLDivElement | null>,
-  deps: unknown[]
+  deps: unknown[],
+  options?: { recalcOnResize?: boolean }
 ) {
   const calculateOptimalLayout = useCallback(() => {
     const container = containerRef.current;
@@ -111,11 +112,15 @@ export function useDynamicFontSize(
   
   useEffect(() => {
     const timeoutId = setTimeout(calculateOptimalLayout, 50);
-    
+
+    if (options?.recalcOnResize === false) {
+      return () => clearTimeout(timeoutId);
+    }
+
     const handleResize = () => {
       requestAnimationFrame(calculateOptimalLayout);
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => {
       clearTimeout(timeoutId);

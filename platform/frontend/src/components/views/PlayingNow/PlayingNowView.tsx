@@ -152,7 +152,7 @@ export function PlayingNowView() {
   const showPurpleHighlight = state.displayMode === 'lyrics' && state.versesEnabled;
 
   // Dynamic font sizing for admin view
-  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, currentVerseIndex, isFullscreen]);
+  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, isFullscreen], { recalcOnResize: false });
 
   // Dynamic font sizing for viewer chords view
   useDynamicFontSize(viewerChordsContainerRef, [
@@ -160,7 +160,7 @@ export function PlayingNowView() {
     viewerShowsChords,
     state.currentSongId,
     isFullscreen,
-  ]);
+  ], { recalcOnResize: false });
 
   // Dynamic font sizing for viewer lyrics full view
   useDynamicFontSize(viewerLyricsContainerRef, [
@@ -169,7 +169,7 @@ export function PlayingNowView() {
     viewerShowsSingleVerse,
     state.currentSongId,
     isFullscreen,
-  ]);
+  ], { recalcOnResize: false });
 
   // Handle click on line to navigate to verse (room owner only)
   const handleLineClick = useCallback(
