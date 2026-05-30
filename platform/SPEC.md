@@ -318,6 +318,7 @@ All routes are room-scoped using the admin's username as the room identifier:
     "markupUrl": "https://raw.githubusercontent.com/KidCrippler/songs/master/english_alon/page169.txt"
   },
   "direction": "ltr",
+  "keyShiftToOriginal": 4,
   "dateCreated": 1607299200000,
   "dateModified": 1607299200000
 }
@@ -327,6 +328,7 @@ All routes are room-scoped using the admin's username as the room identifier:
 - `isPrivate`: If true, song is hidden from viewers but admin can still present it
 - `direction`: Optional override for text direction ("ltr" or "rtl"), otherwise auto-detect
 - `playback.youTubeVideoId`: For reference only, not used in v1
+- `keyShiftToOriginal`: Optional integer (semitones, typically -4..+4). Offset from the written/transcribed key to the song's original recording key. Drives the admin's "jump to original key" shortcut (see §7.10). Absent on most songs.
 
 ### 5.2 Song Markup File Format
 
@@ -546,6 +548,7 @@ CREATE TABLE songs (
   direction TEXT,                       -- 'ltr' | 'rtl' | NULL (auto-detect)
   date_created INTEGER,                 -- Unix timestamp in ms (from JSON)
   date_modified INTEGER,                -- Unix timestamp in ms
+  key_shift_to_original INTEGER,        -- Semitones from written key to original recording key (optional in JSON)
   synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -570,9 +573,10 @@ CREATE INDEX idx_songs_is_private ON songs(is_private);
 - The `songs` table mirrors the external `songs.json` index for offline querying (analytics, queue debugging)
 - Synced automatically on server startup and when any admin clicks "Reload Songs"
 - Sync is non-blocking (fire-and-forget) — clients don't wait for it to complete
-- Table is fully replaced on each sync (DELETE all + INSERT all)
+- Table is fully replaced on each sync (DELETE all + INSERT all), but only when the songs.json content hash differs from the stored hash in `sync_metadata` (otherwise the sync is skipped)
 - Multi-value fields (composers, lyricists, translators, category_ids) stored as JSON arrays
 - No FK constraints to queue/analytics — song_id is a "soft reference"
+- **Read-path is the in-memory index, not this table**: API endpoints (`/api/songs`, `/api/songs/:id`), queue enrichment, and `getEnrichedSong` all read `songsIndex` directly. The table exists for parity/external querying only — adding columns here is informational and never affects feature behavior
 
 ### 5.4 Session Keep-Alive & Retention
 
@@ -744,10 +748,11 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 
 #### Admin Controls
 - Located in the admin controls bar (Playing Now view)
-- Components: `[ ⬇ ] 0 [ ⬆ ] [ 📡 ]`
+- Components: `[ ⬇ ] 0 [ ⬆ ] [ 📡 ] [ 🎯 ]`
   - `⬇` / `⬆`: Decrease/increase offset
   - Number: Current offset (-6 to +6), default 0
   - `📡`: "Push to all viewers" sync button
+  - `🎯`: "Jump to original key" — visible only when the song has `keyShiftToOriginal` (see §7.10)
 - **Always visible** (admin always sees chords mode)
 
 #### Viewer Controls
@@ -776,6 +781,17 @@ C → C# → D → Eb → E → F → F# → G → Ab → A → Bb → B → C
 - When viewer's effective offset differs from admin's offset, show subtle indicator
 - Example: Small dot or asterisk next to the offset number: `+3 ●`
 - Indicates "you're not following admin's key"
+
+### 7.10 Jump to Original Key (Admin Shortcut)
+
+When the song JSON includes `keyShiftToOriginal` (see §5.1), the admin gets a one-tap shortcut to play the song in its original recording key.
+
+- **UI**: A 🎯 button rendered next to the transpose controls in the admin's Playing Now overlay (both regular and fullscreen modes). Title: "עבור לסולם המקורי (וסנכרן לכולם)".
+- **Visibility**: Rendered **only** when `typeof song.keyShiftToOriginal === 'number'`. Songs without the field show no button — UI is unchanged for the majority of the catalog.
+- **Active state**: Styled `active` when `currentKeyOffset === keyShiftToOriginal`.
+- **Semantics**: The value is interpreted as *written → original*; it is applied as-is (no sign flip) to the admin's `currentKeyOffset`.
+- **Broadcast**: Tapping the button sets the admin's local offset **and** broadcasts the new key to all viewers in the room — equivalent to pressing 📡 immediately after. Implemented via a single context action (`setKeyOffsetAndSync`) that takes the offset explicitly to avoid stale-closure broadcasts.
+- **Range note**: Observed values in the catalog fall within the existing `-6..+6` offset range; no clamping logic is added.
 
 ---
 
@@ -858,6 +874,7 @@ The projector client should:
   - `N` Current offset (-6 to +6)
   - ⬆ Transpose up
   - 📡 Push key to all viewers (sync)
+  - 🎯 Jump to song's original key + broadcast (only when `keyShiftToOriginal` is set on the song; see §7.10)
 
 ### 9.6 Keyboard Shortcuts
 | Key | Action |
