@@ -99,6 +99,16 @@ async function migratePlaylistColumns(): Promise<void> {
   console.log('Playlist migration complete');
 }
 
+// Add key_shift_to_original column to songs (idempotent migration)
+async function migrateSongsColumns(): Promise<void> {
+  try {
+    await db.execute('ALTER TABLE songs ADD COLUMN key_shift_to_original INTEGER');
+    console.log('  Migration: added column key_shift_to_original to songs');
+  } catch {
+    // Column already exists — expected after first run
+  }
+}
+
 // Sync playlists from PLAYLISTS env var
 async function syncPlaylistsFromEnv(): Promise<void> {
   if (!config.playlists) return;
@@ -208,6 +218,9 @@ export async function initDatabase(): Promise<Client> {
 
   // Migrate playlist columns to playing_state (idempotent)
   await migratePlaylistColumns();
+
+  // Migrate songs columns (idempotent)
+  await migrateSongsColumns();
 
   // Sync playlists from env var
   await syncPlaylistsFromEnv();
@@ -729,9 +742,10 @@ export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
       
       // Prepare batch statements
       const statements = batch.map(song => ({
-        sql: `INSERT INTO songs (id, name, artist, composers, lyricists, translators, 
-              category_ids, is_private, markup_url, direction, date_created, date_modified) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO songs (id, name, artist, composers, lyricists, translators,
+              category_ids, is_private, markup_url, direction, date_created, date_modified,
+              key_shift_to_original)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           song.id,
           song.name,
@@ -745,6 +759,7 @@ export async function syncSongsToDatabase(songs: Song[]): Promise<void> {
           song.direction ?? null,
           song.dateCreated ?? null,
           song.dateModified ?? null,
+          song.keyShiftToOriginal ?? null,
         ] as InValue[],
       }));
       

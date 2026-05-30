@@ -199,6 +199,7 @@ export async function songsRoutes(fastify: FastifyInstance) {
       playback: song.playback,
       dateCreated: song.dateCreated,
       dateModified: song.dateModified,
+      keyShiftToOriginal: song.keyShiftToOriginal,
     };
   });
 

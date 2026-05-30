@@ -46,6 +46,7 @@ export function AdminChordsDisplay({
     nextVerse,
     prevVerse,
     setKeyOffset,
+    setKeyOffsetAndSync,
     syncKeyToAll,
     setDisplayMode,
     toggleVersesEnabled,
@@ -112,6 +113,15 @@ export function AdminChordsDisplay({
             onOffsetChange={setKeyOffset}
             onSync={syncKeyToAll}
           />
+          {typeof song?.keyShiftToOriginal === 'number' && (
+            <button
+              onClick={() => setKeyOffsetAndSync(song.keyShiftToOriginal!)}
+              title="עבור לסולם המקורי (וסנכרן לכולם)"
+              className={state.currentKeyOffset === song.keyShiftToOriginal ? 'active' : ''}
+            >
+              🎯
+            </button>
+          )}
           <button onClick={onExitFullscreen} title="יציאה ממסך מלא" className="exit-fullscreen-btn">
             ⤡
           </button>

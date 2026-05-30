@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS songs (
   direction TEXT,                       -- 'ltr' | 'rtl' | NULL (auto-detect)
   date_created INTEGER,                 -- Unix timestamp in ms (from JSON)
   date_modified INTEGER,                -- Unix timestamp in ms
+  key_shift_to_original INTEGER,        -- Semitones from written key to original recording key (optional in JSON)
   synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

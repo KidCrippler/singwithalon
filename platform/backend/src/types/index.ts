@@ -20,6 +20,7 @@ export interface Song {
   direction?: 'ltr' | 'rtl';
   dateCreated?: number;
   dateModified?: number;
+  keyShiftToOriginal?: number; // Semitones from written key to original recording key (optional)
 }
 
 // Parsed song line types

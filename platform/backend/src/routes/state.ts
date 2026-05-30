@@ -23,6 +23,7 @@ function getEnrichedSong(songId: number | null) {
     lyricists: song.lyricists,
     translators: song.translators,
     direction: song.direction,
+    keyShiftToOriginal: song.keyShiftToOriginal,
   };
 }
 

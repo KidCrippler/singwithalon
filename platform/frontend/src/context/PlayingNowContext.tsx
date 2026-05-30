@@ -43,6 +43,7 @@ interface PlayingNowContextValue {
   prevVerse: () => void;
   setVerse: (index: number) => void;
   setKeyOffset: (offset: number) => void;
+  setKeyOffsetAndSync: (offset: number) => void;
   syncKeyToAll: () => void;
   setDisplayMode: (mode: 'lyrics' | 'chords') => void;
   toggleVersesEnabled: () => void;
@@ -344,6 +345,17 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
     stateApi.syncKey(roomUsername, state.currentKeyOffset).catch(console.error);
   }, [roomUsername, state.currentKeyOffset]);
 
+  // Set admin's key locally AND broadcast it to all viewers (same as setKeyOffset + syncKeyToAll,
+  // but takes the offset explicitly to avoid broadcasting a stale closure value)
+  const setKeyOffsetAndSync = useCallback((keyOffset: number) => {
+    setState(prev => ({
+      ...prev,
+      currentKeyOffset: keyOffset,
+    }));
+    if (!roomUsername) return;
+    stateApi.syncKey(roomUsername, keyOffset).catch(console.error);
+  }, [roomUsername]);
+
   const setDisplayMode = useCallback((displayMode: 'lyrics' | 'chords') => {
     if (!roomUsername) return;
     // Optimistic update
@@ -419,6 +431,7 @@ export function PlayingNowProvider({ children }: { children: React.ReactNode }) 
       prevVerse,
       setVerse,
       setKeyOffset,
+      setKeyOffsetAndSync,
       syncKeyToAll,
       setDisplayMode,
       toggleVersesEnabled,

@@ -23,6 +23,7 @@ export function AdminControls({
     nextVerse,
     prevVerse,
     setKeyOffset,
+    setKeyOffsetAndSync,
     syncKeyToAll,
     setDisplayMode,
     toggleVersesEnabled,
@@ -173,6 +174,15 @@ export function AdminControls({
         onOffsetChange={setKeyOffset}
         onSync={syncKeyToAll}
       />
+      {typeof state.song?.keyShiftToOriginal === 'number' && (
+        <button
+          onClick={() => setKeyOffsetAndSync(state.song!.keyShiftToOriginal!)}
+          title="עבור לסולם המקורי (וסנכרן לכולם)"
+          className={state.currentKeyOffset === state.song.keyShiftToOriginal ? 'active' : ''}
+        >
+          🎯
+        </button>
+      )}
       {/* Fullscreen button for admin */}
       <button
         onClick={onEnterFullscreen}
