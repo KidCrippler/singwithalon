@@ -10,6 +10,7 @@ import { stateRoutes } from './routes/state.js';
 import { playlistRoutes } from './routes/playlist.js';
 import { toolsRoutes } from './routes/tools.js';
 import { initSocketIO } from './socket/index.js';
+import { resolveSessionId } from './services/session.js';
 
 async function main() {
   // Validate required environment variables
@@ -54,18 +55,19 @@ async function main() {
   // Add session ID extraction from cookie or generate new one
   fastify.decorateRequest('sessionId', '');
   fastify.addHook('preHandler', async (request, reply) => {
-    // Try to get session ID from cookie first
-    let sessionId = request.cookies['singalong_viewer_session'];
-    let isNewSession = false;
-    
-    if (!sessionId) {
-      // Generate a new session ID
-      sessionId = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      isNewSession = true;
-    }
-    
+    // Resolve viewer session ID: X-Session-Id header (stable client UUID) takes
+    // precedence over the cookie, which avoids fragmenting one device into many
+    // sessions when the cross-origin cookie is dropped (mobile Safari/ITP).
+    const headerSessionId = Array.isArray(request.headers['x-session-id'])
+      ? request.headers['x-session-id'][0]
+      : request.headers['x-session-id'];
+    const { sessionId, isNew: isNewSession } = resolveSessionId(
+      headerSessionId,
+      request.cookies['singalong_viewer_session']
+    );
+
     request.sessionId = sessionId;
-    
+
     // Set/refresh the session cookie (expires in 30 days)
     // Use 'lax' sameSite for better compatibility with older browsers
     // Only use 'none' if explicitly configured for cross-origin deployment

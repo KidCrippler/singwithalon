@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { stateApi } from '../services/api';
+import { getRoomSessionId } from '../utils/session';
 import type { Room } from '../types';
 
 interface RoomContextValue {
@@ -13,9 +14,6 @@ interface RoomContextValue {
 }
 
 const RoomContext = createContext<RoomContextValue | null>(null);
-
-// Session storage key prefix for per-room sessions
-const SESSION_KEY_PREFIX = 'singalong:session:';
 
 export function RoomProvider({ children }: { children: React.ReactNode }) {
   // This component MUST be inside a Route with :username param
@@ -30,16 +28,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   // Get or create session ID for the current room
   const getSessionId = useCallback((): string => {
     if (!username) return '';
-    
-    const key = `${SESSION_KEY_PREFIX}${username}`;
-    let storedSessionId = localStorage.getItem(key);
-    
-    if (!storedSessionId) {
-      storedSessionId = crypto.randomUUID();
-      localStorage.setItem(key, storedSessionId);
-    }
-    
-    return storedSessionId;
+    return getRoomSessionId(username);
   }, [username]);
 
   // Load room info when username changes

@@ -1,4 +1,5 @@
 import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState, Playlist, PlaylistWithSongs } from '../types';
+import { getRoomSessionId } from '../utils/session';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -92,18 +93,24 @@ export const queueApi = {
   async add(roomUsername: string, songId: number, requesterName: string, notes?: string): Promise<{ success: boolean; entry: QueueEntry }> {
     return fetchJson(`/api/rooms/${roomUsername}/queue`, {
       method: 'POST',
+      headers: { 'X-Session-Id': getRoomSessionId(roomUsername) },
       body: JSON.stringify({ songId, requesterName, notes }),
     });
   },
 
   // Viewer: remove own entry
   async remove(roomUsername: string, id: number): Promise<{ success: boolean }> {
-    return fetchJson(`/api/rooms/${roomUsername}/queue/${id}`, { method: 'DELETE' });
+    return fetchJson(`/api/rooms/${roomUsername}/queue/${id}`, {
+      method: 'DELETE',
+      headers: { 'X-Session-Id': getRoomSessionId(roomUsername) },
+    });
   },
 
   // Viewer: get own entries in room
   async getMine(roomUsername: string): Promise<QueueEntry[]> {
-    return fetchJson(`/api/rooms/${roomUsername}/queue/mine`);
+    return fetchJson(`/api/rooms/${roomUsername}/queue/mine`, {
+      headers: { 'X-Session-Id': getRoomSessionId(roomUsername) },
+    });
   },
 
   // Admin: present from queue
@@ -240,6 +247,7 @@ export const projectorApi = {
   async register(roomUsername: string, width: number, height: number, linesPerVerse: number): Promise<{ success: boolean; isFirstProjector: boolean }> {
     return fetchJson(`/api/rooms/${roomUsername}/projector/register`, {
       method: 'POST',
+      headers: { 'X-Session-Id': getRoomSessionId(roomUsername) },
       body: JSON.stringify({ width, height, linesPerVerse }),
     });
   },
