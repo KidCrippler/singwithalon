@@ -170,6 +170,17 @@ export function SongView() {
           />
         )}
 
+        {/* Jump to original key - only in chords mode, only when the song has the field (local, no sync) */}
+        {displayMode === 'chords' && typeof song?.keyShiftToOriginal === 'number' && (
+          <button
+            onClick={() => setKeyOffset(song.keyShiftToOriginal!)}
+            title="עבור לסולם המקורי"
+            className={`original-key-btn ${keyOffset === song.keyShiftToOriginal ? 'active' : ''}`}
+          >
+            🎯
+          </button>
+        )}
+
         {/* Song title inline */}
         <div className="song-title-compact">
           {lyrics.metadata.title}
