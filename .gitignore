@@ -16,6 +16,9 @@ config.js
 ehthumbs.db
 Thumbs.db
 
+# asdf version pin (local)
+.tool-versions
+
 # Editor directories and files
 .vscode/
 .idea/
