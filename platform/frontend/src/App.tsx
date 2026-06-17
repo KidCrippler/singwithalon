@@ -16,6 +16,7 @@ import { QueueView } from './components/views/QueueView';
 import { PlaylistView } from './components/views/PlaylistView';
 import { MyPicksView } from './components/views/MyPicksView';
 import { SandboxView } from './components/views/SandboxView';
+import { PlaygroundView } from './components/views/PlaygroundView';
 import { preloadBackgrounds } from './utils/backgrounds';
 
 import './App.css';
@@ -75,6 +76,7 @@ function App() {
             <Routes>
               {/* Tools - not room-scoped */}
               <Route path="/tools/sandbox" element={<SandboxView />} />
+              <Route path="/tools/playground" element={<PlaygroundView />} />
               
               {/* Redirect root paths to default room */}
               <Route path="/" element={<Navigate to={`/${DEFAULT_ROOM}`} replace />} />
