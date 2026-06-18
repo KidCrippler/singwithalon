@@ -15,6 +15,29 @@ interface RoomContextValue {
 
 const RoomContext = createContext<RoomContextValue | null>(null);
 
+// Turn a raw room-load failure into a short troubleshooting hint. The heading on
+// screen still says "room not found", but the actual cause is often a DB or
+// server problem — this points at where to look first.
+function describeRoomError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  const detail = raw.slice(0, 200);
+
+  // fetch() itself rejected — never reached the server (server down, DNS, CORS).
+  if (/failed to fetch|networkerror|load failed/i.test(raw)) {
+    return `לא ניתן להתחבר לשרת. ייתכן שהשרת מושבת או בעיית רשת/CORS — בדקו את לוגים ב‑Railway ואת זמינות השרת. [${detail}]`;
+  }
+  // resolveRoom returned 503 — server is up but the DB ping failed.
+  if (/database unavailable|HTTP 503/i.test(raw)) {
+    return `השרת פעיל אך מסד הנתונים אינו זמין. בדקו את חיבור ה‑Turso ואת לוגי השרת (חפשו "DB heartbeat failed" או "resolveRoom DB failure"). [${detail}]`;
+  }
+  // Genuine 404 from resolveRoom — the room really isn\'t there.
+  if (/room not found/i.test(raw)) {
+    return `החדר לא קיים או אינו פעיל. בדקו את שם המשתמש בכתובת ואת הגדרת ADMIN_USERS. [${detail}]`;
+  }
+  // Anything else (HTTP 500 etc.).
+  return `שגיאת שרת לא צפויה. בדקו את לוגי השרת. [${detail}]`;
+}
+
 export function RoomProvider({ children }: { children: React.ReactNode }) {
   // This component MUST be inside a Route with :username param
   const { username } = useParams<{ username: string }>();
@@ -59,7 +82,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
       .catch((err) => {
         console.error('Failed to load room:', err);
         setRoom(null);
-        setRoomError(err.message || 'Room not found');
+        setRoomError(describeRoomError(err));
       })
       .finally(() => {
         setIsRoomLoading(false);

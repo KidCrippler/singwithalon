@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import { config } from './config.js';
-import { initDatabase } from './db/index.js';
+import { initDatabase, pingDatabase, startDatabaseHeartbeat } from './db/index.js';
 import { authRoutes, authHook } from './routes/auth.js';
 import { songsRoutes } from './routes/songs.js';
 import { queueRoutes } from './routes/queue.js';
@@ -11,6 +11,15 @@ import { playlistRoutes } from './routes/playlist.js';
 import { toolsRoutes } from './routes/tools.js';
 import { initSocketIO } from './socket/index.js';
 import { resolveSessionId } from './services/session.js';
+
+// Catch failures that would otherwise terminate the process silently. Last time
+// the server went down, nothing was logged — these guarantee a trace.
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT EXCEPTION:', error);
+});
 
 async function main() {
   // Validate required environment variables
@@ -98,6 +107,25 @@ async function main() {
   await fastify.register(playlistRoutes);
   await fastify.register(toolsRoutes);
 
+  // Health check — runs a real DB ping so Railway/clients can probe liveness.
+  fastify.get('/api/health', async (_request, reply) => {
+    try {
+      const dbLatencyMs = await pingDatabase();
+      return { status: 'ok', dbLatencyMs, timestamp: new Date().toISOString() };
+    } catch (error) {
+      console.error('Health check DB ping failed:', error);
+      return reply.status(503).send({ status: 'db_unavailable', timestamp: new Date().toISOString() });
+    }
+  });
+
+  // Catch-all error handler — logs every unhandled route/preHandler failure with
+  // the request context. This covers the bare `await db.execute(...)` calls
+  // across all routes, which previously failed without any log line.
+  fastify.setErrorHandler((error, request, reply) => {
+    console.error(`Request failed: ${request.method} ${request.url} —`, error);
+    reply.status(error.statusCode ?? 500).send({ error: error.message || 'Internal server error' });
+  });
+
   // Start the server
   try {
     await fastify.listen({
@@ -108,6 +136,16 @@ async function main() {
     // Initialize Socket.io with the raw HTTP server
     const server = fastify.server;
     initSocketIO(server);
+
+    // Confirm DB connectivity at boot and start a low-noise heartbeat so a
+    // mid-session DB outage shows up in the logs even when no request is active.
+    try {
+      const dbLatencyMs = await pingDatabase();
+      console.log(`DB connectivity OK (${dbLatencyMs}ms)`);
+    } catch (error) {
+      console.error('DB connectivity check failed at startup:', error);
+    }
+    startDatabaseHeartbeat();
 
     console.log(`🎤 SingWithAlon backend running at http://${config.server.host}:${config.server.port}`);
   } catch (err) {

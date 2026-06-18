@@ -235,6 +235,29 @@ export function getDb(): Client {
   return db;
 }
 
+// Lightweight connectivity probe. Returns latency in ms, or throws if the DB
+// is unreachable. Used by /api/health and the periodic heartbeat.
+export async function pingDatabase(): Promise<number> {
+  const start = Date.now();
+  await getDb().execute('SELECT 1');
+  return Date.now() - start;
+}
+
+// Periodic heartbeat. Logs only on failure or slow response so it does not spam
+// the log during normal operation. Returns the interval handle for cleanup.
+export function startDatabaseHeartbeat(intervalMs = 60_000): ReturnType<typeof setInterval> {
+  return setInterval(async () => {
+    try {
+      const latencyMs = await pingDatabase();
+      if (latencyMs > 2000) {
+        console.warn(`DB heartbeat slow: ${latencyMs}ms`);
+      }
+    } catch (error) {
+      console.error('DB heartbeat failed — database unreachable:', error);
+    }
+  }, intervalMs);
+}
+
 // Helper to convert LibSQL row to typed object
 function rowToObject<T>(row: Record<string, unknown>): T {
   return row as T;

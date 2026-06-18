@@ -21,7 +21,15 @@ export async function resolveRoom(request: FastifyRequest<{ Params: RoomParams }
     return reply.status(400).send({ error: 'Room username required' });
   }
 
-  const admin = await adminQueries.getActiveByUsername(username);
+  let admin;
+  try {
+    admin = await adminQueries.getActiveByUsername(username);
+  } catch (error) {
+    // DB unreachable/timeout — distinct from a genuine 404 so the client can
+    // tell "server unavailable" apart from "room does not exist".
+    console.error(`resolveRoom DB failure for "${username}":`, error);
+    return reply.status(503).send({ error: 'Database unavailable' });
+  }
   if (!admin) {
     return reply.status(404).send({ error: 'Room not found' });
   }

@@ -48,7 +48,15 @@ export function setupSocketHandlers(io: Server) {
       }
 
       // Resolve username to admin
-      const admin = await adminQueries.getActiveByUsername(roomUsername);
+      let admin;
+      try {
+        admin = await adminQueries.getActiveByUsername(roomUsername);
+      } catch (error) {
+        // DB failure here would otherwise become a silent unhandled rejection.
+        console.error(`join:room DB failure for "${roomUsername}":`, error);
+        socket.emit('error', { message: 'Server unavailable, please retry' });
+        return;
+      }
       if (!admin) {
         socket.emit('error', { message: 'Room not found' });
         socket.disconnect();
@@ -60,9 +68,15 @@ export function setupSocketHandlers(io: Server) {
       socketData.sessionId = sessionId || socket.id;
 
       // Create/update session in database (room-scoped)
-      await sessionQueries.upsert(adminId, socketData.sessionId, {
-        is_projector: isProjector,
-      });
+      try {
+        await sessionQueries.upsert(adminId, socketData.sessionId, {
+          is_projector: isProjector,
+        });
+      } catch (error) {
+        console.error(`join:room session upsert failed for room ${adminId}:`, error);
+        socket.emit('error', { message: 'Server unavailable, please retry' });
+        return;
+      }
 
       // Join viewers room
       const viewersRoom = getRoomName(adminId, 'viewers');
@@ -103,8 +117,12 @@ export function setupSocketHandlers(io: Server) {
 
     // Ping/heartbeat for keep-alive
     socket.on('ping', async () => {
-      if (socketData.sessionId) {
-        await sessionQueries.updateLastSeen(socketData.sessionId);
+      try {
+        if (socketData.sessionId) {
+          await sessionQueries.updateLastSeen(socketData.sessionId);
+        }
+      } catch (error) {
+        console.error(`ping updateLastSeen failed for session ${socketData.sessionId}:`, error);
       }
       socket.emit('pong', {});
     });
@@ -117,9 +135,13 @@ export function setupSocketHandlers(io: Server) {
 
   // Periodic session cleanup (every 15 minutes)
   setInterval(async () => {
-    const cleaned = await sessionQueries.cleanup();
-    if (cleaned > 0) {
-      console.log(`Cleaned up ${cleaned} stale sessions`);
+    try {
+      const cleaned = await sessionQueries.cleanup();
+      if (cleaned > 0) {
+        console.log(`Cleaned up ${cleaned} stale sessions`);
+      }
+    } catch (error) {
+      console.error('Session cleanup failed:', error);
     }
   }, 15 * 60 * 1000);
 }
