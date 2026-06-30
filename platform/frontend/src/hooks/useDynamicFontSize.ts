@@ -29,13 +29,19 @@ export function useDynamicFontSize(
     const container = containerRef.current;
     if (!container) return;
     
-    // Cap at window.innerHeight: if the container's flex height is not properly bounded
-    // (e.g., due to browser quirks with position:fixed ancestors), clientHeight can grow
-    // to match the content height. That makes fitsVertically trivially true at every font
-    // size, so the algorithm picks the maximum font and only the first few lines are visible.
-    const availableHeight = Math.min(container.clientHeight, window.innerHeight);
+    // Available height = distance from the container's top to the bottom of the
+    // viewport. We must NOT use container.clientHeight here: the container's flex
+    // item isn't height-bounded, so when content's min-content height exceeds the
+    // visible area the container grows to fit the content (clientHeight ===
+    // scrollHeight). That makes the fitsVertically test (scrollHeight <=
+    // availableHeight) compare a value to itself - trivially true at every font
+    // size - so the search sizes a box taller than the screen and .song-view's
+    // overflow:hidden clips the bottom. The container's top offset is stable, so
+    // innerHeight - top is the true visible height regardless of content size.
+    const containerTop = container.getBoundingClientRect().top;
+    const availableHeight = window.innerHeight - containerTop;
     const availableWidth = container.clientWidth;
-    if (availableHeight === 0 || availableWidth === 0) return;
+    if (availableHeight <= 0 || availableWidth === 0) return;
     
     // Get container padding and gap for accurate width calculation
     const containerStyle = getComputedStyle(container);
@@ -109,9 +115,16 @@ export function useDynamicFontSize(
     container.style.setProperty('--dynamic-font-size', `${bestFontSize}px`);
     container.style.fontSize = `${bestFontSize}px`;
   }, [containerRef]);
-  
+
   useEffect(() => {
     const timeoutId = setTimeout(calculateOptimalLayout, 50);
+
+    // Web fonts (Cousine for chords) can load after first paint via display=swap;
+    // when they swap in, glyph metrics change and the content can overflow the
+    // clipped container. Recalc once fonts are ready so the fit uses real metrics.
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(calculateOptimalLayout).catch(() => {});
+    }
 
     if (options?.recalcOnResize === false) {
       return () => clearTimeout(timeoutId);
