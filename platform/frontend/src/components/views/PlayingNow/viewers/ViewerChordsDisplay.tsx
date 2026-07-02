@@ -2,6 +2,8 @@ import { usePlayingNow } from '../../../../context/PlayingNowContext';
 import { FullscreenExitButton } from '../../../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../../../common/ChordsFullscreenHeader';
 import { LineDisplay } from '../../../common/LineDisplay';
+import { ChordSheetAutoFit } from '../../ChordSheetAutoFit';
+import { useChordRenderer } from '../../../../hooks/useChordRenderer';
 import type { ParsedLine, ParsedSong, Song } from '../../../../types';
 
 interface IndexedLine {
@@ -31,6 +33,7 @@ export function ViewerChordsDisplay({
   onExitFullscreen,
 }: ViewerChordsDisplayProps) {
   const { effectiveKeyOffset } = usePlayingNow();
+  const renderer = useChordRenderer();
 
   return (
     <>
@@ -47,25 +50,31 @@ export function ViewerChordsDisplay({
         />
       )}
 
-      <div
-        key={`chords-inner-${songId}`}
-        ref={containerRef}
-        className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
-      >
-        {sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="lyrics-section">
-            {section.map((indexedLine) => (
-              <LineDisplay
-                key={indexedLine.originalIndex}
-                line={indexedLine.line}
-                showChords={true}
-                lineIndex={indexedLine.originalIndex}
-                keyOffset={effectiveKeyOffset}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
+      {renderer === 'new' ? (
+        // New renderer owns its own box (no .lyrics-container columns to fight,
+        // and not driven by useDynamicFontSize).
+        <ChordSheetAutoFit song={lyrics} keyOffset={effectiveKeyOffset} />
+      ) : (
+        <div
+          key={`chords-inner-${songId}`}
+          ref={containerRef}
+          className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
+        >
+          {sections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="lyrics-section">
+              {section.map((indexedLine) => (
+                <LineDisplay
+                  key={indexedLine.originalIndex}
+                  line={indexedLine.line}
+                  showChords={true}
+                  lineIndex={indexedLine.originalIndex}
+                  keyOffset={effectiveKeyOffset}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

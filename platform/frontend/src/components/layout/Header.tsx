@@ -8,6 +8,22 @@ import { useQueue } from '../../context/QueueContext';
 import { useRoom } from '../../context/RoomContext';
 import { useSongs } from '../../context/SongsContext';
 import { ToastContainer, useToast } from '../common/Toast';
+import { useChordRenderer, setChordRenderer } from '../../hooks/useChordRenderer';
+
+/** Per-client renderer toggle, shared by the owner and viewer header menus. */
+function ChordRendererMenuItem() {
+  const renderer = useChordRenderer();
+  return (
+    <label className="menu-item">
+      <input
+        type="checkbox"
+        checked={renderer === 'new'}
+        onChange={(e) => setChordRenderer(e.target.checked ? 'new' : 'classic')}
+      />
+      🎼 תצוגת אקורדים חדשה
+    </label>
+  );
+}
 
 export function Header() {
   const { user, isRoomOwner, logout } = useAuth();
@@ -157,22 +173,39 @@ export function Header() {
                 >
                   {isReloading ? '...' : '🔄'} רענן רשימת שירים
                 </button>
-                <button 
+                <button
                   onClick={handleClearSong}
                   disabled={!state.currentSongId}
                   className="menu-item"
                 >
                   🏠 נקה שיר
                 </button>
+                <ChordRendererMenuItem />
                 <button onClick={handleLogout} className="menu-item">
                   🚪 התנתק
                 </button>
               </div>
             )}
           </div>
-        ) : isAdminRoute ? (
-          <Link to={`${roomBase}/admin`} className="login-link">התחבר</Link>
-        ) : null}
+        ) : (
+          <div className="admin-info" ref={menuRef}>
+            {isAdminRoute && (
+              <Link to={`${roomBase}/admin`} className="login-link">התחבר</Link>
+            )}
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="admin-menu-btn"
+              title="תפריט"
+            >
+              ☰
+            </button>
+            {menuOpen && (
+              <div className="admin-menu-dropdown">
+                <ChordRendererMenuItem />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
     </>

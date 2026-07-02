@@ -11,6 +11,7 @@ import {
 } from '../../../utils/verseCalculator';
 import { groupIntoSectionsWithIndices } from '../../../utils/songDisplay';
 import { useDynamicFontSize } from '../../../hooks/useDynamicFontSize';
+import { useChordRenderer } from '../../../hooks/useChordRenderer';
 import { getSongBackground } from '../../../utils/backgrounds';
 import { getRoomSplash } from '../../../utils/splash';
 import {
@@ -40,6 +41,7 @@ export function PlayingNowView() {
   } = usePlayingNow();
   const { isRoomOwner } = useAuth();
   const { room } = useRoom();
+  const chordRenderer = useChordRenderer();
 
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
   const [lyricsSongId, setLyricsSongId] = useState<number | null>(null);
@@ -151,8 +153,10 @@ export function PlayingNowView() {
   // Should admin show purple highlight?
   const showPurpleHighlight = state.displayMode === 'lyrics' && state.versesEnabled;
 
-  // Dynamic font sizing for admin view
-  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, isFullscreen], { recalcOnResize: false });
+  // Dynamic font sizing for admin view. `chordRenderer` is a dep so switching
+  // back to the classic renderer re-sizes the freshly mounted .lyrics-container
+  // (the new renderer replaces that div, so its ref is null while active).
+  useDynamicFontSize(adminContainerRef, [adminSections, showPurpleHighlight, isFullscreen, chordRenderer], { recalcOnResize: false });
 
   // Dynamic font sizing for viewer chords view
   useDynamicFontSize(viewerChordsContainerRef, [
@@ -160,6 +164,7 @@ export function PlayingNowView() {
     viewerShowsChords,
     state.currentSongId,
     isFullscreen,
+    chordRenderer,
   ], { recalcOnResize: false });
 
   // Dynamic font sizing for viewer lyrics full view
