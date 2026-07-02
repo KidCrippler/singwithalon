@@ -378,17 +378,53 @@ function CueLine({ line, isRtl }: { line: ParsedLine; isRtl: boolean }) {
   );
 }
 
+// Purple current-verse highlight, matching classic `.line.verse-highlighted`
+// (App.css) so the two renderers look the same when a verse is highlighted.
+const HIGHLIGHT_STYLE: CSSProperties = {
+  backgroundColor: 'rgba(128, 0, 128, 0.12)',
+  borderRadius: 2,
+};
+
 /**
  * Walk the parsed lines and render them. A `chords` line consumes the following
  * `lyric` line (if present) so the two render as one aligned block.
+ *
+ * `isLineHighlighted` / `onLineClick` (used by the admin verse view) are keyed
+ * to each block's STARTING source line index and wrap it in a clickable,
+ * optionally-highlighted box - parity with the classic renderer's per-line
+ * highlight + click-to-navigate. Both are undefined for the viewer / SongView,
+ * where the blocks render bare.
  */
 function renderLines(
   lines: ParsedLine[],
   keyOffset: number,
   isRtl: boolean,
-  font: FontMode
+  font: FontMode,
+  isLineHighlighted?: (lineIndex: number) => boolean,
+  onLineClick?: (lineIndex: number) => void
 ) {
   const out: ReactNode[] = [];
+
+  // Wrap a block in a highlight/click box keyed to its starting line index.
+  // Keeps the block together in a column (breakInside) and only adds cursor/
+  // background when the caller opted in.
+  const wrap = (node: ReactNode, startIndex: number): ReactNode => {
+    if (!isLineHighlighted && !onLineClick) return node;
+    const highlighted = isLineHighlighted?.(startIndex) ?? false;
+    return (
+      <div
+        key={startIndex}
+        onClick={onLineClick ? () => onLineClick(startIndex) : undefined}
+        style={{
+          breakInside: 'avoid',
+          cursor: onLineClick ? 'pointer' : undefined,
+          ...(highlighted ? HIGHLIGHT_STYLE : null),
+        }}
+      >
+        {node}
+      </div>
+    );
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -398,32 +434,38 @@ function renderLines(
       const lyricLine = next && next.type === 'lyric' ? next : null;
       if (lyricLine) {
         out.push(
-          <ChordLyricLine
-            key={i}
-            chordLine={line}
-            lyricLine={lyricLine}
-            keyOffset={keyOffset}
-            isRtl={isRtl}
-            font={font}
-          />
+          wrap(
+            <ChordLyricLine
+              key={i}
+              chordLine={line}
+              lyricLine={lyricLine}
+              keyOffset={keyOffset}
+              isRtl={isRtl}
+              font={font}
+            />,
+            i
+          )
         );
         i++; // consume the paired lyric line
       } else {
         out.push(
-          <StandaloneChordLine
-            key={i}
-            chordLine={line}
-            keyOffset={keyOffset}
-            isRtl={isRtl}
-            font={font}
-          />
+          wrap(
+            <StandaloneChordLine
+              key={i}
+              chordLine={line}
+              keyOffset={keyOffset}
+              isRtl={isRtl}
+              font={font}
+            />,
+            i
+          )
         );
       }
       continue;
     }
 
     if (line.type === 'lyric') {
-      out.push(<PlainLyricLine key={i} line={line} isRtl={isRtl} font={font} />);
+      out.push(wrap(<PlainLyricLine key={i} line={line} isRtl={isRtl} font={font} />, i));
       continue;
     }
 
@@ -468,6 +510,14 @@ export interface ChordSheetProps {
   font?: FontMode;
   /** Optional style overrides merged onto the outer container. */
   style?: CSSProperties;
+  /**
+   * Highlight predicate keyed to a block's starting source line index (admin
+   * verse view). When provided (with or without `onLineClick`), matching blocks
+   * get the purple current-verse background.
+   */
+  isLineHighlighted?: (lineIndex: number) => boolean;
+  /** Click handler keyed to a block's starting source line index (click-to-navigate). */
+  onLineClick?: (lineIndex: number) => void;
 }
 
 /**
@@ -485,12 +535,14 @@ export function ChordSheet({
   fontSize = 20,
   font = 'proportional',
   style,
+  isLineHighlighted,
+  onLineClick,
 }: ChordSheetProps) {
   const isRtl = song.metadata.direction !== 'ltr';
 
   const body = useMemo<ReactNode>(
-    () => renderLines(song.lines, keyOffset, isRtl, font),
-    [song.lines, keyOffset, isRtl, font]
+    () => renderLines(song.lines, keyOffset, isRtl, font, isLineHighlighted, onLineClick),
+    [song.lines, keyOffset, isRtl, font, isLineHighlighted, onLineClick]
   );
 
   // An explicit column count wins over flow-to-fit `columnWidth`.

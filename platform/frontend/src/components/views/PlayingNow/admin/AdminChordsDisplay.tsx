@@ -2,6 +2,8 @@ import { usePlayingNow } from '../../../../context/PlayingNowContext';
 import { FullscreenExitButton } from '../../../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../../../common/ChordsFullscreenHeader';
 import { LineDisplay } from '../../../common/LineDisplay';
+import { ChordSheetAutoFit } from '../../ChordSheetAutoFit';
+import { useChordRenderer } from '../../../../hooks/useChordRenderer';
 import { TransposeControls } from '../../../TransposeControls';
 import type { ParsedLine, ParsedSong, Song } from '../../../../types';
 
@@ -51,6 +53,7 @@ export function AdminChordsDisplay({
     setDisplayMode,
     toggleVersesEnabled,
   } = usePlayingNow();
+  const renderer = useChordRenderer();
 
   const currentVerseIndex = state.currentVerseIndex;
 
@@ -128,29 +131,44 @@ export function AdminChordsDisplay({
         </div>
       )}
 
-      <div
-        ref={containerRef}
-        className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''} ${isFullscreen ? 'in-fullscreen' : ''}`}
-      >
-        {sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="lyrics-section">
-            {section.map((indexedLine) => {
-              const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(indexedLine.originalIndex);
-              return (
-                <LineDisplay
-                  key={indexedLine.originalIndex}
-                  line={indexedLine.line}
-                  showChords={true}
-                  lineIndex={indexedLine.originalIndex}
-                  keyOffset={state.currentKeyOffset}
-                  onClick={showPurpleHighlight ? onLineClick : undefined}
-                  isHighlighted={isHighlighted}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
+      {renderer === 'new' ? (
+        // New renderer owns its own box (no .lyrics-container columns to fight,
+        // and not driven by useDynamicFontSize).
+        <ChordSheetAutoFit
+          song={lyrics}
+          keyOffset={state.currentKeyOffset}
+          isLineHighlighted={
+            showPurpleHighlight
+              ? (lineIndex) => isLineInCurrentVerse(lineIndex)
+              : undefined
+          }
+          onLineClick={showPurpleHighlight ? onLineClick : undefined}
+        />
+      ) : (
+        <div
+          ref={containerRef}
+          className={`lyrics-container chords ${showPurpleHighlight ? 'with-verse-highlight' : ''} ${isFullscreen ? 'in-fullscreen' : ''}`}
+        >
+          {sections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="lyrics-section">
+              {section.map((indexedLine) => {
+                const isHighlighted = showPurpleHighlight && isLineInCurrentVerse(indexedLine.originalIndex);
+                return (
+                  <LineDisplay
+                    key={indexedLine.originalIndex}
+                    line={indexedLine.line}
+                    showChords={true}
+                    lineIndex={indexedLine.originalIndex}
+                    keyOffset={state.currentKeyOffset}
+                    onClick={showPurpleHighlight ? onLineClick : undefined}
+                    isHighlighted={isHighlighted}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

@@ -15,6 +15,8 @@ import { ToastContainer, useToast } from '../common/Toast';
 import { FullscreenExitButton } from '../common/FullscreenExitButton';
 import { ChordsFullscreenHeader } from '../common/ChordsFullscreenHeader';
 import { LineDisplay } from '../common/LineDisplay';
+import { ChordSheetAutoFit } from './ChordSheetAutoFit';
+import { useChordRenderer } from '../../hooks/useChordRenderer';
 import type { Song, ParsedSong } from '../../types';
 
 export function SongView() {
@@ -23,6 +25,7 @@ export function SongView() {
   const { isRoomOwner } = useAuth();
   const { setSong } = usePlayingNow();
   const { setSearchTerm } = useSearch();
+  const renderer = useChordRenderer();
   
   const [song, setSongData] = useState<Song | null>(null);
   const [lyrics, setLyrics] = useState<ParsedSong | null>(null);
@@ -91,8 +94,10 @@ export function SongView() {
     return groupIntoSections(lyrics.lines, displayMode === 'chords');
   }, [lyrics, displayMode]);
 
-  // Dynamic font sizing - ensures content fits without scrolling
-  useDynamicFontSize(lyricsContainerRef, [sections, displayMode]);
+  // Dynamic font sizing - ensures content fits without scrolling. `renderer` is
+  // a dep so switching back to classic re-sizes the freshly mounted container
+  // (the new renderer replaces it, leaving the ref null while active).
+  useDynamicFontSize(lyricsContainerRef, [sections, displayMode, renderer]);
 
   const handlePresentNow = () => {
     if (!id) return;
@@ -274,24 +279,30 @@ export function SongView() {
             />
           )}
 
-          <div 
-            ref={lyricsContainerRef}
-            className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
-          >
-            {sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="lyrics-section">
-                {section.map((line, lineIndex) => (
-                  <LineDisplay
-                    key={lineIndex}
-                    line={line}
-                    showChords={true}
-                    lineIndex={lineIndex}
-                    keyOffset={keyOffset}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
+          {renderer === 'new' ? (
+            // New renderer owns its own box (no .lyrics-container columns to
+            // fight, and not driven by useDynamicFontSize).
+            <ChordSheetAutoFit song={lyrics} keyOffset={keyOffset} />
+          ) : (
+            <div
+              ref={lyricsContainerRef}
+              className={`lyrics-container chords ${isFullscreen ? 'in-fullscreen' : ''}`}
+            >
+              {sections.map((section, sectionIndex) => (
+                <div key={sectionIndex} className="lyrics-section">
+                  {section.map((line, lineIndex) => (
+                    <LineDisplay
+                      key={lineIndex}
+                      line={line}
+                      showChords={true}
+                      lineIndex={lineIndex}
+                      keyOffset={keyOffset}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
