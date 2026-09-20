@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tech Stack
 
-Next.js 15 (App Router) + React 19 + Tailwind CSS + Embla Carousel. Hebrew/RTL landing page for a musician.
+Next.js 16 (App Router) + React 19 + Tailwind CSS + Embla Carousel. Hebrew/RTL landing page for a musician.
 
 ## Development Commands
 
@@ -52,6 +52,28 @@ className="py-3 px-5 flex" style={{ display: isTyping ? 'flex' : 'none' }}
 ## RTL Layout
 
 The site is Hebrew. `<html lang="he" dir="rtl">` is set in `app/layout.jsx`. Flexbox/Grid automatically reverse for RTL, text aligns right by default, Embla Carousel is configured with `direction: 'rtl'`. **Always test RTL behavior when modifying layouts.**
+
+## File Structure
+
+```
+react-app/
+├── app/
+│   ├── layout.jsx          # Root layout — sets <html lang="he" dir="rtl">
+│   ├── page.jsx            # Landing page (composes the sections below)
+│   ├── globals.css         # ~416 lines of complex effects (see Styling)
+│   ├── components/
+│   │   ├── Hero.jsx, About.jsx, Services.jsx, Testimonials.jsx,
+│   │   ├── VideoGallery.jsx, VideoPage.jsx, ContactForm.jsx,
+│   │   ├── Navigation.jsx, Footer.jsx, Chatbot.jsx
+│   │   └── ui/             # Button.jsx, SectionHeader.jsx (shared primitives)
+│   ├── data/videos.js      # Video gallery data
+│   ├── utils/assets.js     # Asset path helpers
+│   └── video/[videoId]/page.jsx  # Per-video static pages
+├── public/                 # assets/, CNAME, _headers, robots.txt, sitemap.xml
+├── tailwind.config.js      # important: true; custom colors/shadows/animations
+├── next.config.js          # trailingSlash: true; deployed on Vercel
+└── eslint.config.js        # flat config v9
+```
 
 ## Components
 

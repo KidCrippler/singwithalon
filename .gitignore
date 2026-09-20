@@ -1,9 +1,6 @@
 # Claude Code configuration directory
 .claude/
 
-# Cursor configuration directory
-.cursor/
-
 # API Keys and sensitive configuration
 config.js
 
@@ -29,9 +26,8 @@ Thumbs.db
 node_modules/
 react-app/node_modules/
 
-# React build output
-react-app/dist/
-react-app/.vite-react-ssg-temp/
+# Next.js build output
+react-app/.next/
 
 # Build artifacts
 *.log
@@ -43,9 +39,6 @@ pnpm-debug.log*
 # Temporary files
 *.tmp
 *.temp
-
-# Serena cache directory
-.serena/cache/
 
 # Playwright MCP screenshots
 .playwright-mcp/
