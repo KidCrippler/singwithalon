@@ -59,6 +59,17 @@ function VideoGallery() {
       title: 'שירי זיכרון',
       description: 'קאבר גיטרה - מה רצינו להגיד (שלמה ארצי)',
       ariaLabel: 'נגן וידאו - שירי זיכרון'
+    },
+    {
+      poster: '/assets/letitbe_poster.webp',
+      alt: 'קלאסיקות לועזיות',
+      width: 474,
+      height: 850,
+      src: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/letitbe.mp4',
+      duration: '0:42',
+      title: 'קלאסיקות לועזיות',
+      description: 'Let It Be - ביצוע להקה',
+      ariaLabel: 'נגן וידאו - קלאסיקות לועזיות'
     }
   ];
 
@@ -126,8 +137,8 @@ function VideoGallery() {
             subtitle="צפו בביצועים שלי וקבלו טעימה מהמופעים"
           />
 
-          {/* Video Grid - 2 columns on desktop, 1 on mobile */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-[30px]">
+          {/* Video Grid - 3 columns on desktop, 2 on tablet, 1 on mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-[30px]">
             {videos.map((video, index) => (
               <div
                 key={index}
@@ -179,11 +190,10 @@ function VideoGallery() {
       {isModalOpen && (
         <div
           id="video-modal"
-          className="fixed z-[2000] inset-0 bg-black/90"
+          className="fixed z-[2000] inset-0 bg-black/90 flex items-center justify-center p-4"
           ref={modalRef}
-          style={{ display: 'block' }}
         >
-          <div className="relative my-[10%] md:my-[5%] mx-auto w-[95%] md:w-4/5 max-w-[800px]">
+          <div className="relative">
             <button
               className="absolute top-[-35px] left-0 md:top-[-40px] md:left-[-40px] text-white text-[35px] font-bold bg-transparent border-0 cursor-pointer opacity-100 hover:opacity-70 transition-opacity"
               onClick={closeVideoModal}
@@ -196,7 +206,7 @@ function VideoGallery() {
               id="modal-video"
               controls
               src={currentVideo}
-              className="w-full h-auto rounded-[10px]"
+              className="block w-auto h-auto max-w-[95vw] md:max-w-[800px] max-h-[85vh] rounded-[10px]"
             >
               <track kind="captions" src="#" srcLang="he" label="עברית" default />
             </video>

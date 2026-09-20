@@ -65,6 +65,19 @@ export const videosData = {
     width: 848,
     height: 478,
     keywords: 'שלמה ארצי, כבר עבר, קאבר, אלון כהן, מוזיקה ישראלית, וידאו'
+  },
+  letitbe: {
+    id: 'letitbe',
+    title: 'קלאסיקות לועזיות',
+    description: 'Let It Be - ביצוע להקה',
+    videoUrl: 'https://pub-c512c10de2ad4c37a4e4998b005da1e8.r2.dev/letitbe.mp4',
+    posterUrl: getAssetPath('letitbe_poster.webp'),
+    duration: 'PT42S',
+    durationDisplay: '0:42',
+    genre: 'רוק קלאסי',
+    width: 474,
+    height: 850,
+    keywords: 'Let It Be, הביטלס, The Beatles, קלאסיקה, אלון כהן, שירה בציבור, מוזיקה, וידאו'
   }
 };
 

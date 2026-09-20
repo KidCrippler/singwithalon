@@ -28,5 +28,10 @@
     "globals": "^16.4.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17"
-  }
+  },
+  "description": "Professional Hebrew RTL landing page for Alon Cohen, a musician specializing in Israeli music. Features an interactive song selection system for live performances.",
+  "main": "eslint.config.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
