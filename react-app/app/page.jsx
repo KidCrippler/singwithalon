@@ -6,7 +6,6 @@ import Services from './components/Services'
 import Testimonials from './components/Testimonials'
 import ContactForm from './components/ContactForm'
 import Footer from './components/Footer'
-import Chatbot from './components/Chatbot'
 
 export default function Home() {
   return (
@@ -19,7 +18,6 @@ export default function Home() {
       <Testimonials />
       <ContactForm />
       <Footer />
-      <Chatbot />
     </>
   )
 }
