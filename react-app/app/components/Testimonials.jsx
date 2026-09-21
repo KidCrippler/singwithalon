@@ -139,8 +139,13 @@ function Testimonials() {
             <div className="embla__container">
               {testimonialsData.map((testimonial, index) => (
                 <div key={index} className="embla__slide">
-                  <div className="testimonial-card relative bg-white rounded-3xl p-8 md:p-10 min-h-[400px] md:min-h-[450px] flex flex-col shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                    
+                  <div className="testimonial-card relative w-full bg-white rounded-3xl p-8 md:p-10 min-h-[400px] md:min-h-[450px] flex flex-col shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+
+                    {/* Decorative quote glyph */}
+                    <span className="absolute top-4 left-6 text-[7rem] leading-none font-display text-primary/10 select-none pointer-events-none z-0">
+                      &rdquo;
+                    </span>
+
                     {/* Header with profile and author info */}
                     <div className="flex items-start gap-4 mb-6 relative z-10">
                       {/* Profile icon */}
@@ -164,7 +169,7 @@ function Testimonials() {
                     </div>
 
                     {/* Content area */}
-                    <div className="flex-1 flex flex-col justify-between relative z-10">
+                    <div className="flex-1 flex flex-col relative z-10">
                       {/* Stars */}
                       <div className="flex justify-end gap-1 mb-4">
                         {createStars(testimonial.stars)}
