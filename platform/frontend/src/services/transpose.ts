@@ -291,3 +291,32 @@ export function formatOffset(offset: number): string {
   return offset > 0 ? `+${offset}` : `${offset}`;
 }
 
+/**
+ * The absolute name of a key transposed from `writtenKey` by `offset` semitones,
+ * preserving a trailing minor 'm'. E.g. ("C", 2) -> "D", ("Am", 2) -> "Bm".
+ * Returns writtenKey unchanged if it can't be parsed.
+ */
+export function targetKeyName(writtenKey: string, offset: number): string {
+  const m = writtenKey.match(/^([A-G][#b]?)(m?)$/);
+  if (!m) return writtenKey;
+  return transposeNote(m[1], offset) + m[2];
+}
+
+/**
+ * The 12 keys in `writtenKey`'s quality, chromatic order (C, C#, D, …), each with
+ * the semitone offset from writtenKey normalized to (-6..+6]. Returns null when the
+ * written key is unknown/unparseable (caller falls back to a plain offset stepper).
+ */
+export function keyOptions(writtenKey: string): { name: string; offset: number }[] | null {
+  const m = writtenKey.match(/^([A-G][#b]?)(m?)$/);
+  if (!m) return null;
+  const writtenSemitone = NOTE_TO_SEMITONE[m[1]];
+  if (writtenSemitone === undefined) return null;
+  const quality = m[2];
+  return CHROMATIC_SCALE.map((note, semitone) => {
+    let offset = (((semitone - writtenSemitone) % 12) + 12) % 12; // 0..11
+    if (offset > 6) offset -= 12; // fold to -5..+6 (nearest direction)
+    return { name: note + quality, offset };
+  });
+}
+

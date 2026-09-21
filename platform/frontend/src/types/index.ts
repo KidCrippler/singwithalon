@@ -90,6 +90,15 @@ export interface PlaylistSong {
   songId: number;
   songName: string;
   songArtist: string;
+  keyOffset: number;           // saved semitone offset (0 = as written)
+  writtenKey?: string;         // song.key from the index, if known
+  keyShiftToOriginal?: number; // semitones from written key to original recording key, if known
+}
+
+// One entry sent back to the playlist PUT endpoint.
+export interface PlaylistEntryInput {
+  songId: number;
+  keyOffset: number;
 }
 
 export interface PlaylistWithSongs {

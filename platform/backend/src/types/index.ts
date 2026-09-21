@@ -20,6 +20,7 @@ export interface Song {
   direction?: 'ltr' | 'rtl';
   dateCreated?: number;
   dateModified?: number;
+  key?: string; // Written key of the chart, e.g. 'F' or 'Am' (optional; absent for image-only/chord-less charts)
   keyShiftToOriginal?: number; // Semitones from written key to original recording key (optional)
 }
 
@@ -89,10 +90,20 @@ export interface Playlist {
   id: number;
   admin_id: number;
   name: string;
-  song_ids: string; // JSON array string e.g. '[101,205,333]'
+  song_ids: string; // JSON array of PlaylistEntry objects, e.g. '[{"songId":101,"keyOffset":0}]'
   is_active: boolean;
   created_at: string;
 }
+
+// A normalized playlist entry: song plus its saved per-song transpose offset.
+export interface PlaylistEntry {
+  songId: number;
+  keyOffset: number; // semitones relative to the written chart (0 = as written)
+}
+
+// The two shapes that may appear in the stored song_ids JSON. Legacy playlists
+// hold bare numbers; new ones hold objects. Parsed tolerantly via parseSongIds.
+export type StoredSongEntry = number | { songId: number; keyOffset?: number };
 
 export interface Session {
   session_id: string;

@@ -5,7 +5,13 @@ import { usePlayingNow } from '../../context/PlayingNowContext';
 import { useRoom } from '../../context/RoomContext';
 import { useSongs } from '../../context/SongsContext';
 import { playlistApi } from '../../services/api';
-import type { Playlist, PlaylistSong } from '../../types';
+import { SongKeyControl } from '../SongKeyControl';
+import type { Playlist, PlaylistSong, PlaylistEntryInput } from '../../types';
+
+// Map enriched playlist songs back to the entry form the PUT endpoint expects,
+// preserving each song's saved keyOffset through reorder / add / remove.
+const toEntries = (songs: PlaylistSong[]): PlaylistEntryInput[] =>
+  songs.map(s => ({ songId: s.songId, keyOffset: s.keyOffset }));
 
 const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -104,24 +110,29 @@ export function PlaylistView() {
   };
 
   // Song list mutations
-  const updateSongList = async (newSongIds: number[]) => {
+  const updateSongList = async (entries: PlaylistEntryInput[]) => {
     if (!roomUsername || !activePlaylist) return;
-    await playlistApi.update(roomUsername, activePlaylist.id, { songIds: newSongIds });
+    await playlistApi.update(roomUsername, activePlaylist.id, { songIds: entries });
     reloadPlaylists();
     refreshPlaylist();
   };
 
   const handleRemoveSong = (position: number) => {
     if (!activePlaylist) return;
-    const newIds = activePlaylist.songs.map(s => s.songId).filter((_, i) => i !== position);
-    updateSongList(newIds);
+    updateSongList(toEntries(activePlaylist.songs).filter((_, i) => i !== position));
   };
 
   const handleAddSong = (songId: number) => {
     if (!activePlaylist) return;
-    const currentIds = activePlaylist.songs.map(s => s.songId);
-    updateSongList([...currentIds, songId]);
+    updateSongList([...toEntries(activePlaylist.songs), { songId, keyOffset: 0 }]);
     setSearchQuery('');
+  };
+
+  const handleSetKey = (position: number, keyOffset: number) => {
+    if (!activePlaylist) return;
+    const entries = toEntries(activePlaylist.songs);
+    entries[position] = { ...entries[position], keyOffset };
+    updateSongList(entries);
   };
 
   const clearDrag = useCallback(() => setDrag({ srcIdx: null, overIdx: null, overHalf: null }), []);
@@ -153,7 +164,7 @@ export function PlaylistView() {
     setDrag(prev => {
       if (prev.srcIdx === null || prev.srcIdx === targetIdx || !activePlaylist) return { srcIdx: null, overIdx: null, overHalf: null };
 
-      const arr = activePlaylist.songs.map(s => s.songId);
+      const arr = toEntries(activePlaylist.songs);
       let insertIdx = half === 'top' ? targetIdx : targetIdx + 1;
 
       const [item] = arr.splice(prev.srcIdx, 1);
@@ -177,7 +188,7 @@ export function PlaylistView() {
         setSelectedForMove(null);
         return;
       }
-      const arr = activePlaylist.songs.map(s => s.songId);
+      const arr = toEntries(activePlaylist.songs);
       const [item] = arr.splice(selectedForMove, 1);
       const insertIdx = selectedForMove < position ? position - 1 : position;
       arr.splice(insertIdx, 0, item);
@@ -315,6 +326,13 @@ export function PlaylistView() {
                     <span className="song-name">{song.songName}</span>
                     <span className="song-artist">{song.songArtist}</span>
                   </div>
+                  <SongKeyControl
+                    writtenKey={song.writtenKey}
+                    keyOffset={song.keyOffset}
+                    songName={song.songName}
+                    keyShiftToOriginal={song.keyShiftToOriginal}
+                    onChange={offset => handleSetKey(song.position, offset)}
+                  />
                   {isCurrent && <span className="current-indicator">▶</span>}
                   <button
                     className="song-remove-btn"

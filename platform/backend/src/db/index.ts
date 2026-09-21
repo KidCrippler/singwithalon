@@ -4,7 +4,25 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
 import { config } from '../config.js';
-import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue, Song, Playlist } from '../types/index.js';
+import type { Admin, QueueEntry, PlayingState, Session, GroupedQueue, Song, Playlist, PlaylistEntry, StoredSongEntry } from '../types/index.js';
+
+// Parse a playlists.song_ids JSON string into normalized entries. Tolerant of
+// both the legacy bare-number form and the new object form; any malformed input
+// degrades to [] / keyOffset 0 rather than throwing, so a bad row never breaks a screen.
+export function parseSongIds(json: string): PlaylistEntry[] {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw)) return [];
+  return (raw as StoredSongEntry[])
+    .map(e => (typeof e === 'number'
+      ? { songId: e, keyOffset: 0 }
+      : { songId: e?.songId, keyOffset: e?.keyOffset ?? 0 }))
+    .filter((e): e is PlaylistEntry => typeof e.songId === 'number');
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,6 +124,27 @@ async function migrateSongsColumns(): Promise<void> {
     console.log('  Migration: added column key_shift_to_original to songs');
   } catch {
     // Column already exists — expected after first run
+  }
+}
+
+// Rewrite every playlists.song_ids to the object form { songId, keyOffset }.
+// Idempotent: parseSongIds normalizes both forms, so re-running is a no-op.
+async function migratePlaylistSongIds(): Promise<void> {
+  const result = await db.execute('SELECT id, song_ids FROM playlists');
+  let migrated = 0;
+  for (const row of result.rows) {
+    const { id, song_ids } = row as Record<string, unknown>;
+    const entries = parseSongIds(song_ids as string);
+    const normalized = JSON.stringify(entries);
+    if (normalized === (song_ids as string)) continue; // already object form
+    await db.execute({
+      sql: 'UPDATE playlists SET song_ids = ? WHERE id = ?',
+      args: [normalized, id as number],
+    });
+    migrated++;
+  }
+  if (migrated > 0) {
+    console.log(`  Migration: normalized song_ids on ${migrated} playlist(s) to object form`);
   }
 }
 
@@ -224,6 +263,9 @@ export async function initDatabase(): Promise<Client> {
 
   // Sync playlists from env var
   await syncPlaylistsFromEnv();
+
+  // Normalize any legacy numeric song_ids to the object form (idempotent)
+  await migratePlaylistSongIds();
 
   return db;
 }
@@ -607,7 +649,7 @@ export const playlistQueries = {
     });
   },
 
-  async create(adminId: number, name: string, songIds: number[]): Promise<Playlist> {
+  async create(adminId: number, name: string, songIds: StoredSongEntry[]): Promise<Playlist> {
     const result = await getDb().execute({
       sql: 'INSERT INTO playlists (admin_id, name, song_ids) VALUES (?, ?, ?)',
       args: [adminId, name, JSON.stringify(songIds)],
@@ -616,7 +658,7 @@ export const playlistQueries = {
     return { id, admin_id: adminId, name, song_ids: JSON.stringify(songIds), is_active: false, created_at: new Date().toISOString() };
   },
 
-  async update(id: number, adminId: number, updates: { name?: string; songIds?: number[] }): Promise<Playlist | undefined> {
+  async update(id: number, adminId: number, updates: { name?: string; songIds?: StoredSongEntry[] }): Promise<Playlist | undefined> {
     const fields: string[] = [];
     const values: InValue[] = [];
 

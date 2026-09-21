@@ -1,4 +1,4 @@
-import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState, Playlist, PlaylistWithSongs } from '../types';
+import type { Song, ParsedSong, PlayingStateWithRoom, GroupedQueue, QueueEntry, AuthState, Playlist, PlaylistWithSongs, PlaylistEntryInput } from '../types';
 import { getRoomSessionId } from '../utils/session';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -215,7 +215,7 @@ export const playlistApi = {
     });
   },
 
-  async update(roomUsername: string, id: number, updates: { name?: string; songIds?: number[] }): Promise<Playlist> {
+  async update(roomUsername: string, id: number, updates: { name?: string; songIds?: PlaylistEntryInput[] }): Promise<Playlist> {
     return fetchJson(`/api/rooms/${roomUsername}/playlists/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),

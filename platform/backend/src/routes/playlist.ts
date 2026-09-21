@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { playlistQueries, playingStateQueries, queueQueries } from '../db/index.js';
+import { playlistQueries, playingStateQueries, queueQueries, parseSongIds } from '../db/index.js';
 import { getSongsIndex } from './songs.js';
+import type { PlaylistEntry, StoredSongEntry } from '../types/index.js';
 import { resolveRoom, requireRoomOwner } from './auth.js';
 import { broadcastToRoom } from '../socket/index.js';
 import { analytics } from '../services/analytics.js';
@@ -37,16 +38,19 @@ async function broadcastSongStatus(adminId: number) {
   });
 }
 
-// Helper: Enrich song IDs with names from the in-memory index
-function enrichSongIds(songIds: number[]) {
+// Helper: Enrich playlist entries with names + written key from the in-memory index
+function enrichSongIds(entries: PlaylistEntry[]) {
   const songsIndex = getSongsIndex();
-  return songIds.map((songId, position) => {
-    const song = songsIndex.find(s => s.id === songId);
+  return entries.map((entry, position) => {
+    const song = songsIndex.find(s => s.id === entry.songId);
     return {
       position,
-      songId,
+      songId: entry.songId,
       songName: song?.name ?? '(לא נמצא)',
       songArtist: song?.singer ?? '',
+      keyOffset: entry.keyOffset,
+      writtenKey: song?.key, // undefined when the chart has no known key
+      keyShiftToOriginal: song?.keyShiftToOriginal,
     };
   });
 }
@@ -63,7 +67,7 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         id: p.id,
         name: p.name,
         isActive: !!p.is_active,
-        songCount: (JSON.parse(p.song_ids) as number[]).length,
+        songCount: parseSongIds(p.song_ids).length,
       }));
     }
   );
@@ -79,21 +83,21 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'No active playlist' });
       }
 
-      const songIds = JSON.parse(playlist.song_ids) as number[];
+      const entries = parseSongIds(playlist.song_ids);
       const state = await playingStateQueries.get(adminId);
 
       return {
         id: playlist.id,
         name: playlist.name,
         isActive: true,
-        songs: enrichSongIds(songIds),
+        songs: enrichSongIds(entries),
         position: state?.playlist_position ?? -1,
       };
     }
   );
 
   // Create a playlist
-  fastify.post<{ Params: RoomParams; Body: { name: string; songIds?: number[] } }>(
+  fastify.post<{ Params: RoomParams; Body: { name: string; songIds?: StoredSongEntry[] } }>(
     '/api/rooms/:username/playlists',
     { preHandler: [resolveRoom, requireRoomOwner] },
     async (request, reply) => {
@@ -110,7 +114,7 @@ export async function playlistRoutes(fastify: FastifyInstance) {
   );
 
   // Update a playlist (name and/or song list)
-  fastify.put<{ Params: PlaylistIdParams; Body: { name?: string; songIds?: number[] } }>(
+  fastify.put<{ Params: PlaylistIdParams; Body: { name?: string; songIds?: StoredSongEntry[] } }>(
     '/api/rooms/:username/playlists/:id',
     { preHandler: [resolveRoom, requireRoomOwner] },
     async (request, reply) => {
@@ -123,7 +127,7 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Playlist not found' });
       }
 
-      const updates: { name?: string; songIds?: number[] } = {};
+      const updates: { name?: string; songIds?: StoredSongEntry[] } = {};
       if (name !== undefined) updates.name = name.trim();
       if (songIds !== undefined) updates.songIds = songIds;
 
@@ -132,8 +136,7 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Playlist not found' });
       }
 
-      const parsedSongIds = JSON.parse(updated.song_ids) as number[];
-      return { id: updated.id, name: updated.name, isActive: !!updated.is_active, songCount: parsedSongIds.length };
+      return { id: updated.id, name: updated.name, isActive: !!updated.is_active, songCount: parseSongIds(updated.song_ids).length };
     }
   );
 
@@ -222,14 +225,14 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Playlist not found' });
       }
 
-      const songIds = JSON.parse(playlist.song_ids) as number[];
+      const entries = parseSongIds(playlist.song_ids);
       const targetPosition = state.playlist_position + 1;
 
-      if (targetPosition >= songIds.length) {
+      if (targetPosition >= entries.length) {
         return reply.status(400).send({ error: 'Already at last song' });
       }
 
-      return presentFromPlaylist(adminId, songIds, targetPosition);
+      return presentFromPlaylist(adminId, entries, targetPosition);
     }
   );
 
@@ -249,14 +252,14 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Playlist not found' });
       }
 
-      const songIds = JSON.parse(playlist.song_ids) as number[];
+      const entries = parseSongIds(playlist.song_ids);
       const targetPosition = state.playlist_position - 1;
 
       if (targetPosition < 0) {
         return reply.status(400).send({ error: 'Already at first song' });
       }
 
-      return presentFromPlaylist(adminId, songIds, targetPosition);
+      return presentFromPlaylist(adminId, entries, targetPosition);
     }
   );
 
@@ -277,19 +280,19 @@ export async function playlistRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Playlist not found' });
       }
 
-      const songIds = JSON.parse(playlist.song_ids) as number[];
-      if (position < 0 || position >= songIds.length) {
+      const entries = parseSongIds(playlist.song_ids);
+      if (position < 0 || position >= entries.length) {
         return reply.status(400).send({ error: 'Invalid position' });
       }
 
-      return presentFromPlaylist(adminId, songIds, position);
+      return presentFromPlaylist(adminId, entries, position);
     }
   );
 }
 
 // Shared logic: present a song from the playlist at a given position
-async function presentFromPlaylist(adminId: number, songIds: number[], position: number) {
-  const songId = songIds[position];
+async function presentFromPlaylist(adminId: number, entries: PlaylistEntry[], position: number) {
+  const { songId, keyOffset } = entries[position];
 
   // Mark previous song as played
   const currentState = await playingStateQueries.get(adminId);
@@ -301,7 +304,7 @@ async function presentFromPlaylist(adminId: number, songIds: number[], position:
   await playingStateQueries.update(adminId, {
     current_song_id: songId,
     current_verse_index: 0,
-    current_key_offset: 0,
+    current_key_offset: keyOffset,
     playlist_position: position,
   });
 

@@ -2737,6 +2737,145 @@ button.playlist-position:disabled {
   background: #fee;
 }
 
+/* Per-song key control (pill + popover) */
+.song-key-control {
+  flex-shrink: 0;
+}
+
+.song-key-pill {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  /* Latin key/offset text inside an RTL row — keep it from reordering */
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.song-key-pill.rekeyed {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: rgba(74, 144, 217, 0.08);
+}
+
+.song-key-pill:hover {
+  background: var(--secondary-color);
+}
+
+.song-key-popover {
+  position: fixed;
+  z-index: 1000;
+  min-width: 220px;
+  padding: 0.6rem;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.song-key-popover-title {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.song-key-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.25rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.song-key-cell {
+  min-height: 36px;
+  padding: 0.3rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.song-key-cell:hover {
+  background: var(--secondary-color);
+}
+
+.song-key-cell.written {
+  font-weight: 700;
+}
+
+.song-key-cell.written::after {
+  content: ' •';
+  color: var(--text-secondary);
+}
+
+.song-key-cell.selected {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.song-key-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.song-key-step {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.song-key-step:hover {
+  background: var(--secondary-color);
+}
+
+.song-key-step-value {
+  min-width: 2.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.song-key-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.song-key-action {
+  flex: 1;
+  min-height: 36px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.song-key-action:hover {
+  background: var(--secondary-color);
+  color: var(--primary-color);
+}
+
 /* Inline search to add songs */
 .playlist-add-section {
   margin-top: 0.75rem;
